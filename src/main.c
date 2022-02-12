@@ -25,6 +25,7 @@ LOG_MODULE_DECLARE(app, CONFIG_LOG_DEFAULT_LEVEL);
 int tflm_inference_value_decode_and_verify_sign(uint8_t *inf_val_encoded_buf,
 						size_t inf_val_encoded_buf_len,
 						const unsigned char *pkey,
+						size_t pkey_len,
 						float *y_val)
 {
 	uint8_t *dec;
@@ -34,7 +35,7 @@ int tflm_inference_value_decode_and_verify_sign(uint8_t *inf_val_encoded_buf,
 
 	status = mbedtls_ecp_load_representation(&ctx.pk,
 						 pkey,
-						 strlen(pkey));
+						 pkey_len);
 	if (status != 0) {
 		LOG_ERR("Load the public key failed\n");
 		goto err;
@@ -139,6 +140,7 @@ void main(void)
 			    &inf_val_encoded_buf[0],
 			    inf_val_encoded_buf_len,
 			    public_key,
+			    public_key_len,
 			    &y_value) != 0) {
 			LOG_ERR("NS: Failed to verify signature.\n");
 		} else {

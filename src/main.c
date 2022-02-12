@@ -112,6 +112,9 @@ void main(void)
 		goto err;
 	}
 
+	LOG_INF("Exported public key:");
+	sf_hex_tabulate_16(&fmt, public_key, public_key_len);
+
 	for (int i = 1; i <= 20; i++) {
 
 		x_value = (float)i * deg;

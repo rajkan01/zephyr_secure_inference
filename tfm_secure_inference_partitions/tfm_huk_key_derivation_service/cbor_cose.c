@@ -128,7 +128,7 @@ tflm_add_inf_val(struct tflm_inf_val_encode_ctx *token_ctx,
 }
 
 psa_status_t tflm_inference_value_encode_and_sign(psa_key_handle_t key_handle,
-						  float inv_val,
+						  float inf_val,
 						  uint8_t *inf_val_encoded_buf,
 						  size_t inf_val_encoded_buf_size,
 						  size_t *inf_val_encoded_buf_len)
@@ -153,7 +153,7 @@ psa_status_t tflm_inference_value_encode_and_sign(psa_key_handle_t key_handle,
 		return status;
 	}
 
-	status = tflm_add_inf_val(&encode_ctx, inv_val);
+	status = tflm_add_inf_val(&encode_ctx, inf_val);
 
 	if (status != PSA_SUCCESS) {
 		return status;
@@ -172,6 +172,7 @@ psa_status_t tflm_inference_value_encode_and_sign(psa_key_handle_t key_handle,
 	inf_val_encoded_buf = (uint8_t *)completed_inf_val_encode_sign.ptr;
 	*inf_val_encoded_buf_len = completed_inf_val_encode_sign.len;
 
+#if CONFIG_COSE_VERIFY_SIGN_ON_S_SIDE
 	/* Verify signature */
 	struct t_cose_key inf_val_sign_key;
 
@@ -197,6 +198,6 @@ psa_status_t tflm_inference_value_encode_and_sign(psa_key_handle_t key_handle,
 	} else {
 		LOG_INFFMT("[COSE service] COSE signature verification succeeded\n");
 	}
-
+#endif
 	return status;
 }

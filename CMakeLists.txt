@@ -34,6 +34,8 @@ target_sources(app PRIVATE
   src/tfm_secure_infer_partitions_service_api.c
   src/util_app_log.c
   src/util_sformat.c
+  src/shell/shell.c
+  src/shell/cmd_key_mgmt.c
   ext/NanoCBOR/src/decoder.c
   ext/NanoCBOR/src/encoder.c
 )

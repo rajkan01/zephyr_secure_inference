@@ -13,4 +13,10 @@ source "subsys/logging/Kconfig.template.log_config"
 
 endmenu
 
+config SECURE_INFER_SHELL_CMD_SUPPORT
+	bool "Enable custom shell commands for secure inference"
+	depends on SHELL
+	help
+	  Enabling this option will make secure inference shell commands available.
+
 source "Kconfig.zephyr"

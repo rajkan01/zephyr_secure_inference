@@ -18,6 +18,7 @@
 #include "util/util_sformat.h"
 #include "pk/pk_import_verify_sign.h"
 #include <math.h>
+#include "shell/cmd_key_mgmt.h"
 
 /** Declare a reference to the application logging interface. */
 LOG_MODULE_DECLARE(app, CONFIG_LOG_DEFAULT_LEVEL);
@@ -93,15 +94,17 @@ void main(void)
 		.addr_label = true,
 		.addr = 0
 	};
+
+#if CONFIG_SECURE_INFER_SHELL_CMD_SUPPORT
 	// Generate UUID
 	status = al_psa_status(
-		psa_huk_key_derivation_generate_uuid(uuid, sizeof(uuid)),
+		psa_get_uuid(uuid, sizeof(uuid)),
 		__func__);
 	if (status != PSA_SUCCESS) {
 		LOG_ERR("Unable to get UUID.");
 		return;
 	}
-	LOG_INF("Generated UUID: %s", uuid);
+#endif  /* CONFIG_SECURE_INFER_SHELL_CMD_SUPPORT */
 
 	status = al_psa_status(
 		psa_huk_key_derivation_export_public_key(&key_id,
@@ -153,7 +156,6 @@ void main(void)
 		printf("Deviation: %f\n", fabs(sin(x_value) - y_value));
 		al_dump_log();
 
-		k_msleep(500);
 	}
 
 err:

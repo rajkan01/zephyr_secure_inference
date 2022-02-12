@@ -3,8 +3,8 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-#include "cose_verify.h"
-#include "pk_import_verify_sign.h"
+#include "cose/cose_verify.h"
+#include "pk/pk_import_verify_sign.h"
 
 #define HASH_TSTR(md_ctx, nc, buf, len_buf, str)		    \
 	nanocbor_encoder_init(&nc, buf, len_buf);		    \

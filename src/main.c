@@ -12,11 +12,11 @@
 
 #include <tfm_veneers.h>
 #include <tfm_ns_interface.h>
-#include "tfm_secure_infer_partitions_service_api.h"
-#include "cose_verify.h"
-#include "util_app_log.h"
-#include "util_sformat.h"
-#include "pk_import_verify_sign.h"
+#include "tfm_sp_inf/tfm_secure_infer_partitions_service_api.h"
+#include "cose/cose_verify.h"
+#include "util/util_app_log.h"
+#include "util/util_sformat.h"
+#include "pk/pk_import_verify_sign.h"
 #include <math.h>
 
 /** Declare a reference to the application logging interface. */

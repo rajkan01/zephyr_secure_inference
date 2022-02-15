@@ -11,9 +11,9 @@
 /** Declare a reference to the application logging interface. */
 LOG_MODULE_DECLARE(app, CONFIG_LOG_DEFAULT_LEVEL);
 
-int mbedtls_ecp_load_representation(mbedtls_pk_context *ctx,
-				    const uint8_t *data,
-				    size_t data_length)
+int mbedtls_ecp_load_pubkey(mbedtls_pk_context *ctx,
+			    const uint8_t *data,
+			    size_t data_length)
 {
 	size_t curve_bytes = data_length;
 	const mbedtls_pk_info_t *pk_info;
@@ -87,11 +87,11 @@ err:
 /*
  * Verify a signature
  */
-int mbedtls_ecdsa_pk_verify(mbedtls_pk_context ctx,
-			    const unsigned char *hash,
-			    size_t hash_len,
-			    const unsigned char *sig,
-			    size_t sig_len)
+int mbedtls_ecdsa_verify_sign(mbedtls_pk_context ctx,
+			      const unsigned char *hash,
+			      size_t hash_len,
+			      const unsigned char *sig,
+			      size_t sig_len)
 {
 	mbedtls_mpi r;
 	mbedtls_mpi s;

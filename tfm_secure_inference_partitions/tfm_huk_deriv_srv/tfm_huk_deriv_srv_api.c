@@ -4,12 +4,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "tfm_huk_key_derivation_service_api.h"
+#include "tfm_huk_deriv_srv_api.h"
 
-psa_status_t psa_huk_key_derivation_ec_key(psa_key_id_t *ec_key_id,
-					   const uint8_t *label,
-					   size_t label_size,
-					   psa_key_usage_t *key_usage_flag)
+psa_status_t psa_huk_deriv_ec_key(psa_key_id_t *ec_key_id,
+				  const uint8_t *label,
+				  size_t label_size,
+				  psa_key_usage_t *key_usage_flag)
 {
 	psa_status_t status;
 	psa_handle_t handle;
@@ -20,8 +20,8 @@ psa_status_t psa_huk_key_derivation_ec_key(psa_key_id_t *ec_key_id,
 		{ .base = key_usage_flag, .len = sizeof(psa_key_usage_t) },
 	};
 
-	handle = psa_connect(TFM_HUK_KEY_DERIVATION_EC_KEY_SID,
-			     TFM_HUK_KEY_DERIVATION_EC_KEY_VERSION);
+	handle = psa_connect(TFM_HUK_DERIV_EC_KEY_SID,
+			     TFM_HUK_DERIV_EC_KEY_VERSION);
 	if (!PSA_HANDLE_IS_VALID(handle)) {
 		return PSA_ERROR_GENERIC_ERROR;
 	}
@@ -38,10 +38,10 @@ psa_status_t psa_huk_key_derivation_ec_key(psa_key_id_t *ec_key_id,
 	return status;
 }
 
-psa_status_t psa_huk_key_derivation_cose_cbor_encode_and_sign(float *inf_value,
-							      cose_cbor_config_t *cfg,
-							      uint8_t *encoded_buf,
-							      size_t *encoded_buf_len)
+psa_status_t psa_huk_cose_sign(float *inf_value,
+			       cose_cbor_config_t *cfg,
+			       uint8_t *encoded_buf,
+			       size_t *encoded_buf_len)
 {
 	psa_status_t status;
 	psa_handle_t handle;
@@ -56,8 +56,8 @@ psa_status_t psa_huk_key_derivation_cose_cbor_encode_and_sign(float *inf_value,
 		{ .base = encoded_buf_len, .len = sizeof(size_t) },
 	};
 
-	handle = psa_connect(TFM_HUK_KEY_DERIVATION_COSE_CBOR_ENC_SIGN_SID,
-			     TFM_HUK_KEY_DERIVATION_COSE_CBOR_ENC_SIGN_VERSION);
+	handle = psa_connect(TFM_HUK_COSE_CBOR_ENC_SIGN_SID,
+			     TFM_HUK_COSE_CBOR_ENC_SIGN_VERSION);
 	if (!PSA_HANDLE_IS_VALID(handle)) {
 		return PSA_ERROR_GENERIC_ERROR;
 	}

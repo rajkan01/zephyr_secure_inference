@@ -17,7 +17,7 @@ configure_file(
 set_property(TARGET zephyr_property_target
   APPEND PROPERTY TFM_CMAKE_OPTIONS
   -DTFM_EXTRA_MANIFEST_LIST_FILES=${CMAKE_CURRENT_BINARY_DIR}/tfm_secure_inference_partitions/tfm_manifest_list.yaml
-  -DTFM_EXTRA_PARTITION_PATHS="${CMAKE_CURRENT_LIST_DIR}/tfm_secure_inference_partitions/tfm_huk_key_derivation_service\\\;${CMAKE_CURRENT_LIST_DIR}/tfm_secure_inference_partitions/tfm_tflm_service"
+  -DTFM_EXTRA_PARTITION_PATHS="${CMAKE_CURRENT_LIST_DIR}/tfm_secure_inference_partitions/tfm_huk_deriv_srv\\\;${CMAKE_CURRENT_LIST_DIR}/tfm_secure_inference_partitions/tfm_tflm_service"
   )
 
 # set_property(TARGET zephyr_property_target
@@ -31,7 +31,7 @@ target_sources(app PRIVATE
   src/main.c
   src/pk_import_verify_sign.c
   src/cose_verify.c
-  src/tfm_secure_infer_partitions_service_api.c
+  src/tfm_sip_srv_api.c
   src/util_app_log.c
   src/util_sformat.c
   src/shell/shell.c

@@ -41,40 +41,37 @@ extern "C" {
  *
  * \return Returns error code as specified in \ref psa_status_t
  */
-psa_status_t psa_secure_inference_tflm_hello(psa_key_id_t *key_id,
-					     const float *input,
-					     size_t input_length,
-					     uint8_t *encoded_buf,
-					     size_t encoded_buf_size,
-					     size_t *encoded_buf_len);
+psa_status_t psa_si_tflm_hello(psa_key_id_t *key_id,
+			       const float *input,
+			       size_t input_length,
+			       uint8_t *encoded_buf,
+			       size_t encoded_buf_size,
+			       size_t *encoded_buf_len);
 
 /**
- * \brief Export the public key from key derivation
+ * \brief Get the public key from HUK export public key service
  *
  * \param[in] key_id                   EC key id for persistent key
- * \param[in] ec_public_key_data       Buffer to which exported public key
+ * \param[in] ec_pk_data       Buffer to which exported public key
  *                                     is written into
- * \param[in] ec_public_key_data_size  Size of ec_public_key_data in bytes
+ * \param[in] ec_pk_data_size  Size of ec_pk_data in bytes
  *
  * \return Returns error code as specified in \ref psa_status_t
  */
-psa_status_t psa_huk_key_derivation_export_public_key(psa_key_id_t *key_id,
-						      uint8_t *ec_public_key_data,
-						      size_t ec_public_key_data_size);
+psa_status_t psa_huk_get_pubkey(psa_key_id_t *key_id,
+				uint8_t *ec_pk_data,
+				size_t ec_pk_data_size);
 
 /**
- * \brief Generate UUID
- *
- * Generates an UUID based on
- * https://datatracker.ietf.org/doc/html/rfc4122#section-4.4
+ * \brief Get the UUID from HUK generate UUID service
  *
  * \param[out] uuid          Buffer to write UUID
  * \param[in] uuid_size      Size of UUID buffer
  *
  * \return A status indicating the success/failure of the operation
  */
-psa_status_t psa_huk_key_derivation_generate_uuid(void *uuid,
-						  size_t uuid_size);
+psa_status_t psa_huk_get_uuid(void *uuid,
+			      size_t uuid_size);
 
 #ifdef __cplusplus
 }

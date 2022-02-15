@@ -146,7 +146,7 @@ int cose_verify_sign1(cose_sign_context_t *ctx,
 		return COSE_ERROR_DECODE;
 	}
 
-	if (mbedtls_ecdsa_pk_verify(
+	if (mbedtls_ecdsa_verify_sign(
 		    ctx->pk,
 		    hash, ctx->len_hash, sig, len_sig) != 0) {
 		return COSE_ERROR_AUTHENTICATE;

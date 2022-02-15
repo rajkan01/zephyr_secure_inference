@@ -14,7 +14,7 @@
 #include "target_cfg.h"
 
 #include "constants.h"
-#include "tfm_huk_key_derivation_service_api.h"
+#include "tfm_huk_deriv_srv_api.h"
 #include <string.h>
 // #include "Driver_I2C.h"
 #include "platform_regs.h"
@@ -224,7 +224,7 @@ void tfm_tflm_service_hello(void)
 		psa_read(msg.handle, 1, &x_value, sizeof(x_value));
 		cose_enc_cfg.max_buf_size = msg.out_size[0];
 		if (cose_enc_cfg.key_id == C_SIGN) {
-			cose_enc_cfg.cbor_encode_and_sign_pld = true;
+			cose_enc_cfg.cbor_encode_sign = true;
 		}
 		/* This constant kXrange represents the range of x values our model
 		 * was trained on, which is from 0 to (2 * Pi). We approximate Pi
@@ -241,10 +241,10 @@ void tfm_tflm_service_hello(void)
 
 		LOG_INFFMT("[TFLM service] Starting CBOR encoding and COSE signing...\
 				\r\n");
-		psa_huk_key_derivation_cose_cbor_encode_and_sign(&y_value,
-								 &cose_enc_cfg,
-								 inf_val_encoded_buf,
-								 &inf_val_encoded_buf_len);
+		psa_huk_cose_sign(&y_value,
+				  &cose_enc_cfg,
+				  inf_val_encoded_buf,
+				  &inf_val_encoded_buf_len);
 
 		psa_write(msg.handle, 0, inf_val_encoded_buf, inf_val_encoded_buf_len);
 		psa_write(msg.handle, 1, &inf_val_encoded_buf_len, sizeof(inf_val_encoded_buf_len));
@@ -261,19 +261,19 @@ void tfm_tflm_service_hello(void)
 }
 
 /**
- * \brief Create EC key needed by COSE.
+ * \brief Generate EC key.
  */
-static void tfm_tflm_cose_create_ec_key(const uint8_t  *label,
-					size_t label_len,
-					psa_key_id_t ec_key_id,
-					psa_key_usage_t key_usage_flag)
+static void tfm_tflm_gen_ec_key(const uint8_t  *label,
+				size_t label_len,
+				psa_key_id_t ec_key_id,
+				psa_key_usage_t key_usage_flag)
 {
 	psa_status_t status;
 
-	status = psa_huk_key_derivation_ec_key(&ec_key_id,
-					       label,
-					       label_len,
-					       &key_usage_flag);
+	status = psa_huk_deriv_ec_key(&ec_key_id,
+				      label,
+				      label_len,
+				      &key_usage_flag);
 
 	if (status != PSA_SUCCESS) {
 		LOG_ERRFMT("[TFLM service] HUK key derivation failed with status %d\n" \
@@ -335,18 +335,18 @@ void tfm_tflm_service_req_mngr_init(void)
 	 | Device COSE SIGN    | C_SIGN      | C_SIGN_TLS_EC_PRIV_KEY_HI    |
 	 | Device COSE ENCRYPT | C_ENCRYPT   | C_ENCRYPT_TLS_EC_PRIV_KEY_HI |
 	 */
-	tfm_tflm_cose_create_ec_key(label[0],
-				    strlen((char *)label[0]),
-				    CLIENT_TLS,
-				    PSA_KEY_USAGE_VERIFY_MESSAGE);
-	tfm_tflm_cose_create_ec_key(label[1],
-				    strlen((char *)label[1]),
-				    C_SIGN,
-				    (PSA_KEY_USAGE_SIGN_HASH | PSA_KEY_USAGE_VERIFY_HASH));
-	tfm_tflm_cose_create_ec_key(label[2],
-				    strlen((char *)label[2]),
-				    C_ENCRYPT,
-				    PSA_KEY_USAGE_ENCRYPT);
+	tfm_tflm_gen_ec_key(label[0],
+			    strlen((char *)label[0]),
+			    CLIENT_TLS,
+			    PSA_KEY_USAGE_VERIFY_MESSAGE);
+	tfm_tflm_gen_ec_key(label[1],
+			    strlen((char *)label[1]),
+			    C_SIGN,
+			    (PSA_KEY_USAGE_SIGN_HASH | PSA_KEY_USAGE_VERIFY_HASH));
+	tfm_tflm_gen_ec_key(label[2],
+			    strlen((char *)label[2]),
+			    C_ENCRYPT,
+			    PSA_KEY_USAGE_ENCRYPT);
 
 	/* Tensorflow lite-micro initialisation */
 	setup();

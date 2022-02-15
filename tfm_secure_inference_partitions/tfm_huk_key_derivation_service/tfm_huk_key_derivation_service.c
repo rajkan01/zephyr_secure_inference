@@ -318,23 +318,28 @@ static psa_status_t tfm_huk_key_derivation_gen_uuid(psa_msg_t *msg)
 {
 	psa_status_t status = PSA_SUCCESS;
 	size_t uuid_length;
-	uint8_t uuid_encoded[37] = {0};
-	uint8_t uuid[16] = {0};
+	static uint8_t uuid_encoded[37] = { 0 };
+	uint8_t uuid[16] = { 0 };
 	uint8_t *uuid_label = (uint8_t *)"UUID";
+	static uint8_t is_uuid_generated = 0;
 
-	status = tfm_huk_key_derivation(uuid,
-					sizeof(uuid),
-					&uuid_length,
-					uuid_label,
-					strlen((char *)uuid_label));
+	if (!is_uuid_generated) {
+		status = tfm_huk_key_derivation(uuid,
+						sizeof(uuid),
+						&uuid_length,
+						uuid_label,
+						strlen((char *)uuid_label));
 
-	if (status != PSA_SUCCESS) {
-		return status;
+		if (status != PSA_SUCCESS) {
+			return status;
+		}
+		tfm_encode_random_bytes_to_uuid(uuid,
+						sizeof(uuid),
+						uuid_encoded,
+						sizeof(uuid_encoded));
+		is_uuid_generated = 1;
+		LOG_INFFMT("[UUID service] Generated UUID: %s\n", uuid_encoded);
 	}
-	tfm_encode_random_bytes_to_uuid(uuid,
-					sizeof(uuid),
-					uuid_encoded,
-					sizeof(uuid_encoded));
 	psa_write(msg->handle, 0, uuid_encoded, sizeof(uuid_encoded));
 	return status;
 }

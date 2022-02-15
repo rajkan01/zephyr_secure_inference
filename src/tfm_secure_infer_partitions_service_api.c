@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "tfm_secure_infer_partitions_service_api.h"
+#include "tfm_sp_inf/tfm_secure_infer_partitions_service_api.h"
 
 #include "psa/client.h"
 #include "psa_manifest/sid.h"

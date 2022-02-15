@@ -12,12 +12,13 @@
 
 #include <tfm_veneers.h>
 #include <tfm_ns_interface.h>
-#include "tfm_secure_infer_partitions_service_api.h"
-#include "cose_verify.h"
-#include "util_app_log.h"
-#include "util_sformat.h"
-#include "pk_import_verify_sign.h"
+#include "tfm_sp_inf/tfm_secure_infer_partitions_service_api.h"
+#include "cose/cose_verify.h"
+#include "util/util_app_log.h"
+#include "util/util_sformat.h"
+#include "pk/pk_import_verify_sign.h"
 #include <math.h>
+#include "shell/cmd_key_mgmt.h"
 
 /** Declare a reference to the application logging interface. */
 LOG_MODULE_DECLARE(app, CONFIG_LOG_DEFAULT_LEVEL);
@@ -25,6 +26,7 @@ LOG_MODULE_DECLARE(app, CONFIG_LOG_DEFAULT_LEVEL);
 int tflm_inference_value_decode_and_verify_sign(uint8_t *inf_val_encoded_buf,
 						size_t inf_val_encoded_buf_len,
 						const unsigned char *pkey,
+						size_t pkey_len,
 						float *y_val)
 {
 	uint8_t *dec;
@@ -34,7 +36,7 @@ int tflm_inference_value_decode_and_verify_sign(uint8_t *inf_val_encoded_buf,
 
 	status = mbedtls_ecp_load_representation(&ctx.pk,
 						 pkey,
-						 strlen(pkey));
+						 pkey_len);
 	if (status != 0) {
 		LOG_ERR("Load the public key failed\n");
 		goto err;
@@ -92,15 +94,17 @@ void main(void)
 		.addr_label = true,
 		.addr = 0
 	};
+
+#if CONFIG_SECURE_INFER_SHELL_CMD_SUPPORT
 	// Generate UUID
 	status = al_psa_status(
-		psa_huk_key_derivation_generate_uuid(uuid, sizeof(uuid)),
+		psa_get_uuid(uuid, sizeof(uuid)),
 		__func__);
 	if (status != PSA_SUCCESS) {
 		LOG_ERR("Unable to get UUID.");
 		return;
 	}
-	LOG_INF("Generated UUID: %s", uuid);
+#endif  /* CONFIG_SECURE_INFER_SHELL_CMD_SUPPORT */
 
 	status = al_psa_status(
 		psa_huk_key_derivation_export_public_key(&key_id,
@@ -111,6 +115,9 @@ void main(void)
 		LOG_ERR("Failed to export the_public_key");
 		goto err;
 	}
+
+	LOG_INF("Exported public key:");
+	sf_hex_tabulate_16(&fmt, public_key, public_key_len);
 
 	for (int i = 1; i <= 20; i++) {
 
@@ -136,6 +143,7 @@ void main(void)
 			    &inf_val_encoded_buf[0],
 			    inf_val_encoded_buf_len,
 			    public_key,
+			    public_key_len,
 			    &y_value) != 0) {
 			LOG_ERR("NS: Failed to verify signature.\n");
 		} else {
@@ -148,7 +156,6 @@ void main(void)
 		printf("Deviation: %f\n", fabs(sin(x_value) - y_value));
 		al_dump_log();
 
-		k_msleep(500);
 	}
 
 err:

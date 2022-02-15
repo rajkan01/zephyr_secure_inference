@@ -5,8 +5,8 @@
  */
 #include <logging/log_ctrl.h>
 #include <logging/log.h>
-#include "pk_import_verify_sign.h"
-#include "util_app_log.h"
+#include "pk/pk_import_verify_sign.h"
+#include "util/util_app_log.h"
 
 /** Declare a reference to the application logging interface. */
 LOG_MODULE_DECLARE(app, CONFIG_LOG_DEFAULT_LEVEL);

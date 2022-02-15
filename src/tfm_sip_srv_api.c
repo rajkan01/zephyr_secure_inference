@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "tfm_sp_inf/tfm_secure_infer_partitions_service_api.h"
+#include "tfm_sp_inf/tfm_sip_srv_api.h"
 
 #include "psa/client.h"
 #include "psa_manifest/sid.h"
@@ -31,12 +31,12 @@
 //      return status;
 // }
 
-psa_status_t psa_secure_inference_tflm_hello(psa_key_id_t *key_id,
-					     const float *input,
-					     size_t input_length,
-					     uint8_t *encoded_buf,
-					     size_t encoded_buf_size,
-					     size_t *encoded_buf_len)
+psa_status_t psa_si_tflm_hello(psa_key_id_t *key_id,
+			       const float *input,
+			       size_t input_length,
+			       uint8_t *encoded_buf,
+			       size_t encoded_buf_size,
+			       size_t *encoded_buf_len)
 {
 	psa_status_t status;
 	psa_handle_t handle;
@@ -68,9 +68,9 @@ psa_status_t psa_secure_inference_tflm_hello(psa_key_id_t *key_id,
 	return status;
 }
 
-psa_status_t psa_huk_key_derivation_export_public_key(psa_key_id_t *key_id,
-						      uint8_t *ec_public_key_data,
-						      size_t ec_public_key_data_size)
+psa_status_t psa_huk_get_pubkey(psa_key_id_t *key_id,
+				uint8_t *ec_pk_data,
+				size_t ec_pk_data_size)
 {
 	psa_status_t status;
 	psa_handle_t handle;
@@ -80,11 +80,11 @@ psa_status_t psa_huk_key_derivation_export_public_key(psa_key_id_t *key_id,
 	};
 
 	psa_outvec out_vec[] = {
-		{ .base = ec_public_key_data, .len = ec_public_key_data_size },
+		{ .base = ec_pk_data, .len = ec_pk_data_size },
 	};
 
-	handle = psa_connect(TFM_HUK_KEY_DERIVATION_EXPORT_PUBLIC_KEY_SID,
-			     TFM_HUK_KEY_DERIVATION_EXPORT_PUBLIC_KEY_VERSION);
+	handle = psa_connect(TFM_HUK_EXPORT_PUBKEY_SID,
+			     TFM_HUK_EXPORT_PUBKEY_VERSION);
 	if (!PSA_HANDLE_IS_VALID(handle)) {
 		return PSA_ERROR_GENERIC_ERROR;
 	}
@@ -101,8 +101,8 @@ psa_status_t psa_huk_key_derivation_export_public_key(psa_key_id_t *key_id,
 	return status;
 }
 
-psa_status_t psa_huk_key_derivation_generate_uuid(void *uuid,
-						  size_t uuid_size)
+psa_status_t psa_huk_get_uuid(void *uuid,
+			      size_t uuid_size)
 {
 	psa_status_t status;
 	psa_handle_t handle;
@@ -111,8 +111,8 @@ psa_status_t psa_huk_key_derivation_generate_uuid(void *uuid,
 		{ .base = uuid, .len = uuid_size }
 	};
 
-	handle = psa_connect(TFM_HUK_KEY_DERIVATION_GENERATE_UUID_SID,
-			     TFM_HUK_KEY_DERIVATION_GENERATE_UUID_VERSION);
+	handle = psa_connect(TFM_HUK_GEN_UUID_SID,
+			     TFM_HUK_GEN_UUID_VERSION);
 	if (!PSA_HANDLE_IS_VALID(handle)) {
 		return PSA_ERROR_GENERIC_ERROR;
 	}

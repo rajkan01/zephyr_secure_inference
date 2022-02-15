@@ -24,9 +24,9 @@
  *
  * @return Returns error code as specified in \ref MbedTLS error code.
  */
-int mbedtls_ecp_load_representation(mbedtls_pk_context *ctx,
-				    const uint8_t *data,
-				    size_t data_length);
+int mbedtls_ecp_load_pubkey(mbedtls_pk_context *ctx,
+			    const uint8_t *data,
+			    size_t data_length);
 
 /**
  * \brief           Verify signature in non-ASN container format signed
@@ -43,9 +43,9 @@ int mbedtls_ecp_load_representation(mbedtls_pk_context *ctx,
  *                  signature in sig but its length is less than \p siglen,
  *                  or a specific error code.
  */
-int mbedtls_ecdsa_pk_verify(mbedtls_pk_context ctx,
-			    const unsigned char *hash,
-			    size_t hash_len,
-			    const unsigned char *sig,
-			    size_t sig_len);
+int mbedtls_ecdsa_verify_sign(mbedtls_pk_context ctx,
+			      const unsigned char *hash,
+			      size_t hash_len,
+			      const unsigned char *sig,
+			      size_t sig_len);
 #endif /* PK_IMPORT_VERIFY_SIGN_H */

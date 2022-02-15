@@ -12,7 +12,7 @@
 
 #include <tfm_veneers.h>
 #include <tfm_ns_interface.h>
-#include "tfm_sp_inf/tfm_secure_infer_partitions_service_api.h"
+#include "tfm_sp_inf/tfm_sip_srv_api.h"
 #include "cose/cose_verify.h"
 #include "util/util_app_log.h"
 #include "util/util_sformat.h"
@@ -23,20 +23,20 @@
 /** Declare a reference to the application logging interface. */
 LOG_MODULE_DECLARE(app, CONFIG_LOG_DEFAULT_LEVEL);
 
-int tflm_inference_value_decode_and_verify_sign(uint8_t *inf_val_encoded_buf,
-						size_t inf_val_encoded_buf_len,
-						const unsigned char *pkey,
-						size_t pkey_len,
-						float *y_val)
+int tflm_decode_verify_sign(uint8_t *inf_val_encoded_buf,
+			    size_t inf_val_encoded_buf_len,
+			    const unsigned char *pkey,
+			    size_t pkey_len,
+			    float *y_val)
 {
 	uint8_t *dec;
 	size_t len_dec;
 	cose_sign_context_t ctx;
 	int status;
 
-	status = mbedtls_ecp_load_representation(&ctx.pk,
-						 pkey,
-						 pkey_len);
+	status = mbedtls_ecp_load_pubkey(&ctx.pk,
+					 pkey,
+					 pkey_len);
 	if (status != 0) {
 		LOG_ERR("Load the public key failed\n");
 		goto err;
@@ -107,9 +107,9 @@ void main(void)
 #endif  /* CONFIG_SECURE_INFER_SHELL_CMD_SUPPORT */
 
 	status = al_psa_status(
-		psa_huk_key_derivation_export_public_key(&key_id,
-							 public_key,
-							 public_key_len),
+		psa_huk_get_pubkey(&key_id,
+				   public_key,
+				   public_key_len),
 		__func__);
 	if (status != PSA_SUCCESS) {
 		LOG_ERR("Failed to export the_public_key");
@@ -123,12 +123,12 @@ void main(void)
 
 		x_value = (float)i * deg;
 		status = al_psa_status(
-			psa_secure_inference_tflm_hello(&key_id,
-							&x_value,
-							sizeof(x_value),
-							inf_val_encoded_buf,
-							sizeof(inf_val_encoded_buf),
-							&inf_val_encoded_buf_len),
+			psa_si_tflm_hello(&key_id,
+					  &x_value,
+					  sizeof(x_value),
+					  inf_val_encoded_buf,
+					  sizeof(inf_val_encoded_buf),
+					  &inf_val_encoded_buf_len),
 			__func__);
 
 		if (status != PSA_SUCCESS) {
@@ -139,7 +139,7 @@ void main(void)
 		LOG_INF("CBOR encoded and COSE signed inference value:");
 		sf_hex_tabulate_16(&fmt, inf_val_encoded_buf, inf_val_encoded_buf_len);
 
-		if (tflm_inference_value_decode_and_verify_sign(
+		if (tflm_decode_verify_sign(
 			    &inf_val_encoded_buf[0],
 			    inf_val_encoded_buf_len,
 			    public_key,

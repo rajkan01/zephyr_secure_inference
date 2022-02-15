@@ -16,8 +16,8 @@
 #include "tfm_crypto_defs.h"
 #include "psa/crypto.h"
 #include "psa/service.h"
-#include "psa_manifest/tfm_huk_key_derivation_service.h"
-#include "tfm_huk_key_derivation_service_api.h"
+#include "psa_manifest/tfm_huk_deriv_srv.h"
+#include "tfm_huk_deriv_srv_api.h"
 
 #define KEY_LEN_BYTES  16
 #define LABEL_HI "_EC_PRIV_KEY_HI"
@@ -77,11 +77,11 @@ static psa_status_t tfm_encode_random_bytes_to_uuid(uint8_t *random_bytes,
 	uuid_buf[j] = '\0';
 }
 
-static psa_status_t tfm_huk_key_derivation(uint8_t *key_data,
-					   size_t key_data_size,
-					   size_t *key_data_len,
-					   uint8_t *label,
-					   size_t label_size)
+static psa_status_t tfm_huk_deriv_unique_key(uint8_t *key_data,
+					     size_t key_data_size,
+					     size_t *key_data_len,
+					     uint8_t *label,
+					     size_t label_size)
 {
 	psa_status_t status;
 	psa_key_attributes_t attributes = PSA_KEY_ATTRIBUTES_INIT;
@@ -166,7 +166,7 @@ err_release_op:
 	return status;
 }
 
-static psa_status_t tfm_huk_key_derivation_ec_key(psa_msg_t *msg)
+static psa_status_t tfm_huk_deriv_ec_key(psa_msg_t *msg)
 {
 	psa_status_t status = PSA_SUCCESS;
 	uint8_t ec_priv_key_data[KEY_LEN_BYTES * 2] = { 0 };
@@ -198,21 +198,21 @@ static psa_status_t tfm_huk_key_derivation_ec_key(psa_msg_t *msg)
 	 * as the HUK derived key. But the size of EC private key is 32-bytes.
 	 * Therefore, we decided to call HUK based key derivation twice.
 	 */
-	status = tfm_huk_key_derivation(ec_priv_key_data,
-					KEY_LEN_BYTES,
-					&ec_priv_key_data_len,
-					label_hi,
-					strlen((char *)label_hi));
+	status = tfm_huk_deriv_unique_key(ec_priv_key_data,
+					  KEY_LEN_BYTES,
+					  &ec_priv_key_data_len,
+					  label_hi,
+					  strlen((char *)label_hi));
 
 	if (status != PSA_SUCCESS) {
 		return status;
 	}
 
-	status = tfm_huk_key_derivation(&ec_priv_key_data[ec_priv_key_data_len],
-					KEY_LEN_BYTES,
-					&ec_priv_key_data_len,
-					label_lo,
-					strlen((char *)label_lo));
+	status = tfm_huk_deriv_unique_key(&ec_priv_key_data[ec_priv_key_data_len],
+					  KEY_LEN_BYTES,
+					  &ec_priv_key_data_len,
+					  label_lo,
+					  strlen((char *)label_lo));
 
 	if (status != PSA_SUCCESS) {
 		return status;
@@ -246,7 +246,7 @@ static psa_status_t tfm_huk_key_derivation_ec_key(psa_msg_t *msg)
 }
 
 
-static psa_status_t tfm_huk_key_derivation_export_public_key(psa_msg_t *msg)
+static psa_status_t tfm_huk_export_pubkey(psa_msg_t *msg)
 {
 	psa_status_t status = PSA_SUCCESS;
 	psa_key_id_t key_id = 0;
@@ -276,7 +276,7 @@ static psa_status_t tfm_huk_key_derivation_export_public_key(psa_msg_t *msg)
 	return status;
 }
 
-static psa_status_t tfm_huk_key_derivation_cose_cbor_enc_and_sign
+static psa_status_t tfm_huk_cose_encode_sign
 	(psa_msg_t *msg)
 {
 	psa_status_t status = PSA_SUCCESS;
@@ -284,18 +284,18 @@ static psa_status_t tfm_huk_key_derivation_cose_cbor_enc_and_sign
 
 	psa_read(msg->handle, 1, &cose_cbor_cfg, msg->in_size[1]);
 
-	if (cose_cbor_cfg.cbor_encode_and_sign_pld) {
+	if (cose_cbor_cfg.cbor_encode_sign) {
 		uint8_t inf_val_encoded_buf[cose_cbor_cfg.max_buf_size];
 		size_t inf_val_encoded_buf_len = 0;
 		float inf_value = 0;
 		psa_read(msg->handle, 0, &inf_value, msg->in_size[0]);
-		status = tflm_inference_value_encode_and_sign(cose_cbor_cfg.key_id,
-							      inf_value,
-							      inf_val_encoded_buf,
-							      cose_cbor_cfg.max_buf_size,
-							      &inf_val_encoded_buf_len);
+		status = tfm_cose_encode_sign(cose_cbor_cfg.key_id,
+					      inf_value,
+					      inf_val_encoded_buf,
+					      cose_cbor_cfg.max_buf_size,
+					      &inf_val_encoded_buf_len);
 		if (status != PSA_SUCCESS) {
-			LOG_ERRFMT("tflm_inference_value_encode_and_sign returned: %d \n",
+			LOG_ERRFMT("tfm_cose_encode_sign returned: %d \n",
 				   status);
 			return status;
 		}
@@ -314,7 +314,10 @@ static psa_status_t tfm_huk_key_derivation_cose_cbor_enc_and_sign
 	return status;
 }
 
-static psa_status_t tfm_huk_key_derivation_gen_uuid(psa_msg_t *msg)
+/* Generates an UUID based on
+ * https://datatracker.ietf.org/doc/html/rfc4122#section-4.4
+ */
+static psa_status_t tfm_huk_gen_uuid(psa_msg_t *msg)
 {
 	psa_status_t status = PSA_SUCCESS;
 	size_t uuid_length;
@@ -324,11 +327,11 @@ static psa_status_t tfm_huk_key_derivation_gen_uuid(psa_msg_t *msg)
 	static uint8_t is_uuid_generated = 0;
 
 	if (!is_uuid_generated) {
-		status = tfm_huk_key_derivation(uuid,
-						sizeof(uuid),
-						&uuid_length,
-						uuid_label,
-						strlen((char *)uuid_label));
+		status = tfm_huk_deriv_unique_key(uuid,
+						  sizeof(uuid),
+						  &uuid_length,
+						  uuid_label,
+						  strlen((char *)uuid_label));
 
 		if (status != PSA_SUCCESS) {
 			return status;
@@ -344,7 +347,7 @@ static psa_status_t tfm_huk_key_derivation_gen_uuid(psa_msg_t *msg)
 	return status;
 }
 
-static void tfm_huk_key_derivation_signal_handle(psa_signal_t signal, signal_handler_t pfn)
+static void tfm_huk_deriv_signal_handle(psa_signal_t signal, signal_handler_t pfn)
 {
 	psa_status_t status;
 	psa_msg_t msg;
@@ -366,29 +369,29 @@ static void tfm_huk_key_derivation_signal_handle(psa_signal_t signal, signal_han
 	}
 }
 
-psa_status_t tfm_huk_key_derivation_req_mngr_init(void)
+psa_status_t tfm_huk_deriv_req_mgr_init(void)
 {
 	psa_signal_t signals = 0;
 
 	while (1) {
 		signals = psa_wait(PSA_WAIT_ANY, PSA_BLOCK);
-		if (signals & TFM_HUK_KEY_DERIVATION_EC_KEY_SIGNAL) {
-			tfm_huk_key_derivation_signal_handle(
-				TFM_HUK_KEY_DERIVATION_EC_KEY_SIGNAL,
-				tfm_huk_key_derivation_ec_key);
-		} else if (signals & TFM_HUK_KEY_DERIVATION_EXPORT_PUBLIC_KEY_SIGNAL) {
-			tfm_huk_key_derivation_signal_handle(
-				TFM_HUK_KEY_DERIVATION_EXPORT_PUBLIC_KEY_SIGNAL,
-				tfm_huk_key_derivation_export_public_key);
+		if (signals & TFM_HUK_DERIV_EC_KEY_SIGNAL) {
+			tfm_huk_deriv_signal_handle(
+				TFM_HUK_DERIV_EC_KEY_SIGNAL,
+				tfm_huk_deriv_ec_key);
+		} else if (signals & TFM_HUK_EXPORT_PUBKEY_SIGNAL) {
+			tfm_huk_deriv_signal_handle(
+				TFM_HUK_EXPORT_PUBKEY_SIGNAL,
+				tfm_huk_export_pubkey);
 		} else if (signals &
-			   TFM_HUK_KEY_DERIVATION_COSE_CBOR_ENC_SIGN_SIGNAL) {
-			tfm_huk_key_derivation_signal_handle(
-				TFM_HUK_KEY_DERIVATION_COSE_CBOR_ENC_SIGN_SIGNAL,
-				tfm_huk_key_derivation_cose_cbor_enc_and_sign);
-		} else if (signals & TFM_HUK_KEY_DERIVATION_GENERATE_UUID_SIGNAL) {
-			tfm_huk_key_derivation_signal_handle(
-				TFM_HUK_KEY_DERIVATION_GENERATE_UUID_SIGNAL,
-				tfm_huk_key_derivation_gen_uuid);
+			   TFM_HUK_COSE_CBOR_ENC_SIGN_SIGNAL) {
+			tfm_huk_deriv_signal_handle(
+				TFM_HUK_COSE_CBOR_ENC_SIGN_SIGNAL,
+				tfm_huk_cose_encode_sign);
+		} else if (signals & TFM_HUK_GEN_UUID_SIGNAL) {
+			tfm_huk_deriv_signal_handle(
+				TFM_HUK_GEN_UUID_SIGNAL,
+				tfm_huk_gen_uuid);
 		} else {
 			psa_panic();
 		}

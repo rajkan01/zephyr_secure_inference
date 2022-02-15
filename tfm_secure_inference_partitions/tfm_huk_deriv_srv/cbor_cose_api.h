@@ -14,11 +14,11 @@
 extern "C" {
 #endif
 
-psa_status_t tflm_inference_value_encode_and_sign(psa_key_handle_t key_handle,
-						  float inf_val,
-						  uint8_t *inf_val_encoded_buf,
-						  size_t inf_val_encoded_buf_size,
-						  size_t *inf_val_encoded_buf_len);
+psa_status_t tfm_cose_encode_sign(psa_key_handle_t key_handle,
+				  float inf_val,
+				  uint8_t *inf_val_encoded_buf,
+				  size_t inf_val_encoded_buf_size,
+				  size_t *inf_val_encoded_buf_len);
 
 #ifdef __cplusplus
 }

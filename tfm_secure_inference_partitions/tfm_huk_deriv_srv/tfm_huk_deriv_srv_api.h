@@ -13,7 +13,7 @@
 
 typedef struct {
 	psa_key_id_t key_id;
-	_Bool cbor_encode_and_sign_pld;
+	_Bool cbor_encode_sign;
 	size_t max_buf_size;
 } cose_cbor_config_t;
 
@@ -29,10 +29,10 @@ typedef struct {
  *
  * \return A status indicating the success/failure of the operation
  */
-psa_status_t psa_huk_key_derivation_ec_key(psa_key_id_t *ec_key_id,
-					   const uint8_t *label,
-					   size_t label_size,
-					   psa_key_usage_t *key_usage_flag);
+psa_status_t psa_huk_deriv_ec_key(psa_key_id_t *ec_key_id,
+				  const uint8_t *label,
+				  size_t label_size,
+				  psa_key_usage_t *key_usage_flag);
 /**
  * \brief COSE CBOR encode and sign
  *
@@ -46,7 +46,7 @@ psa_status_t psa_huk_key_derivation_ec_key(psa_key_id_t *ec_key_id,
  *
  * \return A status indicating the success/failure of the operation
  */
-psa_status_t psa_huk_key_derivation_cose_cbor_encode_and_sign(float *inf_value,
-							      cose_cbor_config_t *cfg,
-							      uint8_t *encoded_buf,
-							      size_t *encoded_buf_len);
+psa_status_t psa_huk_cose_sign(float *inf_value,
+			       cose_cbor_config_t *cfg,
+			       uint8_t *encoded_buf,
+			       size_t *encoded_buf_len);

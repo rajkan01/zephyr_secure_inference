@@ -19,7 +19,7 @@ psa_status_t psa_get_uuid(unsigned char *uuid, size_t uuid_size)
 
 	// Request device UUID (derived at startup from the HUK)
 	status = al_psa_status(
-		psa_huk_key_derivation_generate_uuid(uuid, uuid_size),
+		psa_huk_get_uuid(uuid, uuid_size),
 		__func__);
 	if (status != PSA_SUCCESS) {
 		LOG_ERR("Unable to get UUID.");

@@ -38,10 +38,10 @@ t_cose_err_to_psa_err(enum t_cose_err_t err)
 	}
 }
 
-static psa_status_t tflm_inf_val_encode_start(psa_key_handle_t key_handle,
-					      struct tflm_inf_val_encode_ctx *me,
-					      int32_t cose_alg_id,
-					      const struct q_useful_buf *out_buf)
+static psa_status_t tfm_cose_encode_start(psa_key_handle_t key_handle,
+					  struct tfm_cose_encode_ctx *me,
+					  int32_t cose_alg_id,
+					  const struct q_useful_buf *out_buf)
 {
 	enum t_cose_err_t cose_ret;
 	psa_status_t return_value = PSA_SUCCESS;
@@ -74,8 +74,8 @@ static psa_status_t tflm_inf_val_encode_start(psa_key_handle_t key_handle,
 }
 
 static psa_status_t
-tflm_inf_val_encode_finish(struct tflm_inf_val_encode_ctx *me,
-			   struct q_useful_buf_c *completed_token)
+tfm_cose_encode_finish(struct tfm_cose_encode_ctx *me,
+		       struct q_useful_buf_c *completed_token)
 {
 	psa_status_t return_value = PSA_SUCCESS;
 	/* The completed and signed encoded cose_sign1 */
@@ -112,8 +112,8 @@ Done:
 }
 
 static psa_status_t
-tflm_add_inf_val(struct tflm_inf_val_encode_ctx *token_ctx,
-		 float inf_val)
+tfm_cose_add_data(struct tfm_cose_encode_ctx *token_ctx,
+		  float inf_val)
 {
 	struct q_useful_buf_c inf_val_buf;
 
@@ -127,14 +127,14 @@ tflm_add_inf_val(struct tflm_inf_val_encode_ctx *token_ctx,
 	return PSA_SUCCESS;
 }
 
-psa_status_t tflm_inference_value_encode_and_sign(psa_key_handle_t key_handle,
-						  float inf_val,
-						  uint8_t *inf_val_encoded_buf,
-						  size_t inf_val_encoded_buf_size,
-						  size_t *inf_val_encoded_buf_len)
+psa_status_t tfm_cose_encode_sign(psa_key_handle_t key_handle,
+				  float inf_val,
+				  uint8_t *inf_val_encoded_buf,
+				  size_t inf_val_encoded_buf_size,
+				  size_t *inf_val_encoded_buf_len)
 {
 	psa_status_t status = PSA_SUCCESS;
-	struct tflm_inf_val_encode_ctx encode_ctx;
+	struct tfm_cose_encode_ctx encode_ctx;
 	struct q_useful_buf inf_val_encode_sign;
 	struct q_useful_buf_c completed_inf_val_encode_sign;
 
@@ -144,16 +144,16 @@ psa_status_t tflm_inference_value_encode_and_sign(psa_key_handle_t key_handle,
 	/* Get started creating the token. This sets up the CBOR and COSE contexts
 	 * which causes the COSE headers to be constructed.
 	 */
-	status = tflm_inf_val_encode_start(key_handle,
-					   &encode_ctx,
-					   T_COSE_ALGORITHM, /* alg_select   */
-					   &inf_val_encode_sign);
+	status = tfm_cose_encode_start(key_handle,
+				       &encode_ctx,
+				       T_COSE_ALGORITHM,     /* alg_select   */
+				       &inf_val_encode_sign);
 
 	if (status != PSA_SUCCESS) {
 		return status;
 	}
 
-	status = tflm_add_inf_val(&encode_ctx, inf_val);
+	status = tfm_cose_add_data(&encode_ctx, inf_val);
 
 	if (status != PSA_SUCCESS) {
 		return status;
@@ -162,8 +162,8 @@ psa_status_t tflm_inference_value_encode_and_sign(psa_key_handle_t key_handle,
 	/* Finish up creating the token. This is where the actual signature
 	 * is generated. This finishes up the CBOR encoding too.
 	 */
-	status = tflm_inf_val_encode_finish(&encode_ctx,
-					    &completed_inf_val_encode_sign);
+	status = tfm_cose_encode_finish(&encode_ctx,
+					&completed_inf_val_encode_sign);
 	if (status != PSA_SUCCESS) {
 		LOG_INFFMT("sign the payload failed: %d\n", status);
 		return status;
@@ -194,7 +194,7 @@ psa_status_t tflm_inference_value_encode_and_sign(psa_key_handle_t key_handle,
 
 	if (return_value != T_COSE_SUCCESS) {
 		LOG_INFFMT("[COSE service] COSE signature verification failed: %d\n", \
-				return_value);
+			   return_value);
 	} else {
 		LOG_INFFMT("[COSE service] COSE signature verification succeeded\n");
 	}

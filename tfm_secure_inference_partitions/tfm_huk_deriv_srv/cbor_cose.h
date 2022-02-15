@@ -21,7 +21,7 @@ extern "C" {
 
 /**
  * The context for encoding inference value.  The caller of
- * tflm_inference_value_encode_and_sign must create one of these and
+ * tfm_cose_encode_sign must create one of these and
  * pass it to the functions here. It is small enough that it can go
  * on the stack. It is most of the memory needed to create a token
  * except the output buffer and any memory requirements for the
@@ -31,7 +31,7 @@ extern "C" {
  *
  * This is roughly 148 + 32 = 180 bytes
  */
-struct tflm_inf_val_encode_ctx {
+struct tfm_cose_encode_ctx {
 	/* Private data structure */
 	QCBOREncodeContext cbor_enc_ctx;
 	struct t_cose_sign1_sign_ctx signer_ctx;

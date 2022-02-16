@@ -1,21 +1,64 @@
 .. _tfm_secure_inference:
 
-TF-M Secure Provisioning Sample
+TF-M Confidential AI Project
 ############################
 
 Overview
 ********
 
-Provisioning enables an IoT end device to securely communicate with a cloud service.
-It involves following steps:
+This Zephyr project provides a complete secure (S) plus non-secure (NS)
+solution for execution of an inference engine in the secure processing
+environment, as well as end-to-end processing of inference outputs.
 
-- Generate a persistent key (secp256r1) in TF-M
-- Generate device Certificate Signing Request (CSR)
-- Send the device CSR to a Certification Authority (CA)
-- Receive device signed device certificate from CA
-- Store device certificate in TF-M protected storage
+Outputs from the inference engine are encoded as CBOR payloads, with COSE used
+to  enable optional signing and encryption of the data.
 
-Currently, this sample demonstrates step 1 and 2.
+Custom secure service services are included in the sample in the
+``tfm_secure_inference_partitions`` folder. These are added to TF-M as part of
+the secure build process that takes place before the NS Zephyr application is
+built:
+
+- TF-M HUK Key Derivation: UUID and key derivation from the HUK
+- TFLM Service: TensorFlow Lite Micro inference engine and model execution
+
+Inference Engine(s)
+===================
+
+This sample current used TensorFlow Lite Micro (TFLM) as the inference engine,
+with a simple sine-wave model.
+
+This will be extended to support microTVM in the future with the same sine-wave
+model in the near future, in addition to more complex AI/ML models.
+
+You can interact with the sine wave model from the NS side via the ``infer``
+shell command.
+
+Key management
+==============
+
+Certain operations like signing or encrypting the COSE-encoded inference engine
+outputs require the use of keys, and X.509 certificates for these keys.
+
+All keys used in this project are derived at startup from the Hardware Unique
+Key (HUK), meaning that they are device-bound (i.e. explicity tied to a
+specific instance of an SoC), storage-free (meaning they can't be retrieved
+by dumping flash memory or firmware analysis), and repeatable across firmware
+updates.
+
+X.509 certificates generated for these keys are associated with a UUID, which
+is also derived from the HUK. This derived UUID allows us to uniquely and
+consistently identify a single SoC or embedded device.
+
+The following EC keys are currently generated:
+
+- Device Client TLS key (secp256r1)
+- Device COSE SIGN (secp256r1 with SHA-256 digest)
+- Device COSE ENCRYPT (secp256r14, ECDH ES w/concat KDF, AES key wrap,
+256 bit keys)
+
+The non-secure processing environment exposes a ``keys`` shell command that can
+be used to retrieve the public key component of the above private keys, as well
+as generate a certificate signing request (CSR) for a specific key.
 
 Building and Running
 ********************
@@ -35,42 +78,36 @@ Sample Output
 
    .. code-block:: console
 
+      [INF] Beginning TF-M provisioning
+      [WRN] TFM_DUMMY_PROVISIONING is not suitable for production! This device is NOT SECURE
       [Sec Thread] Secure image initializing!
-      Booting TFM v1.4.1
-      [Crypto] Dummy Entropy NV Seed is not suitable for production!
-      *** Booting Zephyr OS build v2.7.99-890-g8a0707727a33  ***
-      csr_subject_name: O=Linaro,CN=00010203-0405-6407-8809-0A0B0C0D0E0F
-      [00:00:00.017,000] <inf> app: Initialising PSA crypto
-      [00:00:00.018,000] <inf> app: PSA crypto init completed
-      [00:00:00.019,000] <inf> app: Persisting SECP256R1 key as #1
-      [00:00:00.565,000] <inf> app: Retrieving public key for key #1
+      TF-M FP mode: Software
+      Booting TFM v1.5.0
+      Creating an empty ITS flash layout.
+      Creating an empty PS flash layout.
+      [TFLM service] Successfully derived the key from HUK for CLIENT_TLS
+      [TFLM service] Successfully derived the key from HUK for C_SIGN
+      [TFLM service] Successfully derived the key from HUK for C_ENCRYPT
+      [TFLM service] TFLM initalisation completed
+      *** Booting Zephyr OS build v2.7.99-2785-ge3c585041afe  ***
+      [UUID service] Generated UUID: 359187E6-3D53-F7E9-3DDB-07C102520937
 
                0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-      00000000 04 36 FB FB D9 F5 8E CE F9 D0 3E DC 2C 3F 40 52 .6........>.,?@R
-      00000010 4E 91 51 CD 86 4B 84 F0 90 7D D1 EE 3C 20 06 1B N.Q..K...}..< ..
-      00000020 5A DC 5A 2A C0 84 10 9C 11 23 50 C6 8D 82 77 A5 Z.Z*.....#P...w.
-      00000030 C9 66 70 67 77 5E B1 47 C8 B1 3D EC E2 6E F6 54 .fpgw^.G..=..n.T
-      00000040 8E                                              .
+      00000000 04 64 79 7F 68 E0 CE E7 97 BA 11 71 AB 3E 36 98 .dy.h......q.>6.
+      00000010 24 9B 96 E7 71 CF D1 E3 E1 4E 4A BB 58 F2 0A 68 $...q....NJ.X..h
+      00000020 AD BD 99 17 99 2E 9C A9 B5 AF 86 11 DE D5 28 F9 ..............(.
+      00000030 5E 50 8C 5C 90 F0 B7 09 7F 55 0C 7E 04 67 84 FC ^P.\.....U.~.g..
+      00000040 36                                              6
 
-      [00:00:01.128,000] <inf> app: Adding subject name to CSR
-      [00:00:01.129,000] <inf> app: Adding subject name to CSR completed
-      [00:00:01.129,000] <inf> app: Adding EC key to PK container
-      [00:00:01.131,000] <inf> app: Adding EC key to PK container completed
-      [00:00:01.132,000] <inf> app: Create device Certificate Signing Request
-      [00:00:02.329,000] <inf> app: Create device Certificate Signing Request completed
-      [00:00:02.330,000] <inf> app: Certificate Signing Request:
+      [TFLM service] Starting secure inferencing...
+      [TFLM service] Starting CBOR encoding and COSE signing...
 
-      -----BEGIN CERTIFICATE REQUEST-----
-      MIH9MIGiAgEAMEAxDzANBgNVBAoMBkxpbmFybzEtMCsGA1UEAwwkMDAwMTAyMDMt
-      MDQwNS02NDA3LTg4MDktMEEwQjBDMEQwRTBGMFkwEwYHKoZIzj0CAQYIKoZIzj0D
-      AQcDQgAENvv72fWOzvnQPtwsP0BSTpFRzYZLhPCQfdHuPCAGG1rcWirAhBCcESNQ
-      xo2Cd6XJZnBnd16xR8ixPezibvZUjqAAMAwGCCqGSM49BAMCBQADSAAwRQIgDy8B
-      EL47rGh8Fbc7UYwQhnJC+/0McB/DPgu3Ob1AtToCIQC99lzWe1zYtSbwyqSdYoTX
-      0aUtDwPBLI3tTrw8pt4YQw==
-      -----END CERTIFICATE REQUEST-----
+               0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+      00000000 D2 84 43 A1 01 26 A0 4B A1 3A 00 01 38 7F 44 2C ..C..&.K.:..8.D,
+      00000010 CE 8A 3C 58 40 B7 61 7C 38 29 4B 0E 78 BF 92 B5 ..<X@.a|8)K.x...
+      00000020 93 74 9C 6C 40 72 13 71 B0 6A 8A 02 49 4F A4 AD .t.l@r.q.j..IO..
+      00000030 7B 15 08 10 4A 75 98 37 9C 3D 31 3D ED 10 EC 60 {...Ju.7.=1=...`
+      00000040 2E 45 FE 20 2B F3 A5 F3 F8 65 0A E0 2A 68 CC 7A .E. +....e..*h.z
+      00000050 3E A5 A2 48 9D                                  >..H.
 
-      [00:00:02.332,000] <inf> app: Encoding CSR as json
-      [00:00:02.335,000] <inf> app: Encoding CSR as json completed
-      [00:00:02.336,000] <inf> app: Certificate Signing Request in JSON:
-
-      {"CSR":"-----BEGIN CERTIFICATE REQUEST-----\nMIH9MIGiAgEAMEAxDzANBgNVBAoMBkxpbmFybzEtMCsGA1UEAwwkMDAwMTAyMDMt\nMDQwNS02NDA3LTg4MDktMEEwQjBDMEQwRTBGMFkwEwYHKoZIzj0CAQYIKoZIzj0D\nAQcDQgAENvv72fWOzvnQPtwsP0BSTpFRzYZLhPCQfdHuPCAGG1rcWirAhBCcESNQ\nxo2Cd6XJZnBnd16xR8ixPezibvZUjqAAMAwGCCqGSM49BAMCBQADSAAwRQIgDy8B\nEL47rGh8Fbc7UYwQhnJC+/0McB/DPgu3Ob1AtToCIQC99lzWe1zYtSbwyqSdYoTX\n0aUtDwPBLI3tTrw8pt4YQw==\n-----END CERTIFICATE REQUEST-----\n"}
+      Model: Sine of 1 deg is: 0.016944       C Mathlib: Sine of 1 deg is: 0.017452   Deviation: 0.000508

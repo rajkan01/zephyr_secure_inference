@@ -13,18 +13,21 @@ environment, as well as end-to-end processing of inference outputs.
 Outputs from the inference engine are encoded as CBOR payloads, with COSE used
 to  enable optional signing and encryption of the data.
 
-Custom secure service services are included in the sample in the
-``tfm_secure_inference_partitions`` folder. These are added to TF-M as part of
-the secure build process that takes place before the NS Zephyr application is
-built:
+Custom secure services are included in the sample in the
+``tfm_secure_inference_partitions`` folder:
 
 - TF-M HUK Key Derivation: UUID and key derivation from the HUK
 - TFLM Service: TensorFlow Lite Micro inference engine and model execution
 
+These secure services are added to TF-M as part of the secure build process
+that takes place before the NS Zephyr application is built, and are
+available to the NS environment based on the access-rights specified in
+the service definition files.
+
 Inference Engine(s)
 ===================
 
-This sample current used TensorFlow Lite Micro (TFLM) as the inference engine,
+This sample currently uses TensorFlow Lite Micro (TFLM) as the inference engine,
 with a simple sine-wave model.
 
 This will be extended to support microTVM in the future with the same sine-wave
@@ -53,8 +56,7 @@ The following EC keys are currently generated:
 
 - Device Client TLS key (secp256r1)
 - Device COSE SIGN (secp256r1 with SHA-256 digest)
-- Device COSE ENCRYPT (secp256r14, ECDH ES w/concat KDF, AES key wrap,
-256 bit keys)
+- Device COSE ENCRYPT (secp256r14, ECDH ES w/concat KDF, AES key wrap, 256 bit keys)
 
 The non-secure processing environment exposes a ``keys`` shell command that can
 be used to retrieve the public key component of the above private keys, as well

@@ -26,7 +26,7 @@
 typedef psa_status_t (*signal_handler_t)(psa_msg_t *);
 
 const char hex_digits[] = { '0', '1', '2', '3', '4', '5', '6', '7',
-			    '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
+			    '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
 
 #define UUID_STR_LEN ((KEY_LEN_BYTES * 2) + 4 + 1)
 #define UUID_7TH_BYTE_MASK  64U         /* 0b0100_0000*/

@@ -23,7 +23,21 @@ psa_status_t psa_get_uuid(unsigned char *uuid, size_t uuid_size)
 		__func__);
 	if (status != PSA_SUCCESS) {
 		LOG_ERR("Unable to get UUID.");
-		return status;
+	}
+	return status;
+}
+
+psa_status_t psa_get_pubkey(uint8_t *public_key, size_t public_key_len, key_context_t ctx)
+{
+	psa_status_t status;
+
+	status = al_psa_status(
+		psa_huk_get_pubkey(&ctx.key_id,
+				   public_key,
+				   public_key_len),
+		__func__);
+	if (status != PSA_SUCCESS) {
+		LOG_ERR("Failed to export the_public_key");
 	}
 	return status;
 }

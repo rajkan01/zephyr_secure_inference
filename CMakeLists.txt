@@ -36,6 +36,7 @@ target_sources(app PRIVATE
   src/util_sformat.c
   src/shell/shell.c
   src/shell/cmd_key_mgmt.c
+  src/shell/cmd_infer.c
   ext/NanoCBOR/src/decoder.c
   ext/NanoCBOR/src/encoder.c
 )

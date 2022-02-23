@@ -164,6 +164,7 @@ void main(void)
 	};
 
 	key_context_init(get_key_context());
+	infer_model_ctx_init(get_infer_model_context());
 
 #if CONFIG_SECURE_INFER_SHELL_CMD_SUPPORT
 	// Generate UUID

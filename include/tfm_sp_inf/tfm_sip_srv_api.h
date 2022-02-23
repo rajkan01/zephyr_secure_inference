@@ -15,6 +15,18 @@
 extern "C" {
 #endif
 
+typedef struct {
+	uint32_t sid;
+	char sid_label[32];
+	uint32_t version;
+	uint8_t sts;
+} infer_model_info_t;
+
+typedef struct {
+	infer_model_info_t model_info[1];
+	uint8_t model_count;
+} infer_model_ctx_t;
+
 // /**
 //  * \brief Read magnetometer (LSM303) data.
 //  *
@@ -73,6 +85,21 @@ psa_status_t psa_huk_get_pubkey(psa_key_id_t *key_id,
 psa_status_t psa_huk_get_uuid(void *uuid,
 			      size_t uuid_size);
 
+/**
+ * @brief Get the inference model context
+ *
+ * @return Returns pointer to the inference model context
+ *
+ */
+infer_model_ctx_t *get_infer_model_context();
+
+/**
+ * @brief Initialize the inference model context
+ *
+ * \param[out] ctx   Pointer to inference model context.
+ *
+ */
+void infer_model_ctx_init(infer_model_ctx_t *ctx);
 #ifdef __cplusplus
 }
 #endif

@@ -8,7 +8,7 @@
 
 #include "psa/client.h"
 #include "psa_manifest/sid.h"
-
+#include <string.h>
 // psa_status_t example_read_lsm303(uint8_t *data,
 //                               size_t data_size)
 // {
@@ -30,6 +30,23 @@
 
 //      return status;
 // }
+
+void infer_model_ctx_init(infer_model_ctx_t *ctx)
+{
+	ctx->model_info[0].sid = TFM_TFLM_SERVICE_HELLO_SID;
+	strcpy(ctx->model_info[0].sid_label, "sine");
+	ctx->model_info[0].version = TFM_TFLM_SERVICE_HELLO_VERSION;
+	ctx->model_info[0].sts = 1;
+	ctx->model_count = 1;
+}
+
+
+infer_model_ctx_t *get_infer_model_context()
+{
+	static infer_model_ctx_t infer_model = { 0 };
+
+	return &infer_model;
+}
 
 psa_status_t psa_si_tflm_hello(psa_key_id_t *key_id,
 			       const float *input,

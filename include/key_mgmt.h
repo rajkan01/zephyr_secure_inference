@@ -50,20 +50,11 @@ typedef struct {
 km_key_context_t *km_context_get();
 
 /**
- * @brief Initialise the supplied key context, populating it via calls to
- *        the HUK key derivation partition on the secure side.
- * @brief Takes the supplied reference to a km_key_context_t array, and
- *        populates it with details for the Device Client TLS, COSE sign, and
- *        COSE encrypt keys. This operation will associate a PSA key ID
- *        with each of the three keys types, allowing access to the public key.
- *        This must be called once before the key context can be used.
- *
- * @param ctx      Pointer to the key context
- * @param key_id   Key id.
- * @param label    Unique string to represent the key context.
+ * @brief Initialise the key context with the EC keys derived from the HUK at
+ *        secure boot. This provides us with the key handles required to
+ *        request the public key, or to request operations based on these
+ *        keys.
  */
-void km_context_init(km_key_context_t *ctx,
-		     km_key_type_t key_id,
-		     const unsigned char *label);
+void km_keys_init(void);
 
 #endif /* KEY_MGMT_H */

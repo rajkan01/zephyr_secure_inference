@@ -38,19 +38,11 @@ typedef struct {
 infer_model_ctx_t *infer_model_context_get();
 
 /**
- * @brief Initialize the inference model context
- *
- * @param ctx      Pointer to inference model context.
- * @param sid      Inference service unique ID.
- * @param version  Version.
- * @param status   Model status.
- * @param label    Unique string to represent the model context.
+ * @brief Initialise the inference engine context to interact with the
+ *        secure inference service. This allows us to send requests to any
+ *        models available in the secure partition.
  *
  */
-void infer_model_ctx_init(infer_model_ctx_t *ctx,
-			  uint32_t sid,
-			  uint32_t version,
-			  imdl_sts_t status,
-			  unsigned char *label);
+void infer_model_init(void);
 
 #endif /* INFER_MODEL_MGMT_H */

@@ -6,9 +6,9 @@
 
 #include <logging/log.h>
 
-#include "tfm_sp_inf/tfm_sip_srv_api.h"
 #include "shell/cmd_key_mgmt.h"
-#include "util/util_app_log.h"
+#include "tfm_sip_srv_api.h"
+#include "util_app_log.h"
 
 /** Declare a reference to the application logging interface. */
 LOG_MODULE_DECLARE(app, CONFIG_LOG_DEFAULT_LEVEL);

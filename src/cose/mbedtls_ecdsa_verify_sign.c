@@ -4,8 +4,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 #include <logging/log.h>
-#include "keys/mbedtls_ecdsa_verify_sign.h"
-#include "util/util_app_log.h"
+
+#include "cose/mbedtls_ecdsa_verify_sign.h"
+#include "util_app_log.h"
 
 /** Declare a reference to the application logging interface. */
 LOG_MODULE_DECLARE(app, CONFIG_LOG_DEFAULT_LEVEL);
@@ -84,7 +85,7 @@ err:
 }
 
 /*
- * Verify a signature
+ * Verify an ECDSA signature
  */
 int mbedtls_ecdsa_verify_sign(mbedtls_pk_context ctx,
 			      const unsigned char *hash,

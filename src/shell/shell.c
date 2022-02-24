@@ -5,9 +5,10 @@
  */
 
 #include <shell/shell.h>
+
 #include "shell/cmd_key_mgmt.h"
 #include "shell/cmd_infer.h"
-#include "infer_model/infer_model_mgmt.h"
+#include "infer_model_mgmt.h"
 
 #if CONFIG_SECURE_INFER_SHELL_CMD_SUPPORT
 

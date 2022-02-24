@@ -4,11 +4,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "tfm_sp_inf/tfm_sip_srv_api.h"
-#include "cose/cose_verify.h"
-#include "keys/mbedtls_ecdsa_verify_sign.h"
-#include "util/util_app_log.h"
 #include <math.h>
+
+#include "cose/cose_verify.h"
+#include "cose/mbedtls_ecdsa_verify_sign.h"
+#include "tfm_sip_srv_api.h"
+#include "util_app_log.h"
 
 #if CONFIG_SECURE_INFER_SHELL_CMD_SUPPORT
 

@@ -10,14 +10,14 @@ find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 
 get_target_property(TFM_BINARY_DIR tfm TFM_BINARY_DIR)
 configure_file(
-  ${CMAKE_CURRENT_LIST_DIR}/tfm_secure_inference_partitions/tfm_manifest_list.yaml.in
-  ${CMAKE_CURRENT_BINARY_DIR}/tfm_secure_inference_partitions/tfm_manifest_list.yaml
+  ${CMAKE_CURRENT_LIST_DIR}/tfm_secure_partitions/tfm_manifest_list.yaml.in
+  ${CMAKE_CURRENT_BINARY_DIR}/tfm_secure_partitions/tfm_manifest_list.yaml
 )
 
 set_property(TARGET zephyr_property_target
   APPEND PROPERTY TFM_CMAKE_OPTIONS
-  -DTFM_EXTRA_MANIFEST_LIST_FILES=${CMAKE_CURRENT_BINARY_DIR}/tfm_secure_inference_partitions/tfm_manifest_list.yaml
-  -DTFM_EXTRA_PARTITION_PATHS="${CMAKE_CURRENT_LIST_DIR}/tfm_secure_inference_partitions/tfm_huk_deriv_srv\\\;${CMAKE_CURRENT_LIST_DIR}/tfm_secure_inference_partitions/tfm_tflm_service"
+  -DTFM_EXTRA_MANIFEST_LIST_FILES=${CMAKE_CURRENT_BINARY_DIR}/tfm_secure_partitions/tfm_manifest_list.yaml
+  -DTFM_EXTRA_PARTITION_PATHS="${CMAKE_CURRENT_LIST_DIR}/tfm_secure_partitions/tfm_huk_deriv_srv\\\;${CMAKE_CURRENT_LIST_DIR}/tfm_secure_partitions/tfm_tflm_service"
   )
 
 # set_property(TARGET zephyr_property_target
@@ -28,17 +28,17 @@ set_property(TARGET zephyr_property_target
 project(tfm_secure_provisioning)
 
 target_sources(app PRIVATE
-  src/main.c
-  src/mbedtls_ecdsa_verify_sign.c
-  src/cose_verify.c
-  src/key_mgmt.c
-  src/tfm_sip_srv_api.c
-  src/infer_model_mgmt.c
-  src/util_app_log.c
-  src/util_sformat.c
+  src/cose/cose_verify.c
+  src/cose/mbedtls_ecdsa_verify_sign.c
   src/shell/shell.c
   src/shell/cmd_key_mgmt.c
   src/shell/cmd_infer.c
+  src/infer_model_mgmt.c
+  src/key_mgmt.c
+  src/main.c
+  src/tfm_sip_srv_api.c
+  src/util_app_log.c
+  src/util_sformat.c
   ext/NanoCBOR/src/decoder.c
   ext/NanoCBOR/src/encoder.c
 )

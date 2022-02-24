@@ -11,7 +11,8 @@
 #include <string.h>
 #include "nanocbor/nanocbor.h"
 #include "psa/crypto_types.h"
-#include "keys/key_mgmt.h"
+
+#include "key_mgmt.h"
 
 #ifndef CONFIG_MBEDTLS_CFG_FILE
 #include "mbedtls/config-tls-generic.h"
@@ -78,9 +79,6 @@ typedef struct {
  */
 int cose_sign_init(cose_sign_context_t *ctx);
 
-/* free underlying mbedTLS contexts */
-void cose_sign_free(cose_sign_context_t *ctx);
-
 /**
  * @brief Decode a COSE object and verify the signature
  *
@@ -116,5 +114,12 @@ int cose_verify_sign1(cose_sign_context_t *ctx,
 int cose_payload_decode(const uint8_t *obj,
 			const size_t len_obj,
 			float *inf_sig_value);
+
+/**
+ * @brief Free underlying MbedTLS contexts
+ * 
+ * @param ctx MbedTLS signing contexts to free.
+ */
+void cose_sign_free(cose_sign_context_t *ctx);
 
 #endif /* COSE_VERIFY_H */

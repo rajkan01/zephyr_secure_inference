@@ -5,7 +5,7 @@
  */
 
 #include "psa/error.h"
-#include "keys/key_mgmt.h"
+#include "key_mgmt.h"
 
 #if CONFIG_SECURE_INFER_SHELL_CMD_SUPPORT
 /**

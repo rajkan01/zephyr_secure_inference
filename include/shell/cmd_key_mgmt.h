@@ -4,12 +4,30 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "tfm_sp_inf/tfm_sip_srv_api.h"
-#include "util/util_app_log.h"
-#include "cose/cose_verify.h"
+#include "psa/error.h"
+#include "key_mgmt.h"
 
 #if CONFIG_SECURE_INFER_SHELL_CMD_SUPPORT
-
+/**
+ * @brief Get the uuid
+ *
+ * @param uuid       Pointer to the buffer to store the uuid.
+ * @param uuid_size  Size of uuid buffer.
+ *
+ * @return psa_status_t
+ */
 psa_status_t psa_get_uuid(unsigned char *uuid, size_t uuid_size);
-psa_status_t psa_get_pubkey(uint8_t *public_key, size_t public_key_len, key_context_t ctx);
+
+/**
+ * @brief Get the public key
+ *
+ * @param public_key      Pointer to the buffer to store the public key.
+ * @param public_key_len  Public key length.
+ * @param ctx             Key context
+ *
+ * @return psa_status_t
+ */
+psa_status_t psa_get_pubkey(uint8_t *public_key,
+			    size_t public_key_len,
+			    km_key_context_t ctx);
 #endif

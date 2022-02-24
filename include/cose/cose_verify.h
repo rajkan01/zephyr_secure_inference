@@ -12,6 +12,8 @@
 #include "nanocbor/nanocbor.h"
 #include "psa/crypto_types.h"
 
+#include "key_mgmt.h"
+
 #ifndef CONFIG_MBEDTLS_CFG_FILE
 #include "mbedtls/config-tls-generic.h"
 #else
@@ -65,25 +67,6 @@ typedef struct {
 	mbedtls_pk_context pk;
 } cose_sign_context_t;
 
-typedef enum {
-	X_509_CERT_GEN = 0,     // X.509 certificate generated
-	KEY_GEN,                // Key generated
-	NONE,
-} key_sts_t;
-
-
-typedef enum {
-	CLIENT_TLS      = 0x5001,       // Client TLS key id
-	C_SIGN          = 0x5002,       // COSE SIGN key id
-	C_ENCRYPT       = 0x5003,       // COSE ENCRYPT key id
-} key_type_t;
-
-typedef struct {
-	psa_key_id_t key_id;
-	char label[32];
-	key_sts_t status;
-} key_context_t;
-
 /**
  * @brief Initialize COSE signing context
  *
@@ -95,9 +78,6 @@ typedef struct {
  *         COSE_ERROR_UNSUPPORTED       Crypto algorithm not supported
  */
 int cose_sign_init(cose_sign_context_t *ctx);
-
-/* free underlying mbedTLS contexts */
-void cose_sign_free(cose_sign_context_t *ctx);
 
 /**
  * @brief Decode a COSE object and verify the signature
@@ -136,11 +116,10 @@ int cose_payload_decode(const uint8_t *obj,
 			float *inf_sig_value);
 
 /**
- * @brief Get the three keys (Device Client TLS, COSE sign, COSE encrypt)
- *        context
- *
- * @return Returns pointer to the key context
- *
+ * @brief Free underlying MbedTLS contexts
+ * 
+ * @param ctx MbedTLS signing contexts to free.
  */
-key_context_t *get_key_context();
+void cose_sign_free(cose_sign_context_t *ctx);
+
 #endif /* COSE_VERIFY_H */

@@ -6,7 +6,8 @@
 
 #include <ctype.h>
 #include <stdio.h>
-#include "util/util_sformat.h"
+
+#include "util_sformat.h"
 
 static void sf_hex_ascii(unsigned char *data, size_t len, unsigned char nonvis)
 {

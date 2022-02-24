@@ -4,30 +4,28 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "tfm_sp_inf/tfm_sip_srv_api.h"
-
 #include "psa/client.h"
-#include "psa_manifest/sid.h"
+#include "tfm_sip_srv_api.h"
 
 // psa_status_t example_read_lsm303(uint8_t *data,
 //                               size_t data_size)
 // {
 //      psa_status_t status;
 //      psa_handle_t handle;
-
+//
 //      psa_outvec out_vec[] = {
 //              { .base = data, .len = data_size },
 //      };
-
+//
 //      handle = psa_connect(TFM_EXAMPLE_READ_LSM303_SID, TFM_EXAMPLE_READ_LSM303_VERSION);
 //      if (!PSA_HANDLE_IS_VALID(handle)) {
 //              return PSA_HANDLE_TO_ERROR(handle);
 //      }
-
+//
 //      status = psa_call(handle, PSA_IPC_CALL, NULL, 0, out_vec, 1);
-
+//
 //      psa_close(handle);
-
+//
 //      return status;
 // }
 

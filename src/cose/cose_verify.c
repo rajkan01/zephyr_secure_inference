@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 #include "cose/cose_verify.h"
-#include "pk/pk_import_verify_sign.h"
+#include "cose/mbedtls_ecdsa_verify_sign.h"
 
 #define HASH_TSTR(md_ctx, nc, buf, len_buf, str)		    \
 	nanocbor_encoder_init(&nc, buf, len_buf);		    \
@@ -18,13 +18,6 @@
 	mbedtls_md_update(&md_ctx, buf, nanocbor_encoded_len(&nc)); \
 	mbedtls_md_update(&md_ctx, bstr, len_bstr);
 
-key_context_t *get_key_context()
-{
-	static key_context_t k_ctx[3] = { 0 };
-
-	return k_ctx;
-}
-
 static int cose_encode_prot(nanocbor_encoder_t *nc)
 {
 	nanocbor_fmt_map(nc, 1);
@@ -33,21 +26,15 @@ static int cose_encode_prot(nanocbor_encoder_t *nc)
 	return nanocbor_encoded_len(nc);
 }
 
-int cose_sign_init(cose_sign_context_t *ctx)
-{
-	mbedtls_ecp_group_id grp_id =
-		mbedtls_pk_ec(ctx->pk)->MBEDTLS_PRIVATE(grp).id;
-
-	if (grp_id == MBEDTLS_ECP_DP_SECP256R1) {
-		ctx->len_hash = 32;
-		ctx->len_sig = 72;
-	} else {
-		return COSE_ERROR_UNSUPPORTED;
-	}
-
-	return COSE_ERROR_NONE;
-}
-
+/**
+ * @brief Calculate a SHA256 hash for SIGN1 verification.
+ * 
+ * @param ctx 		Signing context to use for this operation.
+ * @param pld 		Payload buffer.
+ * @param len_pld 	Size of the payload buffer.
+ * @param hash 		Placeholder for the calculate hash value.
+ * @return int 
+ */
 int cose_sign1_hash(cose_sign_context_t *ctx,
 		    const uint8_t *pld,
 		    const size_t len_pld,
@@ -65,6 +52,7 @@ int cose_sign1_hash(cose_sign_context_t *ctx,
 	nanocbor_encoder_init(&nc, NULL, 0);
 	size_t len_prot = cose_encode_prot(&nc);
 	uint8_t prot[len_prot];
+
 	nanocbor_encoder_init(&nc, prot, len_prot);
 	cose_encode_prot(&nc);
 
@@ -88,7 +76,9 @@ int cose_sign1_hash(cose_sign_context_t *ctx,
 	return COSE_ERROR_NONE;
 }
 
-
+/**
+ * @brief Decode a SIGN1 COSE payload
+ */
 int cose_sign1_decode(cose_sign_context_t *ctx,
 		      const uint8_t *obj, const size_t len_obj,
 		      const uint8_t **pld, size_t *len_pld,
@@ -114,24 +104,18 @@ int cose_sign1_decode(cose_sign_context_t *ctx,
 	return COSE_ERROR_NONE;
 }
 
-int cose_payload_decode(const uint8_t *obj,
-			const size_t len_obj,
-			float *inf_sig_value)
+int cose_sign_init(cose_sign_context_t *ctx)
 {
-	nanocbor_value_t nc, arr;
-	size_t pld_len = sizeof(float);
-	uint8_t temp = 0;
-	uint8_t *sig = &temp;
+	mbedtls_ecp_group_id grp_id =
+		mbedtls_pk_ec(ctx->pk)->MBEDTLS_PRIVATE(grp).id;
 
-	nanocbor_decoder_init(&nc, obj, len_obj);
-
-	if (nanocbor_enter_map(&nc, &arr) < 0) {
-		return COSE_ERROR_DECODE;
+	if (grp_id == MBEDTLS_ECP_DP_SECP256R1) {
+		ctx->len_hash = 32;
+		ctx->len_sig = 72;
+	} else {
+		return COSE_ERROR_UNSUPPORTED;
 	}
 
-	nanocbor_skip(&arr);
-	nanocbor_get_bstr(&arr, (const uint8_t **)&sig, &pld_len);
-	*inf_sig_value = *(float *)sig;
 	return COSE_ERROR_NONE;
 }
 
@@ -159,6 +143,27 @@ int cose_verify_sign1(cose_sign_context_t *ctx,
 		return COSE_ERROR_AUTHENTICATE;
 	}
 
+	return COSE_ERROR_NONE;
+}
+
+int cose_payload_decode(const uint8_t *obj,
+			const size_t len_obj,
+			float *inf_sig_value)
+{
+	nanocbor_value_t nc, arr;
+	size_t pld_len = sizeof(float);
+	uint8_t temp = 0;
+	uint8_t *sig = &temp;
+
+	nanocbor_decoder_init(&nc, obj, len_obj);
+
+	if (nanocbor_enter_map(&nc, &arr) < 0) {
+		return COSE_ERROR_DECODE;
+	}
+
+	nanocbor_skip(&arr);
+	nanocbor_get_bstr(&arr, (const uint8_t **)&sig, &pld_len);
+	*inf_sig_value = *(float *)sig;
 	return COSE_ERROR_NONE;
 }
 

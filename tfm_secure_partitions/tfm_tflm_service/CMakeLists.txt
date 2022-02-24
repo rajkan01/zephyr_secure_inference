@@ -17,11 +17,11 @@ target_include_directories(tfm_app_rot_partition_tflm_service
     INTERFACE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     PRIVATE
-        ${CMAKE_BINARY_DIR}/tfm_secure_inference_partitions/tfm_tflm_service
+        ${CMAKE_BINARY_DIR}/tfm_secure_partitions/tfm_tflm_service
 )
 target_include_directories(tfm_partitions
     INTERFACE
-        ${CMAKE_BINARY_DIR}/tfm_secure_inference_partitions/tfm_tflm_service
+        ${CMAKE_BINARY_DIR}/tfm_secure_partitions/tfm_tflm_service
 )
 
 target_sources(tfm_app_rot_partition_tflm_service
@@ -33,18 +33,18 @@ target_sources(tfm_app_rot_partition_tflm_service
 target_sources(tfm_app_rot_partition_tflm_service
     PRIVATE
         $<$<BOOL:${TFM_PSA_API}>:
-            ${CMAKE_BINARY_DIR}/tfm_secure_inference_partitions/tfm_tflm_service/auto_generated/intermedia_tfm_tflm_service.c>
+            ${CMAKE_BINARY_DIR}/tfm_secure_partitions/tfm_tflm_service/auto_generated/intermedia_tfm_tflm_service.c>
 )
 target_sources(tfm_partitions
     INTERFACE
         $<$<BOOL:${TFM_PSA_API}>:
-            ${CMAKE_BINARY_DIR}/tfm_secure_inference_partitions/tfm_tflm_service/auto_generated/load_info_tfm_tflm_service.c>
+            ${CMAKE_BINARY_DIR}/tfm_secure_partitions/tfm_tflm_service/auto_generated/load_info_tfm_tflm_service.c>
 )
 
 target_include_directories(tfm_app_rot_partition_tflm_service
     PRIVATE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-        ${CMAKE_BINARY_DIR}/tfm_secure_inference_partitions/tfm_tflm_service
+        ${CMAKE_BINARY_DIR}/tfm_secure_partitions/tfm_tflm_service
 )
 
 target_link_libraries(tfm_app_rot_partition_tflm_service

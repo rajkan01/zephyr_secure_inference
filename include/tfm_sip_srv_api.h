@@ -6,11 +6,8 @@
 #ifndef __TFM_SECURE_INFER_PARTITIONS_SERVICE_API_H__
 #define __TFM_SECURE_INFER_PARTITIONS_SERVICE_API_H__
 
-#include <stdint.h>
-#include <stddef.h>
-
-#include "psa/error.h"
 #include "psa/crypto.h"
+#include "psa_manifest/sid.h"
 #ifdef __cplusplus
 extern "C" {
 #endif

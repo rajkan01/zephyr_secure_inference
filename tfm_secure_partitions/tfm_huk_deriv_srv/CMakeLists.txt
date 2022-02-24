@@ -13,11 +13,11 @@ target_include_directories(tfm_app_rot_partition_huk_deriv
     INTERFACE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     PRIVATE
-        ${CMAKE_BINARY_DIR}/tfm_secure_inference_partitions/tfm_huk_deriv_srv
+        ${CMAKE_BINARY_DIR}/tfm_secure_partitions/tfm_huk_deriv_srv
 )
 target_include_directories(tfm_partitions
     INTERFACE
-        ${CMAKE_BINARY_DIR}/tfm_secure_inference_partitions/tfm_huk_deriv_srv
+        ${CMAKE_BINARY_DIR}/tfm_secure_partitions/tfm_huk_deriv_srv
 )
 
 target_sources(tfm_app_rot_partition_huk_deriv
@@ -31,12 +31,12 @@ target_sources(tfm_app_rot_partition_huk_deriv
 target_sources(tfm_app_rot_partition_huk_deriv
     PRIVATE
         $<$<BOOL:${TFM_PSA_API}>:
-            ${CMAKE_BINARY_DIR}/tfm_secure_inference_partitions/tfm_huk_deriv_srv/auto_generated/intermedia_tfm_huk_deriv_srv.c>
+            ${CMAKE_BINARY_DIR}/tfm_secure_partitions/tfm_huk_deriv_srv/auto_generated/intermedia_tfm_huk_deriv_srv.c>
 )
 target_sources(tfm_partitions
     INTERFACE
         $<$<BOOL:${TFM_PSA_API}>:
-            ${CMAKE_BINARY_DIR}/tfm_secure_inference_partitions/tfm_huk_deriv_srv/auto_generated/load_info_tfm_huk_deriv_srv.c>
+            ${CMAKE_BINARY_DIR}/tfm_secure_partitions/tfm_huk_deriv_srv/auto_generated/load_info_tfm_huk_deriv_srv.c>
 )
 
 target_link_libraries(tfm_app_rot_partition_huk_deriv

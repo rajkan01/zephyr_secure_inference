@@ -10,9 +10,9 @@
 #include <logging/log_ctrl.h>
 #include <logging/log.h>
 
-
 /** Declare a reference to the application logging interface. */
 LOG_MODULE_DECLARE(app, CONFIG_LOG_DEFAULT_LEVEL);
+
 #if CONFIG_SECURE_INFER_SHELL_CMD_SUPPORT
 psa_status_t psa_verify_sign(uint8_t *infval_enc_buf,
 			     size_t infval_enc_buf_len,

@@ -9,8 +9,8 @@
 #include <shell/shell.h>
 #include "shell/cmd_key_mgmt.h"
 #include "shell/cmd_infer.h"
+#include "keys/key_mgmt.h"
 #include "tfm_sp_inf/tfm_sip_srv_api.h"
-#include <stdlib.h>
 
 #if CONFIG_SECURE_INFER_SHELL_CMD_SUPPORT
 
@@ -47,14 +47,14 @@ psa_shell_get_uuid(const struct shell *shell, size_t argc, char **argv)
 static int
 psa_shell_get_key_sts(const struct shell *shell, size_t argc, char **argv)
 {
-	char *row1[] = { "Keys", "Key ID", "Status" };
+	char *row1[] = { "Key", "Key ID", "Status" };
 	char *k_sts[] = { "X.509 certificate gen", "Key generated", "Unknown" };
-	key_context_t *ctx = get_key_context();
+	km_key_context_t *ctx = km_context_get();
 
-	shell_print(shell, "|   %-20s|  %-12s |  %-22s |", row1[0], row1[1],
+	shell_print(shell, "| %-20s| %-12s | %-22s |", row1[0], row1[1],
 		    row1[2]);
-	for (int i = 0; i < 3; i++) {
-		shell_print(shell, "|   %-20s|  0x%-10x |  %-22s |", ctx[i].label,
+	for (int i = 0; i < KEY_COUNT; i++) {
+		shell_print(shell, "| %-20s| 0x%-10x | %-22s |", ctx[i].label,
 			    ctx[i].key_id, k_sts[ctx[i].status]);
 	}
 
@@ -65,12 +65,12 @@ static int
 psa_shell_get_pubkey(const struct shell *shell, size_t argc, char **argv)
 {
 
-	uint8_t public_key[65] = { 0 }; /* EC public key = 65 bytes. */
+	uint8_t public_key[KM_PUBLIC_KEY_SIZE] = { 0 };
 	size_t public_key_len = sizeof(public_key);
-	uint8_t key_idx_start = 0, key_idx_end = 3;
+	uint8_t key_idx_start = 0, key_idx_end = KEY_COUNT;
 	_Bool valid_key_id = false;
 	psa_status_t status;
-	key_context_t *ctx = get_key_context();
+	km_key_context_t *ctx = km_context_get();
 
 	if (argc > 1) {
 		uint32_t rx_key_id = strtoul(argv[1], NULL, 16);
@@ -119,14 +119,14 @@ err:
 static int
 psa_shell_list_infer_model(const struct shell *shell, size_t argc, char **argv)
 {
-	char *row1[] = { "Model label", "Model ID", "Status" };
+	char *row1[] = { "Model Label", "Model ID", "Status" };
 	char *m_sts[] = { "Not Active", "Active", "Unknown" };
 	infer_model_ctx_t *ctx = get_infer_model_context();
 
-	shell_print(shell, "|   %-15s|  %-12s |  %-8s |", row1[0], row1[1],
+	shell_print(shell, "| %-15s| %-12s | %-8s |", row1[0], row1[1],
 		    row1[2]);
 	for (int i = 0; i < ctx->model_count; i++) {
-		shell_print(shell, "|   %-15s|  0x%-10x |  %-8s |",
+		shell_print(shell, "| %-15s| 0x%-10x | %-8s |",
 			    ctx->model_info[i].
 			    sid_label, ctx->model_info[i].sid,
 			    m_sts[ctx->model_info[i].sts]);
@@ -142,14 +142,14 @@ psa_shell_get_infer(const struct shell *shell, size_t argc, char **argv)
 	float deg = PI / 180.0;
 	float usr_in_val_start = 0,
 	      usr_in_val_end = 0,
-		  stride = 1.0,
+	      stride = 1.0,
 	      model_out_val;
-	uint8_t key_ctx_idx = 1;        // C_SIGN key context stored index loaction
-	uint8_t pubkey[65] = { 0 };     /* EC public key = 65 bytes. */
+	uint8_t key_ctx_idx = KEY_C_SIGN;
+	uint8_t pubkey[KM_PUBLIC_KEY_SIZE] = { 0 };
 	size_t pubkey_len = sizeof(pubkey);
 	uint8_t infval_enc_buf[256];
 	size_t infval_enc_buf_len = 0;
-	key_context_t *ctx = get_key_context();
+	km_key_context_t *ctx = km_context_get();
 	infer_model_ctx_t *m_ctx = get_infer_model_context();
 	_Bool is_valid_model = false;
 
@@ -224,41 +224,44 @@ psa_shell_get_infer(const struct shell *shell, size_t argc, char **argv)
 
 /* Subcommand array for "info" (level 1). */
 SHELL_STATIC_SUBCMD_SET_CREATE(sub_cmd_info,
-    /* 'version' command handler. */
+	/* 'version' command handler. */
 	SHELL_CMD(version, NULL, "app version", psa_shell_cmd_version),
 	/* 'UUID' command handler. */
 	SHELL_CMD(uuid, NULL, "Device uuid", psa_shell_get_uuid),
-    /* Array terminator. */
+	/* Array terminator. */
 	SHELL_SUBCMD_SET_END
-);
+	);
 
 /* Subcommand array for "keys" (level 1). */
 SHELL_STATIC_SUBCMD_SET_CREATE(sub_cmd_keys,
-    /* 'Status' command handler. */
+	/* 'Status' command handler. */
 	SHELL_CMD(status, NULL, "Device keys status", psa_shell_get_key_sts),
-    /* 'Public key' command handler. */
+	/* 'Public key' command handler. */
 	SHELL_CMD(public, NULL, "List public key(s) and key IDs",
 		psa_shell_get_pubkey),
-    /* Array terminator. */
+	/* Array terminator. */
 	SHELL_SUBCMD_SET_END
-);
+	);
 
 /* Subcommand array for "infer" (level 1). */
 SHELL_STATIC_SUBCMD_SET_CREATE(sub_cmd_infer,
-    /* 'Model' command handler. */
+	/* 'Model' command handler. */
 	SHELL_CMD(model, NULL, "List model labels and its IDs",
 		psa_shell_list_infer_model),
-    /* 'get' command handler. */
+	/* 'get' command handler. */
 	SHELL_CMD(get, NULL, "Run inference for a given input value(s) ",
 		psa_shell_get_infer),
-    /* Array terminator. */
+	/* Array terminator. */
 	SHELL_SUBCMD_SET_END
 );
 
 /* Root command "info" (level 0). */
 SHELL_CMD_REGISTER(info, &sub_cmd_info, "Device information", NULL);
+
 /* Root command "keys" (level 0). */
 SHELL_CMD_REGISTER(keys, &sub_cmd_keys, "Key Management", NULL);
+
 /* Root command "infer" (level 0). */
 SHELL_CMD_REGISTER(infer, &sub_cmd_infer, "Inference Engine", NULL);
+
 #endif  /* CONFIG_SECURE_INFER_SHELL_CMD_SUPPORT */

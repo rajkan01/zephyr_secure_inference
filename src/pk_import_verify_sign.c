@@ -5,7 +5,7 @@
  */
 #include <logging/log_ctrl.h>
 #include <logging/log.h>
-#include "pk/pk_import_verify_sign.h"
+#include "keys/pk_import_verify_sign.h"
 #include "util/util_app_log.h"
 
 /** Declare a reference to the application logging interface. */

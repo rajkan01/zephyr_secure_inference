@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 #include "cose/cose_verify.h"
-#include "pk/pk_import_verify_sign.h"
+#include "keys/pk_import_verify_sign.h"
 
 #define HASH_TSTR(md_ctx, nc, buf, len_buf, str)		    \
 	nanocbor_encoder_init(&nc, buf, len_buf);		    \
@@ -17,13 +17,6 @@
 	nanocbor_fmt_bstr(&nc, len_bstr);			    \
 	mbedtls_md_update(&md_ctx, buf, nanocbor_encoded_len(&nc)); \
 	mbedtls_md_update(&md_ctx, bstr, len_bstr);
-
-key_context_t *get_key_context()
-{
-	static key_context_t k_ctx[3] = { 0 };
-
-	return k_ctx;
-}
 
 static int cose_encode_prot(nanocbor_encoder_t *nc)
 {

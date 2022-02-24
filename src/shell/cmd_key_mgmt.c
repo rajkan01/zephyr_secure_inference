@@ -4,13 +4,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "psa/error.h"
 #include <zephyr.h>
-#include "shell/cmd_key_mgmt.h"
 #include <logging/log_ctrl.h>
 #include <logging/log.h>
+
+#include "tfm_sp_inf/tfm_sip_srv_api.h"
+#include "shell/cmd_key_mgmt.h"
+#include "util/util_app_log.h"
+
 /** Declare a reference to the application logging interface. */
 LOG_MODULE_DECLARE(app, CONFIG_LOG_DEFAULT_LEVEL);
+
 #if CONFIG_SECURE_INFER_SHELL_CMD_SUPPORT
 
 psa_status_t psa_get_uuid(unsigned char *uuid, size_t uuid_size)
@@ -27,7 +31,8 @@ psa_status_t psa_get_uuid(unsigned char *uuid, size_t uuid_size)
 	return status;
 }
 
-psa_status_t psa_get_pubkey(uint8_t *public_key, size_t public_key_len, key_context_t ctx)
+psa_status_t psa_get_pubkey(uint8_t *public_key, size_t public_key_len,
+			    km_key_context_t ctx)
 {
 	psa_status_t status;
 

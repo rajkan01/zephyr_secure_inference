@@ -31,6 +31,7 @@ target_sources(app PRIVATE
   src/main.c
   src/pk_import_verify_sign.c
   src/cose_verify.c
+  src/key_mgmt.c
   src/tfm_sip_srv_api.c
   src/util_app_log.c
   src/util_sformat.c

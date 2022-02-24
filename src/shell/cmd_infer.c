@@ -4,10 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "psa/error.h"
-#include <zephyr.h>
 #include "shell/cmd_infer.h"
-#include <logging/log_ctrl.h>
 #include <logging/log.h>
 
 /** Declare a reference to the application logging interface. */
@@ -61,7 +58,7 @@ err:
 	return status;
 }
 
-psa_status_t psa_get_infer(psa_key_id_t key_id,
+psa_status_t psa_get_infer_enc_out_buff(km_key_idx_t key_idx,
 			   float input,
 			   uint8_t *infval_enc_buf,
 			   size_t infval_enc_buf_size,
@@ -70,7 +67,7 @@ psa_status_t psa_get_infer(psa_key_id_t key_id,
 	psa_status_t status;
 
 	status = al_psa_status(
-		psa_si_tflm_hello(&key_id,
+		psa_si_tflm_hello(&((km_context_get()[key_idx]).key_id),
 				  &input,
 				  sizeof(input),
 				  infval_enc_buf,

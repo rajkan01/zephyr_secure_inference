@@ -4,8 +4,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <zephyr.h>
-#include <logging/log_ctrl.h>
 #include <logging/log.h>
 
 #include "tfm_sp_inf/tfm_sip_srv_api.h"

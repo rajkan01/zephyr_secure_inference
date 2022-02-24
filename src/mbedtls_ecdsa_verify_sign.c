@@ -3,9 +3,8 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-#include <logging/log_ctrl.h>
 #include <logging/log.h>
-#include "keys/pk_import_verify_sign.h"
+#include "keys/mbedtls_ecdsa_verify_sign.h"
 #include "util/util_app_log.h"
 
 /** Declare a reference to the application logging interface. */

@@ -7,7 +7,6 @@
 #ifndef KEY_MGMT_H
 #define KEY_MGMT_H
 
-#include <zephyr.h>
 #include "psa/crypto_types.h"
 
 /** EC public keys are 65 bytes. */
@@ -59,8 +58,12 @@ km_key_context_t *km_context_get();
  *        with each of the three keys types, allowing access to the public key.
  *        This must be called once before the key context can be used.
  *
- * @param ctx
+ * @param ctx      Pointer to the key context
+ * @param key_id   Key id.
+ * @param label    Unique string to represent the key context.
  */
-void km_context_init(km_key_context_t *ctx);
+void km_context_init(km_key_context_t *ctx,
+		     km_key_type_t key_id,
+		     const unsigned char *label);
 
 #endif /* KEY_MGMT_H */

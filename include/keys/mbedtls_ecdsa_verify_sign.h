@@ -3,13 +3,11 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-#ifndef PK_IMPORT_VERIFY_SIGN_H
-#define PK_IMPORT_VERIFY_SIGN_H
+#ifndef MBEDTLS_ECDSA_VERIFY_SIGN_H
+#define MBEDTLS_ECDSA_VERIFY_SIGN_H
 
-#include <stdio.h>
 #include "mbedtls/pk.h"
 #include "mbedtls/error.h"
-#include <zephyr.h>
 
 /**
  * @brief              Load the contents of a public key buffer
@@ -48,4 +46,4 @@ int mbedtls_ecdsa_verify_sign(mbedtls_pk_context ctx,
 			      size_t hash_len,
 			      const unsigned char *sig,
 			      size_t sig_len);
-#endif /* PK_IMPORT_VERIFY_SIGN_H */
+#endif /* MBEDTLS_ECDSA_VERIFY_SIGN_H */

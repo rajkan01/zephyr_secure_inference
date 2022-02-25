@@ -27,7 +27,7 @@ void main(void)
 	km_keys_init();
 
 	/* Initialise references to the inference engine and models. */
-	infer_model_init();
+	infer_init();
 
 	/* Derive the device UUID, which will cache it for later requests. */
 	status = al_psa_status(km_get_uuid(uuid, sizeof(uuid)), __func__);

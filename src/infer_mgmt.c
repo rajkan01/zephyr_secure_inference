@@ -26,10 +26,10 @@ LOG_MODULE_DECLARE(app, CONFIG_LOG_DEFAULT_LEVEL);
  * @param label    Unique string to represent the model context.
  *
  */
-void infer_model_ctx_init(infer_model_ctx_t *ctx,
+void infer_model_ctx_init(infer_ctx_t *ctx,
 			  uint32_t sid,
 			  uint32_t version,
-			  imdl_sts_t status,
+			  infer_model_sts_t status,
 			  unsigned char *label)
 {
 	ctx->sid = sid;
@@ -116,21 +116,21 @@ psa_status_t infer_get_cose_output(km_key_idx_t key_idx,
 	return status;
 }
 
-infer_model_ctx_t *infer_model_context_get()
+infer_ctx_t *infer_context_get()
 {
-	static infer_model_ctx_t infer_model[IMDL_COUNT] = { 0 };
+	static infer_ctx_t infer_model[INFER_MODEL_COUNT] = { 0 };
 
 	return infer_model;
 }
 
-void infer_model_init()
+void infer_init()
 {
-	infer_model_ctx_t *ctx = infer_model_context_get();
+	infer_ctx_t *ctx = infer_context_get();
 
 	/* Initialise the TFLM sine wave model context. */
-	infer_model_ctx_init(&ctx[IMDL_SINE],
+	infer_model_ctx_init(&ctx[INFER_MODEL_SINE],
 			     TFM_TFLM_SERVICE_HELLO_SID,
 			     TFM_TFLM_SERVICE_HELLO_VERSION,
-			     IMDL_ACTIVE,
+			     INFER_MODEL_STS_ACTIVE,
 			     "sine");
 }

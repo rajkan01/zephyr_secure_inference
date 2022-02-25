@@ -34,11 +34,11 @@ cmd_infer_list_models(const struct shell *shell, size_t argc, char **argv)
 {
 	char *row1[] = { "Model Label", "Model ID", "Status" };
 	char *m_sts[] = { "Not Active", "Active", "Unknown" };
-	infer_model_ctx_t *ctx = infer_model_context_get();
+	infer_ctx_t *ctx = infer_context_get();
 
 	shell_print(shell, "| %-15s| %-12s | %-8s |", row1[0], row1[1],
 		    row1[2]);
-	for (int i = 0; i < IMDL_COUNT; i++) {
+	for (int i = 0; i < INFER_MODEL_COUNT; i++) {
 		shell_print(shell, "| %-15s| 0x%-10x | %-8s |",
 			    ctx[i].sid_label,
 			    ctx[i].sid,
@@ -63,11 +63,11 @@ cmd_infer_get_val(const struct shell *shell, size_t argc, char **argv)
 	uint8_t infval_enc_buf[256];
 	size_t infval_enc_buf_len = 0;
 	km_key_context_t *ctx = km_context_get();
-	infer_model_ctx_t *m_ctx = infer_model_context_get();
+	infer_ctx_t *m_ctx = infer_context_get();
 	_Bool is_valid_model = false;
 
 	if (argc > 2) {
-		for (int i = 0; i < IMDL_COUNT; i++) {
+		for (int i = 0; i < INFER_MODEL_COUNT; i++) {
 			if (strcmp(argv[1], m_ctx[i].sid_label) == 0) {
 				shell_print(shell, "Model label:  %s", argv[1]);
 				is_valid_model = true;

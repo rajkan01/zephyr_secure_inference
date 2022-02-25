@@ -8,7 +8,7 @@
 #include <logging/log.h>
 
 #include "key_mgmt.h"
-#include "tfm_sip_srv_api.h"
+#include "tfm_partition_huk.h"
 #include "util_app_log.h"
 #include "util_sformat.h"
 

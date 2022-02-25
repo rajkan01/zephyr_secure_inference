@@ -30,10 +30,10 @@ project(tfm_secure_provisioning)
 target_sources(app PRIVATE
   src/cose/cose_verify.c
   src/cose/mbedtls_ecdsa_verify_sign.c
-  src/shell/shell.c
-  src/shell/cmd_key_mgmt.c
   src/shell/cmd_infer.c
-  src/infer_model_mgmt.c
+  src/shell/cmd_info.c
+  src/shell/cmd_keys.c
+  src/infer_mgmt.c
   src/key_mgmt.c
   src/main.c
   src/tfm_partition_huk.c

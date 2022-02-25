@@ -76,6 +76,37 @@ err:
 	al_dump_log();
 }
 
+psa_status_t km_get_uuid(unsigned char *uuid, size_t uuid_size)
+{
+	psa_status_t status;
+
+	/* Request device UUID (derived at startup from the HUK) */
+	status = al_psa_status(
+		psa_huk_get_uuid(uuid, uuid_size),
+		__func__);
+	if (status != PSA_SUCCESS) {
+		LOG_ERR("Unable to get UUID.");
+	}
+
+	return status;
+}
+
+psa_status_t km_get_pubkey(uint8_t *public_key, size_t public_key_len,
+			   km_key_context_t ctx)
+{
+	psa_status_t status;
+
+	status = al_psa_status(
+		psa_huk_get_pubkey(&ctx.key_id,
+				   public_key,
+				   public_key_len),
+		__func__);
+	if (status != PSA_SUCCESS) {
+		LOG_ERR("Failed to export the_public_key");
+	}
+	return status;
+}
+
 km_key_context_t *km_context_get()
 {
 	static km_key_context_t k_ctx[KEY_COUNT] = { 0 };

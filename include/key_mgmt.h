@@ -41,6 +41,29 @@ typedef struct {
 } km_key_context_t;
 
 /**
+ * @brief Get the HUK-derived UUID from the secure partition.
+ *
+ * @param uuid       Pointer to the buffer to store the UUID.
+ * @param uuid_size  Size of UUID buffer.
+ *
+ * @return psa_status_t
+ */
+psa_status_t km_get_uuid(unsigned char *uuid, size_t uuid_size);
+
+/**
+ * @brief Get the public key from the HUK-derived key on the secure partition.
+ *
+ * @param public_key      Pointer to the buffer to store the public key.
+ * @param public_key_len  Public key buffer length.
+ * @param ctx             Key context
+ *
+ * @return psa_status_t
+ */
+psa_status_t km_get_pubkey(uint8_t *public_key,
+			   size_t public_key_len,
+			   km_key_context_t ctx);
+
+/**
  * @brief Gets a reference to the km_key_context_t array in memory. The data this
  *        pointer references is NULL-initialised by default, and needs to be
  *        initialised before it can be used.

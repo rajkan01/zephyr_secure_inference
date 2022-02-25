@@ -27,4 +27,11 @@ config SECURE_INFER_HUK_DERIV_LABEL_EXTRA
 	  is exposed here for convenience purposes so that the Zephyr build
 	  system can pass it through to TF-M.
 
+config AZURE_SHELL_CMD_SUPPORT
+	bool "Enable custom shell commands for Azure"
+	depends on SHELL
+	help
+	  Enabling this option will make shell commands available for
+	  controlling communication with the Azure IoT Hub service.
+
 source "Kconfig.zephyr"

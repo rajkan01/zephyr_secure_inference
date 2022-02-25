@@ -34,6 +34,7 @@ project(tfm_secure_inference)
 target_sources(app PRIVATE
   src/cose/cose_verify.c
   src/cose/mbedtls_ecdsa_verify_sign.c
+  src/shell/cmd_azure.c
   src/shell/cmd_infer.c
   src/shell/cmd_info.c
   src/shell/cmd_keys.c

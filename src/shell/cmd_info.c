@@ -37,6 +37,7 @@ cmd_info_uuid(const struct shell *shell, size_t argc, char **argv)
 		return -EINVAL;
 	}
 	shell_print(shell, "%s", uuid);
+
 	return 0;
 }
 

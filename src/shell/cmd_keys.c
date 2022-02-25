@@ -37,7 +37,6 @@ cmd_keys_key_stat(const struct shell *shell, size_t argc, char **argv)
 static int
 cmd_keys_pubkey(const struct shell *shell, size_t argc, char **argv)
 {
-
 	uint8_t public_key[KM_PUBLIC_KEY_SIZE] = { 0 };
 	size_t public_key_len = sizeof(public_key);
 	uint8_t key_idx_start = 0, key_idx_end = KEY_COUNT;
@@ -83,6 +82,7 @@ cmd_keys_pubkey(const struct shell *shell, size_t argc, char **argv)
 		shell_print(shell, "\n");
 		key_idx_start++;
 	}
+
 	return 0;
 err:
 	shell_print(shell, "Error: invalid key id argument \"%s\"\n", argv[1]);

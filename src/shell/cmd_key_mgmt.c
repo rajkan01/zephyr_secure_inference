@@ -7,7 +7,7 @@
 #include <logging/log.h>
 
 #include "shell/cmd_key_mgmt.h"
-#include "tfm_sip_srv_api.h"
+#include "tfm_partition_huk.h"
 #include "util_app_log.h"
 
 /** Declare a reference to the application logging interface. */

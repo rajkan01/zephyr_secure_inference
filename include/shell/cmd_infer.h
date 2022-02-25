@@ -8,7 +8,7 @@
 
 #include "cose/cose_verify.h"
 #include "cose/mbedtls_ecdsa_verify_sign.h"
-#include "tfm_sip_srv_api.h"
+#include "tfm_partition_tflm.h"
 #include "util_app_log.h"
 
 #if CONFIG_SECURE_INFER_SHELL_CMD_SUPPORT

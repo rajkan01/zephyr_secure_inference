@@ -36,7 +36,8 @@ target_sources(app PRIVATE
   src/infer_model_mgmt.c
   src/key_mgmt.c
   src/main.c
-  src/tfm_sip_srv_api.c
+  src/tfm_partition_huk.c
+  src/tfm_partition_tflm.c
   src/util_app_log.c
   src/util_sformat.c
   ext/NanoCBOR/src/decoder.c

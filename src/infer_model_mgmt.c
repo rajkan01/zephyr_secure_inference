@@ -7,7 +7,7 @@
 #include <logging/log.h>
 
 #include "psa_manifest/sid.h"
-#include "tfm_sip_srv_api.h"
+#include "tfm_partition_tflm.h"
 #include "infer_model_mgmt.h"
 
 /** Declare a reference to the application logging interface. */

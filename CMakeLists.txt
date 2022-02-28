@@ -32,6 +32,7 @@ set_property(TARGET zephyr_property_target
 project(tfm_secure_inference)
 
 target_sources(app PRIVATE
+  src/azure.c
   src/cose/cose_verify.c
   src/cose/mbedtls_ecdsa_verify_sign.c
   src/shell/cmd_azure.c

@@ -1,0 +1,4 @@
+# Certificate and private key specific to this device.
+device_crt.txt
+device_key.txt
+azure-config.h

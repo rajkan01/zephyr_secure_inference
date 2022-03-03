@@ -13,19 +13,9 @@
 
 #include <azure.h>
 #include "test_certs.h"
+#include "azure-config.h"
 
 LOG_MODULE_DECLARE(app, CONFIG_LOG_DEFAULT_LEVEL);
-
-/* This stuff was originally in config.h. */
-#define APP_MQTT_BUFFER_SIZE    1024
-#define APP_SLEEP_MSECS		8000
-#define MQTT_CLIENTID           "3051dad9-9dfa-4a22-a4dd-bb39b378eb09"
-#define SERVER_ADDR		"davidb-zephyr.azure-devices.net"
-#define CONFIG_SAMPLE_CLOUD_AZURE_HOSTNAME		"davidb-zephyr.azure-devices.net"
-#define CONFIG_SAMPLE_CLOUD_AZURE_SERVER_PORT		8883
-#define SERVER_PORT		8883
-#define CONFIG_SAMPLE_CLOUD_AZURE_USERNAME \
-	"davidb-zephyr.azure-devices.net/3051dad9-9dfa-4a22-a4dd-bb39b378eb09"
 
 /* Buffers for MQTT client. */
 static uint8_t rx_buffer[APP_MQTT_BUFFER_SIZE];

@@ -9,6 +9,8 @@
 # linker script will lay the partition in memory.
 add_library(tfm_app_rot_partition_huk_deriv STATIC)
 
+include(config.cmake)
+
 target_include_directories(tfm_app_rot_partition_huk_deriv
     INTERFACE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>

@@ -19,9 +19,16 @@
 #include "psa_manifest/tfm_huk_deriv_srv.h"
 #include "tfm_huk_deriv_srv_api.h"
 
-#define KEY_LEN_BYTES  16
-#define LABEL_HI "_EC_PRIV_KEY_HI"
-#define LABEL_LO "_EC_PRIV_KEY_LO"
+#define KEY_LEN_BYTES 16
+/* This macro appends an optional HUK_DERIV_SEED_EXTRA string to the
+ * label used for key derivation, enabling key diversity during testing
+ * on emulated platforms with a fixed HUK value.
+ * It can be set at compile time via '-DHUK_DERIV_SEED_EXTRA=value'.
+ */
+#define LABEL_CONCAT(A) #A HUK_DERIV_SEED_EXTRA
+#define LABEL_HI    LABEL_CONCAT(_EC_PRIV_KEY_HI)
+#define LABEL_LO    LABEL_CONCAT(_EC_PRIV_KEY_LO)
+#define LABEL_UUID  LABEL_CONCAT(UUID)
 
 typedef psa_status_t (*signal_handler_t)(psa_msg_t *);
 
@@ -188,10 +195,10 @@ static psa_status_t tfm_huk_deriv_ec_key(psa_msg_t *msg)
 	psa_read(msg->handle, 1, &key_id, msg->in_size[1]);
 	psa_read(msg->handle, 2, &key_usage_flag, msg->in_size[2]);
 
-	// Add _EC_PRIV_KEY_HI to rx_label to create unique label_hi
+	/* Add LABEL_HI to rx_label to create label_hi. */
 	sprintf((char *)label_hi, "%s%s", rx_label, LABEL_HI);
 
-	// Add _EC_PRIV_KEY_LO to rx_label to create unique label_lo
+	/* Add LABEL_LO to rx_label to create label_lo. */
 	sprintf((char *)label_lo, "%s%s", rx_label, LABEL_LO);
 
 	/* For MPS2 AN521 platform, TF-M always returns a 16-byte sample key
@@ -323,8 +330,11 @@ static psa_status_t tfm_huk_gen_uuid(psa_msg_t *msg)
 	size_t uuid_length;
 	static uint8_t uuid_encoded[37] = { 0 };
 	uint8_t uuid[16] = { 0 };
-	uint8_t *uuid_label = (uint8_t *)"UUID";
+	uint8_t uuid_label[32] = { 0 };
 	static uint8_t is_uuid_generated = 0;
+
+	/* Populate uuid_label from label macro. */
+	sprintf((char *)uuid_label, "%s", LABEL_UUID);
 
 	if (!is_uuid_generated) {
 		status = tfm_huk_deriv_unique_key(uuid,

@@ -66,4 +66,15 @@ set_property(TARGET zephyr_property_target
              -DCRYPTO_ENGINE_BUF_SIZE=0x2400
 )
 
+# Since the MPS2/MPS3 boards in TF-M use a hard-coded HUK value, we need to
+# append a custom seed value during key derivation for unique key(s). This
+# value is exposed here as a convenience so that west can pass it on to TF-M,
+# but is only used in the secure partition(s).
+if (CONFIG_SECURE_INFER_HUK_DERIV_SEED_EXTRA)
+  set_property(TARGET zephyr_property_target
+              APPEND PROPERTY TFM_CMAKE_OPTIONS
+              -DHUK_DERIV_SEED_EXTRA=${CONFIG_SECURE_INFER_HUK_DERIV_SEED_EXTRA}
+  )
+endif()
+
 zephyr_include_directories(${APPLICATION_SOURCE_DIR}/src/tls_config)

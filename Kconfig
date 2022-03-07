@@ -19,4 +19,12 @@ config SECURE_INFER_SHELL_CMD_SUPPORT
 	help
 	  Enabling this option will make secure inference shell commands available.
 
+config SECURE_INFER_HUK_DERIV_SEED_EXTRA
+	string "Supplementary seed label value for key derivation"
+	help
+	  This string will be appended to the label used when deriving keys from
+	  the HUK in the secure HUK service. It is used exclusively by TF-M, but
+	  is exposed here for convenience purposes so that the Zephyr build
+	  system can pass it through to TF-M.
+
 source "Kconfig.zephyr"

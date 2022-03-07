@@ -47,6 +47,10 @@ static struct zsock_addrinfo hints;
 static struct zsock_addrinfo *haddr;
 #endif
 
+/* Semaphore waiting for command to start process. */
+static K_SEM_DEFINE(mqtt_command_start, 0, 1);
+
+/* Semaphore to indicate networking has come up. */
 static K_SEM_DEFINE(mqtt_start, 0, 1);
 
 /* Stack used by the Azure thread.  Note that most of the stack will
@@ -493,6 +497,7 @@ end:
 #endif
 
 #if defined(CONFIG_NET_DHCPV4)
+/*
 static void abort_mqtt_connection(void)
 {
 	if (mqtt_connected) {
@@ -501,6 +506,7 @@ static void abort_mqtt_connection(void)
 		k_work_cancel_delayable(&pub_message);
 	}
 }
+*/
 
 static void l4_event_handler(struct net_mgmt_event_callback *cb,
 			     uint32_t mgmt_event, struct net_if *iface)
@@ -529,6 +535,7 @@ static void l4_event_handler(struct net_mgmt_event_callback *cb,
 
 void start_azure_service(void)
 {
+	k_sem_give(&mqtt_command_start);
 }
 
 void stop_azure_service(void)
@@ -558,6 +565,10 @@ void azure_thread(void)
 	net_mgmt_add_event_callback(&l4_mgmt_cb);
 #endif
 
+	/* Sleep until the "azure start" command is given. */
+	k_sem_take(&mqtt_command_start, K_FOREVER);
+
+	LOG_INF("Connecting to Azure");
 	connect_to_cloud_and_publish();
 }
 

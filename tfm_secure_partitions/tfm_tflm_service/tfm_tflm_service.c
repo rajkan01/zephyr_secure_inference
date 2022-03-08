@@ -338,7 +338,7 @@ void tfm_tflm_service_req_mngr_init(void)
 	tfm_tflm_gen_ec_key(label[0],
 			    strlen((char *)label[0]),
 			    CLIENT_TLS,
-			    PSA_KEY_USAGE_VERIFY_MESSAGE);
+			    (PSA_KEY_USAGE_SIGN_HASH | PSA_KEY_USAGE_VERIFY_MESSAGE));
 	tfm_tflm_gen_ec_key(label[1],
 			    strlen((char *)label[1]),
 			    C_SIGN,
@@ -346,7 +346,7 @@ void tfm_tflm_service_req_mngr_init(void)
 	tfm_tflm_gen_ec_key(label[2],
 			    strlen((char *)label[2]),
 			    C_ENCRYPT,
-			    PSA_KEY_USAGE_ENCRYPT);
+			    PSA_KEY_USAGE_SIGN_HASH | PSA_KEY_USAGE_ENCRYPT);
 
 	/* Tensorflow lite-micro initialisation */
 	setup();

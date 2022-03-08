@@ -52,6 +52,15 @@
         "version": 1,
         "version_policy": "STRICT"
     },
+    {
+      "name": "TFM_HUK_HASH_SIGN",
+       "sid": "0xFFFFF005", # Bits [31:12] denote the vendor (change this),
+                           # bits [11:0] are arbitrary at the discretion of the
+                           # vendor.
+        "non_secure_clients": true,
+        "version": 1,
+        "version_policy": "STRICT"
+    },
   ],
 
   "dependencies": [

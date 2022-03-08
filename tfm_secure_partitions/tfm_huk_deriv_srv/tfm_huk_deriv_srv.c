@@ -321,6 +321,107 @@ static psa_status_t tfm_huk_cose_encode_sign
 	return status;
 }
 
+/* Calculate the SHA256 hash value of the given CSR payload and sign the hash
+ * value using the private key of the given key ID.
+ */
+static psa_status_t tfm_huk_hash_sign(psa_msg_t *msg)
+{
+	psa_status_t status = PSA_SUCCESS;
+	psa_algorithm_t psa_alg_id = PSA_ALG_ECDSA(PSA_ALG_SHA_256);
+	psa_key_handle_t key_handle;
+	size_t signature_len;
+	unsigned char hash[64];
+	psa_key_id_t key_id = 0;
+	size_t csr_data_size = msg->in_size[1];
+	uint8_t csr_data[csr_data_size],
+		sig[64];
+	psa_hash_operation_t hash_operation = PSA_HASH_OPERATION_INIT;
+	size_t hash_len;
+	psa_algorithm_t hash_alg = PSA_ALG_SHA_256;
+
+	psa_read(msg->handle, 0, &key_id, msg->in_size[0]);
+	psa_read(msg->handle, 1, csr_data, msg->in_size[1]);
+	status = psa_open_key(key_id, &key_handle);
+	if (status != PSA_SUCCESS) {
+		LOG_ERRFMT("psa_open_key returned: %d \n", status);
+	}
+	LOG_INFFMT("Key id: 0x%x\n\n", key_id);
+	if (!PSA_ALG_IS_ECDSA(psa_alg_id)) {
+		status = PSA_ERROR_PROGRAMMER_ERROR;
+		goto err;
+	}
+	/* Calculate the SHA256 hash value of the CSR data using PSA crypto service */
+	if (psa_hash_setup(&hash_operation, hash_alg) != PSA_SUCCESS) {
+		status = PSA_ERROR_PROGRAMMER_ERROR;
+		goto err;
+	}
+
+	if (psa_hash_update(&hash_operation,
+			    csr_data,
+			    csr_data_size) !=
+	    PSA_SUCCESS) {
+		status = PSA_ERROR_PROGRAMMER_ERROR;
+		goto err;
+	}
+
+	if (psa_hash_finish(&hash_operation,
+			    hash,
+			    sizeof(hash),
+			    &hash_len)
+	    != PSA_SUCCESS) {
+		status = PSA_ERROR_PROGRAMMER_ERROR;
+		goto err;
+	}
+
+	/* Sign the hash value using PSA crypto service */
+	status = psa_sign_hash(key_handle,
+			       psa_alg_id,
+			       hash,
+			       hash_len,
+			       sig,                     /* Sig buf */
+			       sizeof(sig),             /* Sig buf size */
+			       &signature_len);         /* Sig length */
+
+#if PSA_HUK_HASH_SIGN_VERIFY
+	status = psa_verify_hash(key_handle,
+				 psa_alg_id,
+				 hash,
+				 hash_len,
+				 sig,                   /* Sig buf */
+				 signature_len);        /* Sig length */
+
+
+	if (status != PSA_SUCCESS) {
+		LOG_ERRFMT("hash sign verification failed: %d \n", status);
+		goto err;
+	} else {
+		LOG_ERRFMT("hash sign verification passed: %d \n", status);
+	}
+	LOG_INFFMT("Signed value from S-side\n");
+	for (int i = 0; i < signature_len; i++) {
+		LOG_INFFMT("0x%x, ", sig[i]);
+	}
+	LOG_INFFMT("\n");
+#endif
+
+	status = psa_close_key(key_handle);
+	if (status != PSA_SUCCESS) {
+		LOG_ERRFMT("psa_close_key returned: %d \n", status);
+	}
+	psa_write(msg->handle,
+		  0,
+		  sig,
+		  signature_len);
+	psa_write(msg->handle,
+		  1,
+		  &signature_len,
+		  sizeof(signature_len));
+	return status;
+
+err:
+	return status;
+}
+
 /* Generates an UUID based on
  * https://datatracker.ietf.org/doc/html/rfc4122#section-4.4
  */
@@ -402,6 +503,10 @@ psa_status_t tfm_huk_deriv_req_mgr_init(void)
 			tfm_huk_deriv_signal_handle(
 				TFM_HUK_GEN_UUID_SIGNAL,
 				tfm_huk_gen_uuid);
+		} else if (signals & TFM_HUK_HASH_SIGN_SIGNAL) {
+			tfm_huk_deriv_signal_handle(
+				TFM_HUK_HASH_SIGN_SIGNAL,
+				tfm_huk_hash_sign);
 		} else {
 			psa_panic();
 		}

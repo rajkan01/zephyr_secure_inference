@@ -25,7 +25,7 @@ set_property(TARGET zephyr_property_target
 #   ${PARTITION_PATHS}
 #   )
 
-project(tfm_secure_provisioning)
+project(tfm_secure_inference)
 
 target_sources(app PRIVATE
   src/cose/cose_verify.c
@@ -40,6 +40,7 @@ target_sources(app PRIVATE
   src/tfm_partition_tflm.c
   src/util_app_log.c
   src/util_sformat.c
+  src/x509_csr_gen.c
   ext/NanoCBOR/src/decoder.c
   ext/NanoCBOR/src/encoder.c
 )

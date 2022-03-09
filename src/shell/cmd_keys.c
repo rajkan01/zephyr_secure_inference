@@ -10,12 +10,37 @@
 
 #include "tfm_partition_huk.h"
 #include "key_mgmt.h"
+#include "x509_csr_gen.h"
 #include "util_app_log.h"
 
 /** Declare a reference to the application logging interface. */
 LOG_MODULE_DECLARE(app, CONFIG_LOG_DEFAULT_LEVEL);
 
 #if CONFIG_SECURE_INFER_SHELL_CMD_SUPPORT
+
+static int
+cmd_keys_shell_invalid_arg(const struct shell *shell, char *arg_name)
+{
+	shell_print(shell, "Error: invalid argument \"%s\"\n", arg_name);
+
+	return -EINVAL;
+}
+
+static int
+cmd_keys_shell_missing_arg(const struct shell *shell, char *arg_name)
+{
+	shell_print(shell, "Error: missing argument: \"%s\"\n", arg_name);
+
+	return -EINVAL;
+}
+
+static int
+cmd_keys_shell_rc_code(const struct shell *shell, char *error, int rc)
+{
+	shell_print(shell, "Error: %s: \"%d\"\n", error, rc);
+
+	return -EINVAL;
+}
 
 static int
 cmd_keys_key_stat(const struct shell *shell, size_t argc, char **argv)
@@ -63,7 +88,7 @@ cmd_keys_pubkey(const struct shell *shell, size_t argc, char **argv)
 	while (key_idx_start < key_idx_end) {
 
 		status = km_get_pubkey(public_key, public_key_len,
-					ctx[key_idx_start]);
+				       ctx[key_idx_start]);
 		if (status != 0) {
 			shell_print(shell, "Error: Failed to get the public key");
 			return -EINVAL;
@@ -89,12 +114,120 @@ err:
 	return -EINVAL;
 }
 
+static int
+cmd_keys_csr(const struct shell *shell, size_t argc, char **argv)
+{
+	uint8_t key_idx = 0;
+	char *csr_supported_format[] = { "PEM", "JSON", "PEM_JSON", "Unknown" };
+	x509_csr_fmt_t csr_fmt = CSR_NONE;
+	_Bool is_valid_key_id = false,
+	      is_valid_csr_format = false;
+	psa_status_t status;
+	km_key_context_t *ctx = km_context_get();
+
+	if ((argc == 1) || (strcmp(argv[1], "help") == 0)) {
+		shell_print(shell, "Generate a CSR for the given key id and format");
+		shell_print(shell, " $ %s %s <CSR format> <Key ID>",
+			    argv[-1], argv[0]);
+		shell_print(shell, "  CSR formats: \"PEM\", \"JSON\", \"PEM_JSON\"");
+		shell_print(shell, "  Key ID: run ($ %s status) command to find \n",
+			    argv[-1]);
+		shell_print(shell, "Ex. (%s %s PEM 5001):", argv[-1], argv[0]);
+		shell_print(shell, "  $ %s %s PEM 5001\n", argv[-1], argv[0]);
+		return 0;
+	}
+
+	/* Missing argument. */
+	if (argc == 2) {
+		return cmd_keys_shell_missing_arg(shell, "Key ID");
+	}
+
+	/* Too many arguments. */
+	if (argc > 3) {
+		return cmd_keys_shell_invalid_arg(shell, argv[3]);
+	}
+
+	/* Validate the display format */
+	for (int i = 0; i < CSR_NONE; i++) {
+		if (strcmp(argv[1], csr_supported_format[i]) == 0) {
+			csr_fmt = i;
+			is_valid_csr_format = true;
+			break;
+		}
+	}
+
+	/* Validate the Key ID */
+	if (is_valid_csr_format) {
+		uint32_t rx_key_id = strtoul(argv[2], NULL, 16);
+		while (key_idx < KEY_COUNT) {
+			if (ctx[key_idx].key_id == rx_key_id) {
+				is_valid_key_id = true;
+				break;
+			}
+			key_idx++;
+		}
+	} else {
+		return cmd_keys_shell_invalid_arg(shell, argv[1]);
+	}
+
+	/* Parse valid request. */
+	if (is_valid_key_id) {
+		unsigned char csr[1024];
+		unsigned char uuid[37];
+
+		/* Get the UUID */
+		status = al_psa_status(km_get_uuid(uuid, sizeof(uuid)), __func__);
+		if (status != PSA_SUCCESS) {
+			return cmd_keys_shell_rc_code(shell,
+						      "Unable to read UUID",
+						      status);
+		}
+
+		/* Generate CSR PEM format using Mbed TLS */
+		status = x509_csr_generate(key_idx,
+					   csr,
+					   sizeof(csr),
+					   uuid,
+					   sizeof(uuid));
+		if (status != PSA_SUCCESS) {
+			return cmd_keys_shell_rc_code(shell,
+						      "Failed to generate CSR",
+						      status);
+		}
+		if (csr_fmt == CSR_PEM_FORMAT || csr_fmt == CSR_PEM_JSON_FORMAT) {
+			shell_print(shell, "CSR PEM format:");
+			shell_print(shell, "%s", csr);
+		}
+		if (csr_fmt == CSR_JSON_FORMAT || csr_fmt == CSR_PEM_JSON_FORMAT) {
+			unsigned char csr_json[1024] = { 0 };
+
+			/* CSR encode to JSON format */
+			status = x509_csr_json_encode(csr,
+						      csr_json,
+						      sizeof(csr_json));
+			if (status != 0) {
+				return cmd_keys_shell_rc_code(shell,
+							      "Failed to encode CSR",
+							      status);
+			}
+			shell_print(shell, "CSR encoded in JSON format:");
+			shell_print(shell, "%s", csr_json);
+		}
+	} else {
+		return cmd_keys_shell_invalid_arg(shell, argv[2]);
+	}
+
+	return 0;
+}
+
 /* Subcommand array for "keys" (level 1). */
 SHELL_STATIC_SUBCMD_SET_CREATE(sub_cmd_keys,
 	/* 'Status' command handler. */
 	SHELL_CMD(status, NULL, "Device keys status", cmd_keys_key_stat),
 	/* 'Public key' command handler. */
 	SHELL_CMD(public, NULL, "List public key(s) and key IDs", cmd_keys_pubkey),
+    /* 'CSR' command handler. */
+	SHELL_CMD(csr, NULL, "Generate and display CSR on given key ID", cmd_keys_csr),
 	/* Array terminator. */
 	SHELL_SUBCMD_SET_END
 	);

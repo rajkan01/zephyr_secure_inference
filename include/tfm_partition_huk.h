@@ -38,6 +38,27 @@ psa_status_t psa_huk_get_pubkey(psa_key_id_t *key_id,
 psa_status_t psa_huk_get_uuid(void *uuid,
 			      size_t uuid_size);
 
+
+/**
+ * @brief Calculate the SHA256 hash value of the given CSR payload and sign the hash
+ * value using the private key of the given key ID.
+ *
+ * @param key_id         Key ID.
+ * @param csr_data       Pointer to the buffer to store CSR.
+ * @param csr_data_size  The size in bytes of @p csr_data.
+ * @param sig            Pointer to the buffer to store Signature.
+ * @param sig_size       The size in byters of @p sig.
+ * @param sig_len        The Signed CSR hash len in bytes.
+ *
+ * @return psa_status_t
+ */
+psa_status_t psa_huk_hash_sign(psa_key_id_t *key_id,
+			       uint8_t *csr_data,
+			       size_t csr_data_size,
+			       uint8_t *sig,
+			       size_t sig_size,
+			       size_t *sig_len);
+
 #ifdef __cplusplus
 }
 #endif

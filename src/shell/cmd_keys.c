@@ -129,11 +129,9 @@ cmd_keys_csr(const struct shell *shell, size_t argc, char **argv)
 		shell_print(shell, "Generate a CSR for the given key id and format");
 		shell_print(shell, " $ %s %s <CSR format> <Key ID>",
 			    argv[-1], argv[0]);
-		shell_print(shell, "  CSR formats: \"PEM\", \"JSON\", \"PEM_JSON\"");
-		shell_print(shell, "  Key ID: run ($ %s status) command to find \n",
-			    argv[-1]);
-		shell_print(shell, "Ex. (%s %s PEM 5001):", argv[-1], argv[0]);
-		shell_print(shell, "  $ %s %s PEM 5001\n", argv[-1], argv[0]);
+		shell_print(shell, "  <CSR format>: 'PEM', 'JSON', 'PEM_JSON'");
+		shell_print(shell, "  <Key ID>:     run 'status' for key ID list\n");
+		shell_print(shell, "Ex.: $ %s %s PEM 5001", argv[-1], argv[0]);
 		return 0;
 	}
 
@@ -195,7 +193,6 @@ cmd_keys_csr(const struct shell *shell, size_t argc, char **argv)
 						      status);
 		}
 		if (csr_fmt == CSR_PEM_FORMAT || csr_fmt == CSR_PEM_JSON_FORMAT) {
-			shell_print(shell, "CSR PEM format:");
 			shell_print(shell, "%s", csr);
 		}
 		if (csr_fmt == CSR_JSON_FORMAT || csr_fmt == CSR_PEM_JSON_FORMAT) {
@@ -210,7 +207,6 @@ cmd_keys_csr(const struct shell *shell, size_t argc, char **argv)
 							      "Failed to encode CSR",
 							      status);
 			}
-			shell_print(shell, "CSR encoded in JSON format:");
 			shell_print(shell, "%s", csr_json);
 		}
 	} else {

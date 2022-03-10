@@ -38,6 +38,41 @@ const char hex_digits[] = { '0', '1', '2', '3', '4', '5', '6', '7',
 #define UUID_STR_LEN ((KEY_LEN_BYTES * 2) + 4 + 1)
 #define UUID_7TH_BYTE_MASK  64U         /* 0b0100_0000*/
 #define UUID_9TH_BYTE_MASK  128U        /* 0b1000_0000*/
+#define TFM_HUK_ASN1_CONSTRUCTED      0x20
+#define TFM_HUK_ASN1_SEQUENCE         0x10
+#define TFM_HUK_ASN1_DATA_LENGTH_0_255 1
+
+/* To verify CSR ASN.1 tag and length of the payload */
+static psa_status_t tfm_huk_csr_verify(unsigned char *csr_data,
+				       size_t csr_len, int tag)
+{
+	unsigned char *csr_start = csr_data,
+		      *csr_end = (csr_data + csr_len);
+	size_t len;
+
+	if ((csr_end - csr_start) < 1) {
+		return(PSA_ERROR_INSUFFICIENT_DATA);
+	}
+
+	if (*csr_start != tag) {
+		return(PSA_ERROR_INVALID_ARGUMENT);
+	}
+
+	csr_start++;
+
+	/* Check CSR data payload length between 0 to 255 */
+	if ((*csr_start & 0x7F) == TFM_HUK_ASN1_DATA_LENGTH_0_255) {
+		len = csr_start[1];
+		csr_start += 2;
+	} else {
+		return(PSA_ERROR_NOT_SUPPORTED);
+	}
+
+	if (len != ((size_t)(csr_end - csr_start))) {
+		return(PSA_ERROR_SERVICE_FAILURE);
+	}
+	return PSA_SUCCESS;
+}
 
 static psa_status_t tfm_encode_random_bytes_to_uuid(uint8_t *random_bytes,
 						    size_t random_bytes_len,
@@ -324,7 +359,7 @@ static psa_status_t tfm_huk_cose_encode_sign
 /* Calculate the SHA256 hash value of the given CSR payload and sign the hash
  * value using the private key of the given key ID.
  */
-static psa_status_t tfm_huk_hash_sign(psa_msg_t *msg)
+static psa_status_t tfm_huk_hash_sign_csr(psa_msg_t *msg)
 {
 	psa_status_t status = PSA_SUCCESS;
 	psa_algorithm_t psa_alg_id = PSA_ALG_ECDSA(PSA_ALG_SHA_256);
@@ -341,35 +376,47 @@ static psa_status_t tfm_huk_hash_sign(psa_msg_t *msg)
 
 	psa_read(msg->handle, 0, &key_id, msg->in_size[0]);
 	psa_read(msg->handle, 1, csr_data, msg->in_size[1]);
+
+	/* Verify CSR ASN.1 tag and length of the payload in bytes to
+	 * avoid fake payload getting signed by this service
+	 */
+	status = tfm_huk_csr_verify(csr_data,
+				    msg->in_size[1],
+				    TFM_HUK_ASN1_CONSTRUCTED | TFM_HUK_ASN1_SEQUENCE);
+	if (status != PSA_SUCCESS) {
+		LOG_ERRFMT("tfm_huk_csr_verify failed with: %d \n", status);
+		goto err;
+	} else {
+		LOG_INFFMT("[CSR hash sign service] Verified ASN.1 tag and length of the payload\n");
+	}
+
 	status = psa_open_key(key_id, &key_handle);
 	if (status != PSA_SUCCESS) {
 		LOG_ERRFMT("psa_open_key returned: %d \n", status);
 	}
-	LOG_INFFMT("Key id: 0x%x\n\n", key_id);
+	LOG_INFFMT("[CSR hash sign service] Key id: 0x%x\n\n", key_id);
 	if (!PSA_ALG_IS_ECDSA(psa_alg_id)) {
-		status = PSA_ERROR_PROGRAMMER_ERROR;
+		status = PSA_ERROR_NOT_SUPPORTED;
 		goto err;
 	}
 	/* Calculate the SHA256 hash value of the CSR data using PSA crypto service */
-	if (psa_hash_setup(&hash_operation, hash_alg) != PSA_SUCCESS) {
-		status = PSA_ERROR_PROGRAMMER_ERROR;
+	status = psa_hash_setup(&hash_operation, hash_alg);
+	if (status != PSA_SUCCESS) {
 		goto err;
 	}
 
-	if (psa_hash_update(&hash_operation,
-			    csr_data,
-			    csr_data_size) !=
-	    PSA_SUCCESS) {
-		status = PSA_ERROR_PROGRAMMER_ERROR;
+	status = psa_hash_update(&hash_operation,
+				 csr_data,
+				 csr_data_size);
+	if (status != PSA_SUCCESS) {
 		goto err;
 	}
 
-	if (psa_hash_finish(&hash_operation,
-			    hash,
-			    sizeof(hash),
-			    &hash_len)
-	    != PSA_SUCCESS) {
-		status = PSA_ERROR_PROGRAMMER_ERROR;
+	status = psa_hash_finish(&hash_operation,
+				 hash,
+				 sizeof(hash),
+				 &hash_len);
+	if (status != PSA_SUCCESS) {
 		goto err;
 	}
 
@@ -506,7 +553,7 @@ psa_status_t tfm_huk_deriv_req_mgr_init(void)
 		} else if (signals & TFM_HUK_HASH_SIGN_SIGNAL) {
 			tfm_huk_deriv_signal_handle(
 				TFM_HUK_HASH_SIGN_SIGNAL,
-				tfm_huk_hash_sign);
+				tfm_huk_hash_sign_csr);
 		} else {
 			psa_panic();
 		}

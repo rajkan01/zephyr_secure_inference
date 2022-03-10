@@ -41,6 +41,7 @@ target_sources(app PRIVATE
   src/shell/cmd_keys.c
   src/shell/shell_common.c
   src/infer_mgmt.c
+  src/dhcpwait.c
   src/key_mgmt.c
   src/main.c
   src/tfm_partition_huk.c

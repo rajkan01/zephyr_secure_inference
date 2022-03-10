@@ -12,6 +12,7 @@
 #include "infer_mgmt.h"
 #include "util_app_cfg.h"
 #include "util_app_log.h"
+#include "dhcpwait.h"
 
 /** Declare a reference to the application logging interface. */
 LOG_MODULE_DECLARE(app, CONFIG_LOG_DEFAULT_LEVEL);
@@ -31,6 +32,10 @@ void main(void)
 	if (cfg_load_data(&cfg)) {
 		LOG_ERR("Error loading/generating app config data in PS.");
 	}
+
+	/* Initialize the system that waits for networking to come up.
+	 * */
+	init_dhcp_wait();
 
 	/* Initialise references to derived keys (required once before use!). */
 	km_keys_init();

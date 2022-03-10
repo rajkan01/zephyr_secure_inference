@@ -12,6 +12,7 @@
 #include <random/rand32.h>
 
 #include <azure.h>
+#include "dhcpwait.h"
 #include "test_certs.h"
 #include "azure-config.h"
 
@@ -34,13 +35,6 @@ static int nfds;
 static bool mqtt_connected;
 
 static struct k_work_delayable pub_message;
-#if defined(CONFIG_NET_DHCPV4)
-static struct k_work_delayable check_network_conn;
-
-#define L4_EVENT_MASK (NET_EVENT_L4_CONNECTED | NET_EVENT_L4_DISCONNECTED)
-
-static struct net_mgmt_event_callback l4_mgmt_cb;
-#endif
 
 #if defined(CONFIG_DNS_RESOLVER)
 static struct zsock_addrinfo hints;
@@ -439,97 +433,21 @@ static void connect_to_cloud_and_publish(void)
 {
 	int rc = -EINVAL;
 
-#if defined(CONFIG_NET_DHCPV4)
-	while (true) {
-		k_sem_take(&mqtt_start, K_FOREVER);
-#endif
 #if defined(CONFIG_DNS_RESOLVER)
-		rc = get_mqtt_broker_addrinfo();
-		if (rc) {
-			return;
-		}
+	rc = get_mqtt_broker_addrinfo();
+	if (rc) {
+		return;
+	}
 #endif
 #if 1
-		rc = try_to_connect(&client_ctx);
-		if (rc) {
-			return;
-		}
-
-		poll_mqtt();
-#endif
-#if defined(CONFIG_NET_DHCPV4)
+	rc = try_to_connect(&client_ctx);
+	if (rc) {
+		return;
 	}
+
+	poll_mqtt();
 #endif
 }
-
-/* DHCP tries to renew the address after interface is down and up.
- * If DHCPv4 address renewal is success, then it doesn't generate
- * any event. We have to monitor this way.
- * If DHCPv4 attempts exceeds maxinum number, it will delete iface
- * address and attempts for new request. In this case we can rely on
- * IPV4_ADDR_ADD event.
- */
-#if defined(CONFIG_NET_DHCPV4)
-static void check_network_connection(struct k_work *work)
-{
-	struct net_if *iface;
-
-	if (mqtt_connected) {
-		return;
-	}
-
-	iface = net_if_get_default();
-	if (!iface) {
-		goto end;
-	}
-
-	if (iface->config.dhcpv4.state == NET_DHCPV4_BOUND) {
-		LOG_ERR("Azure network interface is up");
-		k_sem_give(&mqtt_start);
-		return;
-	}
-
-	LOG_INF("waiting for DHCP to acquire addr");
-
-end:
-	k_work_reschedule(&check_network_conn, K_SECONDS(3));
-}
-#endif
-
-#if defined(CONFIG_NET_DHCPV4)
-/*
-static void abort_mqtt_connection(void)
-{
-	if (mqtt_connected) {
-		mqtt_connected = false;
-		mqtt_abort(&client_ctx);
-		k_work_cancel_delayable(&pub_message);
-	}
-}
-*/
-
-static void l4_event_handler(struct net_mgmt_event_callback *cb,
-			     uint32_t mgmt_event, struct net_if *iface)
-{
-	if ((mgmt_event & L4_EVENT_MASK) != mgmt_event) {
-		return;
-	}
-
-	if (mgmt_event == NET_EVENT_L4_CONNECTED) {
-		/* Wait for DHCP to be back in BOUND state */
-		k_work_reschedule(&check_network_conn, K_SECONDS(3));
-
-		return;
-	}
-
-	if (mgmt_event == NET_EVENT_L4_DISCONNECTED) {
-		// abort_mqtt_connection();
-		k_work_cancel_delayable(&check_network_conn);
-
-		return;
-	}
-}
-#endif
 
 #define PRIORITY 7
 
@@ -548,6 +466,7 @@ void azure_thread(void)
 
 	/* Wait for the network interface to be up. */
 	LOG_INF("Azure: waiting for network...");
+	await_dhcp();
 
 	rc = tls_init();
 	if (rc) {
@@ -556,14 +475,6 @@ void azure_thread(void)
 
 	/* Start a worker to publish messages when possible to do. */
 	k_work_init_delayable(&pub_message, publish_timeout);
-
-#if defined(CONFIG_NET_DHCPV4)
-	k_work_init_delayable(&check_network_conn, check_network_connection);
-
-	net_mgmt_init_event_callback(&l4_mgmt_cb, l4_event_handler,
-				     L4_EVENT_MASK);
-	net_mgmt_add_event_callback(&l4_mgmt_cb);
-#endif
 
 	/* Sleep until the "azure start" command is given. */
 	k_sem_take(&mqtt_command_start, K_FOREVER);

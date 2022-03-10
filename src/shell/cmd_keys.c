@@ -126,12 +126,12 @@ cmd_keys_csr(const struct shell *shell, size_t argc, char **argv)
 	km_key_context_t *ctx = km_context_get();
 
 	if ((argc == 1) || (strcmp(argv[1], "help") == 0)) {
-		shell_print(shell, "Generate a CSR for the given key id and format");
-		shell_print(shell, " $ %s %s <CSR format> <Key ID>",
+		shell_print(shell, "Generate a CSR for the given key id and format\n");
+		shell_print(shell, "  $ %s %s <Format> <Key ID>\n",
 			    argv[-1], argv[0]);
-		shell_print(shell, "  <CSR format>: 'PEM', 'JSON', 'PEM_JSON'");
-		shell_print(shell, "  <Key ID>:     run 'status' for key ID list\n");
-		shell_print(shell, "Ex.: $ %s %s PEM 5001", argv[-1], argv[0]);
+		shell_print(shell, "  <Format>   'PEM', 'JSON', 'PEM_JSON'");
+		shell_print(shell, "  <Key ID>   Run 'status' for key ID list\n");
+		shell_print(shell, "Example: $ %s %s PEM 5001", argv[-1], argv[0]);
 		return 0;
 	}
 

@@ -4,12 +4,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 #include <zephyr.h>
+#include <data/json.h>
+
 #include "util_app_log.h"
 #include "x509_csr_gen.h"
-
-
 #include "util_sformat.h"
-#include <data/json.h>
 
 /*
  * Declare a reference to the application logging interface.
@@ -411,13 +410,13 @@ psa_status_t x509_csr_generate(const km_key_idx_t key_idx,
 	 */
 	char csr_subject_name[80] = { 0 };
 
-	printf("\nX509 CSR generation for '%s' key:\n", ctx[key_idx].label);
+	printf("\nGenerating X.509 CSR for '%s' key:\n", ctx[key_idx].label);
 
 	/* CSR subject name: O=Linaro,CN= <UUID>,OU=<Key label> */
 	sprintf(csr_subject_name, "%s%s%s%s%s", X509_CSR_SUB_ORG,
 		",CN=", uuid, ",OU=", ctx[key_idx].label);
 
-	printf("csr_subject_name: %s\n", csr_subject_name);
+	printf("Subject: %s\n", csr_subject_name);
 
 	/* Initialize Mbed TLS structures. */
 	mbedtls_x509write_csr_init(&req);
@@ -471,7 +470,7 @@ psa_status_t x509_csr_json_encode(unsigned char *csr,
 				     csr_json_buff,
 				     csr_json_buff_len);
 	if (status != 0) {
-		LOG_ERR(" CSR encoding to JSON format failed with error 0x%04x",
+		LOG_ERR("CSR encoding to JSON format failed with error 0x%04x",
 			status);
 	}
 	return status;

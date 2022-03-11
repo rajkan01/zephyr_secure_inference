@@ -10,10 +10,14 @@
 
 #include "key_mgmt.h"
 #include "infer_mgmt.h"
+#include "util_app_cfg.h"
 #include "util_app_log.h"
 
 /** Declare a reference to the application logging interface. */
 LOG_MODULE_DECLARE(app, CONFIG_LOG_DEFAULT_LEVEL);
+
+/* Create an instance of the system config struct for the application. */
+static struct cfg_data cfg;
 
 void main(void)
 {
@@ -22,6 +26,11 @@ void main(void)
 
 	/* Initialise the logger subsys and dump the current buffer. */
 	log_init();
+
+	/* Load app config struct from protected storage (create if missing). */
+	if (cfg_load_data(&cfg)) {
+		LOG_ERR("Error loading/generating app config data in PS.");
+	}
 
 	/* Initialise references to derived keys (required once before use!). */
 	km_keys_init();

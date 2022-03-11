@@ -12,6 +12,9 @@
 /** EC public keys are 65 bytes. */
 #define KM_PUBLIC_KEY_SIZE (65)
 
+/** Maximum X.509 certificate size in bytes. */
+#define KM_CERT_MAX_SIZE (1024)
+
 /** Define the index for the key in the key context array. */
 typedef enum {
 	KEY_CLIENT_TLS = 0,             /**< TLS client key ID */
@@ -34,11 +37,23 @@ typedef enum {
 	KEY_ID_C_ENCRYPT        = 0x5003,       /**< COSE ENCRYPT key ID */
 } km_key_type_t;
 
+/** Key context. */
 typedef struct {
+	/** PSA Crypto key handle for the key in the secure domain. */
 	psa_key_id_t key_id;
+	/** Display name. */
 	char label[32];
+	/** Key status, indicate if a certificate is available. */
 	km_key_sts_t status;
 } km_key_context_t;
+
+/** X.509 certificate context. */
+typedef struct {
+	/** Size of the cert payload in bytes. 0 if NULL. */
+	size_t sz;
+	/** X.509 certificate payload. Max 1 KB. */
+	char cert[KM_CERT_MAX_SIZE];
+} km_x509_cert_t;
 
 /**
  * @brief Get the HUK-derived UUID from the secure partition.

@@ -38,6 +38,7 @@ target_sources(app PRIVATE
   src/main.c
   src/tfm_partition_huk.c
   src/tfm_partition_tflm.c
+  src/util_app_cfg.c
   src/util_app_log.c
   src/util_sformat.c
   src/x509_csr_gen.c

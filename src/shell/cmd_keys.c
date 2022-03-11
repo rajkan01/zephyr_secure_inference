@@ -154,63 +154,63 @@ cmd_keys_csr(const struct shell *shell, size_t argc, char **argv)
 		}
 	}
 
-	/* Validate the Key ID */
-	if (is_valid_csr_format) {
-		uint32_t rx_key_id = strtoul(argv[2], NULL, 16);
-		while (key_idx < KEY_COUNT) {
-			if (ctx[key_idx].key_id == rx_key_id) {
-				is_valid_key_id = true;
-				break;
-			}
-			key_idx++;
-		}
-	} else {
+	if (!is_valid_csr_format) {
 		return cmd_keys_shell_invalid_arg(shell, argv[1]);
 	}
 
+	/* Validate the Key ID */
+	uint32_t rx_key_id = strtoul(argv[2], NULL, 16);
+	while (key_idx < KEY_COUNT) {
+		if (ctx[key_idx].key_id == rx_key_id) {
+			is_valid_key_id = true;
+			break;
+		}
+		key_idx++;
+	}
+
 	/* Parse valid request. */
-	if (is_valid_key_id) {
-		static unsigned char csr[1024];
-		unsigned char uuid[37];
-
-		/* Get the UUID */
-		status = al_psa_status(km_get_uuid(uuid, sizeof(uuid)), __func__);
-		if (status != PSA_SUCCESS) {
-			return cmd_keys_shell_rc_code(shell,
-						      "Unable to read UUID",
-						      status);
-		}
-
-		/* Generate CSR PEM format using Mbed TLS */
-		status = x509_csr_generate(key_idx,
-					   csr,
-					   sizeof(csr),
-					   uuid,
-					   sizeof(uuid));
-		if (status != PSA_SUCCESS) {
-			return cmd_keys_shell_rc_code(shell,
-						      "Failed to generate CSR",
-						      status);
-		}
-		if (csr_fmt == CSR_PEM_FORMAT || csr_fmt == CSR_PEM_JSON_FORMAT) {
-			shell_print(shell, "%s", csr);
-		}
-		if (csr_fmt == CSR_JSON_FORMAT || csr_fmt == CSR_PEM_JSON_FORMAT) {
-			static unsigned char csr_json[1024] = { 0 };
-
-			/* CSR encode to JSON format */
-			status = x509_csr_json_encode(csr,
-						      csr_json,
-						      sizeof(csr_json));
-			if (status != 0) {
-				return cmd_keys_shell_rc_code(shell,
-							      "Failed to encode CSR",
-							      status);
-			}
-			shell_print(shell, "%s", csr_json);
-		}
-	} else {
+	if (!is_valid_key_id) {
 		return cmd_keys_shell_invalid_arg(shell, argv[2]);
+	}
+
+	static unsigned char csr[1024];
+	unsigned char uuid[37];
+
+	/* Get the UUID */
+	status = al_psa_status(km_get_uuid(uuid, sizeof(uuid)), __func__);
+	if (status != PSA_SUCCESS) {
+		return cmd_keys_shell_rc_code(shell,
+					      "Unable to read UUID",
+					      status);
+	}
+
+	/* Generate CSR PEM format using Mbed TLS */
+	status = x509_csr_generate(key_idx,
+				   csr,
+				   sizeof(csr),
+				   uuid,
+				   sizeof(uuid));
+	if (status != PSA_SUCCESS) {
+		return cmd_keys_shell_rc_code(shell,
+					      "Failed to generate CSR",
+					      status);
+	}
+	if (csr_fmt == CSR_PEM_FORMAT || csr_fmt == CSR_PEM_JSON_FORMAT) {
+		shell_print(shell, "%s", csr);
+	}
+	if (csr_fmt == CSR_JSON_FORMAT || csr_fmt == CSR_PEM_JSON_FORMAT) {
+		static unsigned char csr_json[1024] = { 0 };
+
+		/* CSR encode to JSON format */
+		status = x509_csr_json_encode(csr,
+					      csr_json,
+					      sizeof(csr_json));
+		if (status != 0) {
+			return cmd_keys_shell_rc_code(shell,
+						      "Failed to encode CSR",
+						      status);
+		}
+		shell_print(shell, "%s", csr_json);
 	}
 
 	return 0;

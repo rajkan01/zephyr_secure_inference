@@ -170,7 +170,7 @@ cmd_keys_csr(const struct shell *shell, size_t argc, char **argv)
 
 	/* Parse valid request. */
 	if (is_valid_key_id) {
-		unsigned char csr[1024];
+		static unsigned char csr[1024];
 		unsigned char uuid[37];
 
 		/* Get the UUID */
@@ -196,7 +196,7 @@ cmd_keys_csr(const struct shell *shell, size_t argc, char **argv)
 			shell_print(shell, "%s", csr);
 		}
 		if (csr_fmt == CSR_JSON_FORMAT || csr_fmt == CSR_PEM_JSON_FORMAT) {
-			unsigned char csr_json[1024] = { 0 };
+			static unsigned char csr_json[1024] = { 0 };
 
 			/* CSR encode to JSON format */
 			status = x509_csr_json_encode(csr,

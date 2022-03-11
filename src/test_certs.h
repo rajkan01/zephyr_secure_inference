@@ -28,4 +28,20 @@ static unsigned char device_key[] = {
 #include "device_key.txt"
 };
 
+/* There is a device-class key that we use for the initial
+ * provisioning.  This is the certificate for this.  This should be
+ * from the file certs/devclass_crt.txt, from linaroca's
+ * setup-devclass.sh script.
+ */
+static char devclass_crt[] =
+#include "devclass_crt.txt"
+;
+
+/* The private key for the above devclass.  We need this to be able to
+ * authenticate with the CA server.
+ */
+static unsigned char devclass_key[] = {
+#include "devclass_key.txt"
+};
+
 #endif /* not __TEST_CERTS_H__ */

@@ -113,3 +113,30 @@ Sample Output
       00000050 3E A5 A2 48 9D                                  >..H.
 
       Model: Sine of 1 deg is: 0.016944       C Mathlib: Sine of 1 deg is: 0.017452   Deviation: 0.000508
+
+Common Problems
+***************
+
+Why are my derived keys values and UUID always the same?
+=========================================================
+
+TF-M defines a hard-coded HUK value for the mps2 and mps3 platforms, meaning
+that every instance of this sample run on these platforms will derive the same
+key values.
+
+This project defines an optional ``HUK_DERIV_SEED_EXTRA`` value in the secure
+parition that can be used to provide an additional label component for key
+derivation, enabling key diversity when testing on emulated platforms.
+    
+A KConfig wrapper for this variable is also added via the
+``DCONFIG_SECURE_INFER_HUK_DERIV_SEED_EXTRA`` config flag to facilitate passing
+the seed from Zephyr's build system up to the TF-M build system.
+
+The seed value must be less than 16 characters in size!
+
+It can be defined at compile time with west via:
+
+::
+
+   $ west build -p -b mps2_an521_ns -t run -- \
+     -DCONFIG_SECURE_INFER_HUK_DERIV_SEED_EXTRA=\"123456789012345\"

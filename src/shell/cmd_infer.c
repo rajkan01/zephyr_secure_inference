@@ -60,9 +60,8 @@ cmd_infer_get_val(const struct shell *shell, size_t argc, char **argv)
 	uint8_t key_ctx_idx = KEY_C_SIGN;
 	uint8_t pubkey[KM_PUBLIC_KEY_SIZE] = { 0 };
 	size_t pubkey_len = sizeof(pubkey);
-	uint8_t infval_enc_buf[256];
+	static uint8_t infval_enc_buf[256];
 	size_t infval_enc_buf_len = 0;
-	km_key_context_t *ctx = km_context_get();
 	infer_ctx_t *m_ctx = infer_context_get();
 	_Bool is_valid_model = false;
 
@@ -107,7 +106,7 @@ cmd_infer_get_val(const struct shell *shell, size_t argc, char **argv)
 			shell_print(shell, "\n");
 		}
 		status = km_get_pubkey(pubkey, pubkey_len,
-				       ctx[key_ctx_idx]);
+				       key_ctx_idx);
 
 		if (status != 0) {
 			shell_print(shell, "Failed to get the public key");

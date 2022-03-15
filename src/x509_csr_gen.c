@@ -55,101 +55,6 @@ int x509_csr_hash_calc(const uint8_t *buf,
 }
 #endif
 
-int x509_csr_write_pubkey(unsigned char **p, unsigned char *start,
-			  const km_key_idx_t key_idx)
-{
-	km_key_context_t *ctx = km_context_get();
-	size_t buffer_size = (size_t)(*p - start);
-
-	if (p == NULL || *p == NULL || start == NULL) {
-		return MBEDTLS_ERR_PK_BAD_INPUT_DATA;
-	}
-
-	if (*p < start || buffer_size < KM_PUBLIC_KEY_SIZE) {
-		return(MBEDTLS_ERR_PK_BAD_INPUT_DATA);
-	}
-
-	if (km_get_pubkey(start, KM_PUBLIC_KEY_SIZE,
-			  ctx[key_idx]) != 0) {
-		return MBEDTLS_ERR_PK_BAD_INPUT_DATA;
-	} else {
-		*p -= KM_PUBLIC_KEY_SIZE;
-		memmove(*p, start, KM_PUBLIC_KEY_SIZE);
-	}
-
-	return((int) KM_PUBLIC_KEY_SIZE);
-}
-
-int x509_csr_write_pubkey_der(const km_key_idx_t key_idx,
-			      unsigned char *buf,
-			      size_t size)
-{
-	int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
-	unsigned char *c;
-	size_t len = 0, par_len = 0,
-	       oid_len = MBEDTLS_OID_SIZE(MBEDTLS_OID_EC_GRP_SECP256R1);
-	mbedtls_pk_type_t pk_type = MBEDTLS_PK_ECKEY;
-	const char *oid = MBEDTLS_OID_EC_GRP_SECP256R1;
-
-	if (buf == NULL) {
-		return(MBEDTLS_ERR_PK_BAD_INPUT_DATA);
-	}
-
-	if (size == 0) {
-		return(MBEDTLS_ERR_ASN1_BUF_TOO_SMALL);
-	}
-
-	c = buf + size;
-
-	MBEDTLS_ASN1_CHK_ADD(len, x509_csr_write_pubkey(&c, buf, key_idx));
-
-	if (c - buf < 1) {
-		return(MBEDTLS_ERR_ASN1_BUF_TOO_SMALL);
-	}
-
-	/*
-	 *  SubjectPublicKeyInfo  ::=  SEQUENCE  {
-	 *       algorithm            AlgorithmIdentifier,
-	 *       subjectPublicKey     BIT STRING }
-	 */
-	*--c = 0;
-	len += 1;
-
-	MBEDTLS_ASN1_CHK_ADD(len, mbedtls_asn1_write_len(&c, buf, len));
-	MBEDTLS_ASN1_CHK_ADD(len, mbedtls_asn1_write_tag(&c, buf, MBEDTLS_ASN1_BIT_STRING));
-
-	/* Write EC algorithm parameters; that's akin
-	 * to pk_write_ec_param() above. */
-	MBEDTLS_ASN1_CHK_ADD(par_len,
-			     mbedtls_asn1_write_oid(&c,
-						    buf,
-						    oid,
-						    oid_len));
-
-
-	if ((ret = mbedtls_oid_get_oid_by_pk_alg(pk_type,
-						 &oid,
-						 &oid_len)) != 0) {
-		return(ret);
-	}
-
-	MBEDTLS_ASN1_CHK_ADD(len,
-			     mbedtls_asn1_write_algorithm_identifier(&c,
-								     buf,
-								     oid,
-								     oid_len,
-								     par_len));
-
-	MBEDTLS_ASN1_CHK_ADD(len, mbedtls_asn1_write_len(&c, buf, len));
-	MBEDTLS_ASN1_CHK_ADD(len,
-			     mbedtls_asn1_write_tag(&c,
-						    buf,
-						    MBEDTLS_ASN1_CONSTRUCTED |
-						    MBEDTLS_ASN1_SEQUENCE));
-
-	return((int) len);
-}
-
 static int x509_csr_write_mpibuf(unsigned char **p, unsigned char *start,
 				 size_t n_len)
 {
@@ -207,7 +112,7 @@ static int x509_csr_write_sign(km_key_idx_t key_idx,
 	unsigned char *p = sig + sig_size;
 	int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
 	size_t len = 0;
-	km_key_context_t *ctx = km_context_get();
+	km_key_context_t *ctx = km_get_context();
 	psa_status_t status;
 
 	/* Send the CSR payload to HUK hash sign tfm service which calculate hash
@@ -251,7 +156,7 @@ static int x509_csr_gen_der(mbedtls_x509write_csr *ctx,
 	const char *sig_oid;
 	size_t sig_oid_len = 0;
 	unsigned char *c, *c2;
-	size_t pub_len = 0, sig_and_oid_len = 0, sig_len;
+	size_t public_key_len = 0, sig_and_oid_len = 0, sig_len;
 	size_t len = 0;
 	mbedtls_pk_type_t pk_alg = MBEDTLS_PK_ECDSA;
 	size_t sig_size = MBEDTLS_PK_SIGNATURE_MAX_SIZE;
@@ -269,12 +174,15 @@ static int x509_csr_gen_der(mbedtls_x509write_csr *ctx,
 				     MBEDTLS_ASN1_CONSTRUCTED |
 				     MBEDTLS_ASN1_CONTEXT_SPECIFIC));
 
-	MBEDTLS_ASN1_CHK_ADD(pub_len,
-			     x509_csr_write_pubkey_der(key_idx,
-						       buf,
-						       c - buf));
-	c -= pub_len;
-	len += pub_len;
+	if ((ret = km_enc_pubkey_der(key_idx,
+				     buf,
+				     c - buf,
+				     &public_key_len)) != 0) {
+		return ret;
+	}
+
+	c -= public_key_len;
+	len += public_key_len;
 
 	/*
 	 *  Subject  ::=  Name
@@ -402,7 +310,7 @@ psa_status_t x509_csr_generate(const km_key_idx_t key_idx,
 			       size_t uuid_size)
 {
 	psa_status_t status;
-	km_key_context_t *ctx = km_context_get();
+	km_key_context_t *ctx = km_get_context();
 	mbedtls_x509write_csr req;
 
 	/* length of CSR subject name is calculated as

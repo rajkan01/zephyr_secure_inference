@@ -101,7 +101,7 @@ psa_status_t infer_get_cose_output(km_key_idx_t key_idx,
 	psa_status_t status;
 
 	status = al_psa_status(
-		psa_si_tflm_hello(&((km_context_get()[key_idx]).key_id),
+		psa_si_tflm_hello(&((km_get_context()[key_idx]).key_id),
 				  &input,
 				  sizeof(input),
 				  infval_enc_buf,

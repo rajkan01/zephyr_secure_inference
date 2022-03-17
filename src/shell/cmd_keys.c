@@ -5,7 +5,7 @@
  */
 
 #include <stdlib.h> /*stroutl */
-#include <shell/shell.h>
+#include <shell_common.h>
 #include <logging/log.h>
 
 #include "tfm_partition_huk.h"
@@ -19,35 +19,11 @@ LOG_MODULE_DECLARE(app, CONFIG_LOG_DEFAULT_LEVEL);
 #if CONFIG_SECURE_INFER_SHELL_CMD_SUPPORT
 
 static int
-cmd_keys_shell_invalid_arg(const struct shell *shell, char *arg_name)
-{
-	shell_print(shell, "Error: invalid argument \"%s\"\n", arg_name);
-
-	return -EINVAL;
-}
-
-static int
-cmd_keys_shell_missing_arg(const struct shell *shell, char *arg_name)
-{
-	shell_print(shell, "Error: missing argument: \"%s\"\n", arg_name);
-
-	return -EINVAL;
-}
-
-static int
-cmd_keys_shell_rc_code(const struct shell *shell, char *error, int rc)
-{
-	shell_print(shell, "Error: %s: \"%d\"\n", error, rc);
-
-	return -EINVAL;
-}
-
-static int
 cmd_keys_key_stat(const struct shell *shell, size_t argc, char **argv)
 {
 	char *row1[] = { "Key", "Key ID", "Status" };
 	char *k_sts[] = { "X.509 certificate gen", "Key generated", "Unknown" };
-	km_key_context_t *ctx = km_context_get();
+	km_key_context_t *ctx = km_get_context();
 
 	shell_print(shell, "| %-20s| %-12s | %-22s |", row1[0], row1[1],
 		    row1[2]);
@@ -59,59 +35,75 @@ cmd_keys_key_stat(const struct shell *shell, size_t argc, char **argv)
 	return 0;
 }
 
+/* Validate the Key ID and get the key context index */
+static _Bool cmd_keys_get_key_idx(uint32_t key_id, uint8_t *key_idx)
+{
+	km_key_context_t *ctx = km_get_context();
+
+	for (int i = 0; i < KEY_COUNT; i++) {
+		if (ctx[i].key_id == key_id) {
+			*key_idx = i;
+			return true;
+		}
+	}
+	return false;
+}
+
 static int
 cmd_keys_pubkey(const struct shell *shell, size_t argc, char **argv)
 {
-	uint8_t public_key[KM_PUBLIC_KEY_SIZE] = { 0 };
-	size_t public_key_len = sizeof(public_key);
+	unsigned char public_key[512] = { 0 };
+	size_t public_key_len = 0;
 	uint8_t key_idx_start = 0, key_idx_end = KEY_COUNT;
-	_Bool valid_key_id = false;
 	psa_status_t status;
-	km_key_context_t *ctx = km_context_get();
+	km_key_context_t *ctx = km_get_context();
+
+	if ((argc == 2) && (strcmp(argv[1], "help") == 0)) {
+		shell_print(shell, "Display public key(s) in PEM format\n");
+		shell_print(shell, "  $ %s %s <Key ID>\n", argv[-1], argv[0]);
+		shell_print(shell,
+			    "  [Key ID]   Optional: Key ID ('status' for list)\n");
+		shell_print(shell, "Example: $ %s %s", argv[-1], argv[0]);
+		shell_print(shell,
+			    "         $ %s %s 5001 (List public key of 5001 key ID)",
+			    argv[-1], argv[0]);
+		return 0;
+	}
+
+	/* Too many arguments. */
+	if (argc > 2) {
+		return cmd_keys_shell_too_many_arg(shell, argv[2]);
+	}
 
 	if (argc > 1) {
 		uint32_t rx_key_id = strtoul(argv[1], NULL, 16);
-		while (key_idx_start < key_idx_end) {
-			if (ctx[key_idx_start].key_id == rx_key_id) {
-				valid_key_id = true;
-				break;
-			}
-			key_idx_start++;
-		}
-		if (valid_key_id) {
+		if (cmd_keys_get_key_idx(rx_key_id, &key_idx_start)) {
 			key_idx_end = key_idx_start + 1;
 		} else {
-			goto err;
+			return cmd_keys_shell_invalid_arg(shell, argv[1]);
 		}
 	}
 
 	while (key_idx_start < key_idx_end) {
+		public_key_len = 0;
+		status = km_enc_pubkey_pem(key_idx_start,
+					   public_key,
+					   sizeof(public_key),
+					   &public_key_len);
 
-		status = km_get_pubkey(public_key, public_key_len,
-				       ctx[key_idx_start]);
 		if (status != 0) {
-			shell_print(shell, "Error: Failed to get the public key");
-			return -EINVAL;
+			return cmd_keys_shell_rc_code(shell,
+						      "Failed to get the public key",
+						      status);
 		}
-		shell_print(shell, "Key label: %s", ctx[key_idx_start].label);
-		shell_print(shell, "Key id: 0x%x", ctx[key_idx_start].key_id);
-		shell_print(shell, "Public key:");
-		for (int i = 0; i < public_key_len; i++) {
-			if (i > 0 && !(i % 16)) {
-				shell_print(shell, "");
-			}
 
-			shell_fprintf(shell, SHELL_NORMAL, "%02x ",
-				      public_key[i] & 0xFF);
-		}
-		shell_print(shell, "\n");
+		shell_print(shell, "Key ID: 0x%x", ctx[key_idx_start].key_id);
+		shell_print(shell, "%s Public key:", ctx[key_idx_start].label);
+		shell_print(shell, "%s", public_key);
 		key_idx_start++;
 	}
 
 	return 0;
-err:
-	shell_print(shell, "Error: invalid key id argument \"%s\"\n", argv[1]);
-	return -EINVAL;
 }
 
 static int
@@ -120,10 +112,8 @@ cmd_keys_csr(const struct shell *shell, size_t argc, char **argv)
 	uint8_t key_idx = 0;
 	char *csr_supported_format[] = { "PEM", "JSON", "PEM_JSON", "Unknown" };
 	x509_csr_fmt_t csr_fmt = CSR_NONE;
-	_Bool is_valid_key_id = false,
-	      is_valid_csr_format = false;
+	_Bool is_valid_csr_format = false;
 	psa_status_t status;
-	km_key_context_t *ctx = km_context_get();
 
 	if ((argc == 1) || (strcmp(argv[1], "help") == 0)) {
 		shell_print(shell, "Generate a CSR for the given key id and format\n");
@@ -142,7 +132,7 @@ cmd_keys_csr(const struct shell *shell, size_t argc, char **argv)
 
 	/* Too many arguments. */
 	if (argc > 3) {
-		return cmd_keys_shell_invalid_arg(shell, argv[3]);
+		return cmd_keys_shell_too_many_arg(shell, argv[3]);
 	}
 
 	/* Validate the display format */
@@ -158,18 +148,10 @@ cmd_keys_csr(const struct shell *shell, size_t argc, char **argv)
 		return cmd_keys_shell_invalid_arg(shell, argv[1]);
 	}
 
-	/* Validate the Key ID */
 	uint32_t rx_key_id = strtoul(argv[2], NULL, 16);
-	while (key_idx < KEY_COUNT) {
-		if (ctx[key_idx].key_id == rx_key_id) {
-			is_valid_key_id = true;
-			break;
-		}
-		key_idx++;
-	}
 
 	/* Parse valid request. */
-	if (!is_valid_key_id) {
+	if (!cmd_keys_get_key_idx(rx_key_id, &key_idx)) {
 		return cmd_keys_shell_invalid_arg(shell, argv[2]);
 	}
 

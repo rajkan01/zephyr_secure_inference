@@ -9,6 +9,9 @@
 
 #include "psa/crypto_types.h"
 
+#define EC_PUBLIC_PEM_BEGIN          "-----BEGIN PUBLIC KEY-----\n"
+#define EC_PUBLIC_PEM_END             "-----END PUBLIC KEY-----\n"
+
 /** EC public keys are 65 bytes. */
 #define KM_PUBLIC_KEY_SIZE (65)
 
@@ -70,13 +73,13 @@ psa_status_t km_get_uuid(unsigned char *uuid, size_t uuid_size);
  *
  * @param public_key      Pointer to the buffer to store the public key.
  * @param public_key_len  Public key buffer length.
- * @param ctx             Key context
+ * @param key_idx         Key context index.
  *
  * @return psa_status_t
  */
 psa_status_t km_get_pubkey(uint8_t *public_key,
 			   size_t public_key_len,
-			   km_key_context_t ctx);
+			   const km_key_idx_t key_idx);
 
 /**
  * @brief Gets a reference to the km_key_context_t array in memory. The data this
@@ -85,7 +88,7 @@ psa_status_t km_get_pubkey(uint8_t *public_key,
  *
  * @return Returns a pointer to the key context array
  */
-km_key_context_t *km_context_get();
+km_key_context_t *km_get_context();
 
 /**
  * @brief Initialise the key context with the EC keys derived from the HUK at
@@ -95,4 +98,33 @@ km_key_context_t *km_context_get();
  */
 void km_keys_init(void);
 
+/**
+ * @brief Encode the public key to PEM format.
+ *
+ * @param key_idx      Key context index.
+ * @param public_key   Pointer to the buffer to store public key in PEM format.
+ * @param public_key_size The size in bytes of @p public_key buffer.
+ * @param public_key_len  The size in bytes of encoded length.
+ *
+ * @return psa_status_t
+ */
+psa_status_t km_enc_pubkey_pem(const km_key_idx_t key_idx,
+			       uint8_t *public_key,
+			       size_t public_key_size,
+			       size_t *public_key_len);
+
+/**
+ * @brief Encode the public key to DER format.
+ *
+ * @param key_idx      Key context index.
+ * @param public_key   Pointer to the buffer to store public key in DER format.
+ * @param public_key_size The size in bytes of @p public_key buffer.
+ * @param public_key_len  The size in bytes of encoded length.
+ *
+ * @return psa_status_t
+ */
+psa_status_t km_enc_pubkey_der(const km_key_idx_t key_idx,
+			       unsigned char *public_key,
+			       size_t public_key_size,
+			       size_t *public_key_len);
 #endif /* KEY_MGMT_H */

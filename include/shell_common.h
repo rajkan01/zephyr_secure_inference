@@ -19,7 +19,7 @@
  * @return -EINVAL
  */
 int
-cmd_keys_shell_invalid_arg(const struct shell *shell, char *arg_name);
+shell_com_invalid_arg(const struct shell *shell, char *arg_name);
 
 /**
  * @brief Helper utility function to print the too many arguments error
@@ -31,7 +31,7 @@ cmd_keys_shell_invalid_arg(const struct shell *shell, char *arg_name);
  * @return -EINVAL
  */
 int
-cmd_keys_shell_too_many_arg(const struct shell *shell, char *arg_name);
+shell_com_too_many_arg(const struct shell *shell, char *arg_name);
 
 /**
  * @brief Helper utility function to print the missing argument error
@@ -43,7 +43,7 @@ cmd_keys_shell_too_many_arg(const struct shell *shell, char *arg_name);
  * @return -EINVAL
  */
 int
-cmd_keys_shell_missing_arg(const struct shell *shell, char *arg_name);
+shell_com_missing_arg(const struct shell *shell, char *arg_name);
 
 /**
  * @brief Helper utility function to print the error and arg_name and return
@@ -57,6 +57,32 @@ cmd_keys_shell_missing_arg(const struct shell *shell, char *arg_name);
  * @return -EINVAL
  */
 int
-cmd_keys_shell_rc_code(const struct shell *shell, char *error, int rc);
+shell_com_rc_code(const struct shell *shell, char *error, int rc);
+
+/**
+ * @brief Helper utility function to convert string to float.
+ *
+ * @param       str     Pointer to a stored buffer of string.
+ * @param       value   Value to store the converted string to float value.
+ *
+ * @return true  Succesful conversion
+ *         false Unsuccessful conversion
+ */
+_Bool shell_com_str_to_float(char *str, float *value);
+
+/**
+ * @brief Helper utility function to convert string to float, validate the
+ * converted value in the range between min to max.
+ *
+ * @param       str     Pointer to a stored buffer of string.
+ * @param       value   Value to store the converted string to float value.
+ * @param       min     Minimum value.
+ * @param       max     Maximum value.
+ *
+ * @return true  Succesful conversion
+ *         false Unsuccessful conversion or invalid range
+ */
+_Bool
+shell_com_str_to_float_min_max(char *str, float *value, float min, float max);
 
 #endif /* SHELL_COMMON_H */

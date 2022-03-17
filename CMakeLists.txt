@@ -33,6 +33,7 @@ target_sources(app PRIVATE
   src/shell/cmd_infer.c
   src/shell/cmd_info.c
   src/shell/cmd_keys.c
+  src/shell/shell_common.c
   src/infer_mgmt.c
   src/key_mgmt.c
   src/main.c

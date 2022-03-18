@@ -32,3 +32,11 @@ static const unsigned char raw_device_key[] = {
 };
 const unsigned char *device_key = raw_device_key;
 const size_t device_key_len = sizeof(raw_device_key);
+
+/* The setup-ca.sh script in the linarca repo should create this file.
+ */
+static const unsigned char raw_bootstrap_crt = {
+#include "ca_crt.txt"
+};
+const unsigned char *bootstrap_crt = raw_bootstrap_crt;
+const size_t bootstrap_crt_len = sizeof(raw_bootstrap_crt);

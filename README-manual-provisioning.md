@@ -33,3 +33,9 @@ xxd -i < .../linaroca/certs/<UUID>.key > src/device_key.txt
 ```
 
 These files should not be checked in.
+
+## Including the bootstrap CA certificate
+
+Bring in the bootstrap CA certificate.  The LinaroCA setup-ca.sh
+script should have extracted a file `certs/ca_crt.txt`, which can be
+placed in the `src` directory.

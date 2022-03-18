@@ -9,6 +9,7 @@
 
 #include <sys/types.h>
 
+/* The root of trust for the MQTT server. */
 extern const unsigned char *ca_certificate;
 extern const size_t ca_certificate_len;
 
@@ -26,5 +27,10 @@ extern const size_t device_crt_len;
  */
 extern const unsigned char *device_key;
 extern const size_t device_key_len;
+
+/* The root of trust for the bootstrap service.
+ */
+extern const unsigned char *bootstrap_crt;
+extern const size_t bootstrap_crt_len;
 
 #endif /* not __TEST_CERTS_H__ */

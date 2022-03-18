@@ -72,7 +72,7 @@ cmd_keys_pubkey(const struct shell *shell, size_t argc, char **argv)
 
 	/* Too many arguments. */
 	if (argc > 2) {
-		return cmd_keys_shell_too_many_arg(shell, argv[2]);
+		return shell_com_too_many_arg(shell, argv[2]);
 	}
 
 	if (argc > 1) {
@@ -80,7 +80,7 @@ cmd_keys_pubkey(const struct shell *shell, size_t argc, char **argv)
 		if (cmd_keys_get_key_idx(rx_key_id, &key_idx_start)) {
 			key_idx_end = key_idx_start + 1;
 		} else {
-			return cmd_keys_shell_invalid_arg(shell, argv[1]);
+			return shell_com_invalid_arg(shell, argv[1]);
 		}
 	}
 
@@ -92,9 +92,9 @@ cmd_keys_pubkey(const struct shell *shell, size_t argc, char **argv)
 					   &public_key_len);
 
 		if (status != 0) {
-			return cmd_keys_shell_rc_code(shell,
-						      "Failed to get the public key",
-						      status);
+			return shell_com_rc_code(shell,
+						 "Failed to get the public key",
+						 status);
 		}
 
 		shell_print(shell, "Key ID: 0x%x", ctx[key_idx_start].key_id);
@@ -127,12 +127,12 @@ cmd_keys_csr(const struct shell *shell, size_t argc, char **argv)
 
 	/* Missing argument. */
 	if (argc == 2) {
-		return cmd_keys_shell_missing_arg(shell, "Key ID");
+		return shell_com_missing_arg(shell, "Key ID");
 	}
 
 	/* Too many arguments. */
 	if (argc > 3) {
-		return cmd_keys_shell_too_many_arg(shell, argv[3]);
+		return shell_com_too_many_arg(shell, argv[3]);
 	}
 
 	/* Validate the display format */
@@ -145,14 +145,14 @@ cmd_keys_csr(const struct shell *shell, size_t argc, char **argv)
 	}
 
 	if (!is_valid_csr_format) {
-		return cmd_keys_shell_invalid_arg(shell, argv[1]);
+		return shell_com_invalid_arg(shell, argv[1]);
 	}
 
 	uint32_t rx_key_id = strtoul(argv[2], NULL, 16);
 
 	/* Parse valid request. */
 	if (!cmd_keys_get_key_idx(rx_key_id, &key_idx)) {
-		return cmd_keys_shell_invalid_arg(shell, argv[2]);
+		return shell_com_invalid_arg(shell, argv[2]);
 	}
 
 	static unsigned char csr[1024];
@@ -161,9 +161,9 @@ cmd_keys_csr(const struct shell *shell, size_t argc, char **argv)
 	/* Get the UUID */
 	status = al_psa_status(km_get_uuid(uuid, sizeof(uuid)), __func__);
 	if (status != PSA_SUCCESS) {
-		return cmd_keys_shell_rc_code(shell,
-					      "Unable to read UUID",
-					      status);
+		return shell_com_rc_code(shell,
+					 "Unable to read UUID",
+					 status);
 	}
 
 	/* Generate CSR PEM format using Mbed TLS */
@@ -173,9 +173,9 @@ cmd_keys_csr(const struct shell *shell, size_t argc, char **argv)
 				   uuid,
 				   sizeof(uuid));
 	if (status != PSA_SUCCESS) {
-		return cmd_keys_shell_rc_code(shell,
-					      "Failed to generate CSR",
-					      status);
+		return shell_com_rc_code(shell,
+					 "Failed to generate CSR",
+					 status);
 	}
 	if (csr_fmt == CSR_PEM_FORMAT || csr_fmt == CSR_PEM_JSON_FORMAT) {
 		shell_print(shell, "%s", csr);
@@ -188,9 +188,9 @@ cmd_keys_csr(const struct shell *shell, size_t argc, char **argv)
 					      csr_json,
 					      sizeof(csr_json));
 		if (status != 0) {
-			return cmd_keys_shell_rc_code(shell,
-						      "Failed to encode CSR",
-						      status);
+			return shell_com_rc_code(shell,
+						 "Failed to encode CSR",
+						 status);
 		}
 		shell_print(shell, "%s", csr_json);
 	}

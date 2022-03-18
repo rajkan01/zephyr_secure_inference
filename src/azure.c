@@ -71,7 +71,7 @@ static int tls_init(void)
 	int err;
 
 	err = tls_credential_add(APP_CA_CERT_TAG, TLS_CREDENTIAL_CA_CERTIFICATE,
-				 ca_certificate, sizeof(ca_certificate));
+				 ca_certificate, ca_certificate_len);
 	if (err < 0) {
 		LOG_ERR("Failed to register public certificate: %d", err);
 		return err;
@@ -79,14 +79,14 @@ static int tls_init(void)
 
 #if 1
 	err = tls_credential_add(APP_CA_CERT_TAG, TLS_CREDENTIAL_SERVER_CERTIFICATE,
-				 device_crt, sizeof(device_crt));
+				 device_crt, device_crt_len);
 	if (err < 0) {
 		LOG_ERR("Failed to register device public certificate: %d", err);
 		return err;
 	}
 
 	err = tls_credential_add(APP_CA_CERT_TAG, TLS_CREDENTIAL_PRIVATE_KEY,
-				 device_key, sizeof(device_key));
+				 device_key, device_key_len);
 	if (err < 0) {
 		LOG_ERR("Failed to register device private key: %d", err);
 		return err;

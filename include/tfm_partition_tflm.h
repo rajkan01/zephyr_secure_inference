@@ -8,6 +8,7 @@
 
 #include "tfm_api.h"
 #include "psa/crypto.h"
+#include "infer_mgmt.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,9 +30,11 @@ extern "C" {
  * \brief Run secure inference to manipulate the sine value of input and
  *        encode and sign sine value using COSE CBOR
  *
- * \param[in]   key_id              EC key id which is used to access EC key
- *                                  to sign the payload after inference run
- * \param[in]   input               Angle in degrees
+ * \param[in]   infer_config       Inference config holds the encode format and
+ *                                 model index which is used in secure
+ *                                 inference service to find the model to use.
+ * \param[in]   input              The input parameter.
+ * \param[in]   input_data_size    The input parameter size in bytes.
  * \param[out]  encoded_buf         Buffer to which encoded data
  *                                  is written into
  * \param[in]   encoded_buf_size    Size of encoded_buf in bytes
@@ -39,11 +42,11 @@ extern "C" {
  *
  * \return Returns error code as specified in \ref psa_status_t
  */
-psa_status_t psa_si_tflm_hello(psa_key_id_t *key_id,
-			       const float *input,
-			       size_t input_length,
+psa_status_t psa_si_tflm_hello(infer_config_t *infer_config,
+			       void *input,
+			       size_t input_data_size,
 			       uint8_t *encoded_buf,
-			       size_t encoded_buf_size,
+			       size_t infval_enc_buf_size,
 			       size_t *encoded_buf_len);
 
 #ifdef __cplusplus

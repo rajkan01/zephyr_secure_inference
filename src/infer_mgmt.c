@@ -92,18 +92,23 @@ err:
 	return status;
 }
 
-psa_status_t infer_get_cose_output(km_key_idx_t key_idx,
-				   float input,
+psa_status_t infer_get_cose_output(infer_enc_t enc_format,
+				   infer_model_idx_t model_idx,
+				   void  *input,
+				   size_t input_size,
 				   uint8_t *infval_enc_buf,
 				   size_t infval_enc_buf_size,
 				   size_t *infval_enc_buf_len)
 {
 	psa_status_t status;
+	infer_config_t infer_config;
 
+	infer_config.enc_format = enc_format;
+	infer_config.model_idx = model_idx;
 	status = al_psa_status(
-		psa_si_tflm_hello(&((km_get_context()[key_idx]).key_id),
-				  &input,
-				  sizeof(input),
+		psa_si_tflm_hello(&infer_config,
+				  input,
+				  input_size,
 				  infval_enc_buf,
 				  infval_enc_buf_size,
 				  infval_enc_buf_len),

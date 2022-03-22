@@ -33,22 +33,22 @@
 //      return status;
 // }
 
-psa_status_t psa_si_tflm_hello(psa_key_id_t *key_id,
-			       const float *input,
-			       size_t input_length,
+psa_status_t psa_si_tflm_hello(infer_config_t *infer_config,
+			       void *input,
+			       size_t input_data_size,
 			       uint8_t *encoded_buf,
-			       size_t encoded_buf_size,
+			       size_t infval_enc_buf_size,
 			       size_t *encoded_buf_len)
 {
 	psa_status_t status;
 	psa_handle_t handle;
 	psa_invec in_vec[] = {
-		{ .base = key_id, .len = sizeof(psa_key_id_t) },
-		{ .base = input, .len = input_length },
+		{ .base = input, .len =  input_data_size },
+		{ .base = infer_config, .len = sizeof(infer_config_t) },
 	};
 
 	psa_outvec out_vec[] = {
-		{ .base = encoded_buf, .len = encoded_buf_size },
+		{ .base = encoded_buf, .len = infval_enc_buf_size },
 		{ .base = encoded_buf_len, .len = sizeof(size_t) },
 	};
 

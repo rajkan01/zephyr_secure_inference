@@ -7,15 +7,15 @@
 #include "tfm_huk_deriv_srv_api.h"
 
 psa_status_t psa_huk_deriv_ec_key(psa_key_id_t *ec_key_id,
-				  const uint8_t *label,
-				  size_t label_size,
+				  const uint8_t *seed,
+				  size_t seed_size,
 				  psa_key_usage_t *key_usage_flag)
 {
 	psa_status_t status;
 	psa_handle_t handle;
 
 	psa_invec in_vec[] = {
-		{ .base = label, .len = label_size },
+		{ .base = seed, .len = seed_size },
 		{ .base = ec_key_id, .len = sizeof(psa_key_id_t) },
 		{ .base = key_usage_flag, .len = sizeof(psa_key_usage_t) },
 	};
@@ -39,8 +39,9 @@ psa_status_t psa_huk_deriv_ec_key(psa_key_id_t *ec_key_id,
 }
 
 psa_status_t psa_huk_cose_sign(float *inf_value,
-			       cose_cbor_config_t *cfg,
+			       huk_enc_format_t enc_format,
 			       uint8_t *encoded_buf,
+			       size_t encoded_buf_size,
 			       size_t *encoded_buf_len)
 {
 	psa_status_t status;
@@ -48,11 +49,11 @@ psa_status_t psa_huk_cose_sign(float *inf_value,
 
 	psa_invec in_vec[] = {
 		{ .base = inf_value, .len = sizeof(float) },
-		{ .base = cfg, .len = sizeof(cose_cbor_config_t) },
+		{ .base = &enc_format, .len = sizeof(huk_enc_format_t) },
 	};
 
 	psa_outvec out_vec[] = {
-		{ .base = encoded_buf, .len = cfg->max_buf_size },
+		{ .base = encoded_buf, .len = encoded_buf_size },
 		{ .base = encoded_buf_len, .len = sizeof(size_t) },
 	};
 

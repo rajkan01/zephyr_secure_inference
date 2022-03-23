@@ -299,6 +299,7 @@ static void tfm_tflm_gen_ec_key(const uint8_t  *seed,
 		LOG_ERRFMT(
 			"[TFLM service] HUK key derivation failed with status %d\n",
 			status);
+		psa_panic();
 	} else {
 		LOG_INFFMT("[TFLM service] Successfully derived the key from HUK for");
 		LOG_INFFMT(" %s\n", seed);

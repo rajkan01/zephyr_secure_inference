@@ -44,7 +44,8 @@ void km_context_init(km_key_context_t *ctx,
 	if (sizeof(ctx->label) > (strlen(label) + 1)) {
 		strcpy(ctx->label, label);
 	} else {
-		LOG_ERR("Insufficient memory to copy key label");
+		printf("Insufficient memory to copy key label\n");
+		goto err;
 	}
 
 	/* Request the public key from the secure service. */
@@ -54,14 +55,16 @@ void km_context_init(km_key_context_t *ctx,
 				   public_key_len),
 		__func__);
 	if (status != PSA_SUCCESS) {
-		LOG_ERR("Failed to export the_public_key");
+		printf("Failed to export the_public_key with status %d\n", status);
 		goto err;
 	} else {
 		ctx->status = KEY_GEN;
 	}
+	return;
 err:
 	/* Dump any queued log messages, and wait for system events. */
 	al_dump_log();
+	exit(0);
 }
 
 psa_status_t km_get_uuid(unsigned char *uuid, size_t uuid_size)

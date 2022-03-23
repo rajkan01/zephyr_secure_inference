@@ -276,6 +276,7 @@ static psa_status_t tfm_huk_deriv_ec_key(psa_msg_t *msg)
 				&tflm_cose_key_handle);
 	if (status != PSA_SUCCESS) {
 		LOG_ERRFMT("[HUK deriv unique key] psa_import_key returned: %d \n", status);
+		return status;
 	}
 	status = psa_close_key(tflm_cose_key_handle);
 	if (status != PSA_SUCCESS) {
@@ -298,6 +299,7 @@ static psa_status_t tfm_huk_export_pubkey(psa_msg_t *msg)
 	status = psa_open_key(key_id, &key_handle);
 	if (status != PSA_SUCCESS) {
 		LOG_ERRFMT("[HUK export pubkey service] psa_open_key returned: %d \n", status);
+		goto err;
 	}
 
 	status = psa_export_public_key(key_handle,
@@ -306,13 +308,16 @@ static psa_status_t tfm_huk_export_pubkey(psa_msg_t *msg)
 				       &data_len);
 	if (status != PSA_SUCCESS) {
 		LOG_ERRFMT("[HUK export pubkey service] psa_export_public_key returned: %d \n", status);
+		goto err;
 	}
 
 	status = psa_close_key(key_handle);
 	if (status != PSA_SUCCESS) {
 		LOG_ERRFMT("[HUK export pubkey service] psa_close_key returned: %d \n", status);
+		goto err;
 	}
 	psa_write(msg->handle, 0, data_out, data_len);
+err:
 	return status;
 }
 
@@ -408,6 +413,7 @@ static psa_status_t tfm_huk_hash_sign_csr(psa_msg_t *msg)
 	if (status != PSA_SUCCESS) {
 		LOG_ERRFMT(
 			"[HUK CSR sign service] psa_open_key returned: %d \n", status);
+		goto err;
 	}
 	LOG_INFFMT("[HUK CSR sign service] Key id: 0x%x\n\n", key_id);
 	if (!PSA_ALG_IS_ECDSA(psa_alg_id)) {
@@ -482,8 +488,6 @@ static psa_status_t tfm_huk_hash_sign_csr(psa_msg_t *msg)
 		  1,
 		  &signature_len,
 		  sizeof(signature_len));
-	return status;
-
 err:
 	return status;
 }

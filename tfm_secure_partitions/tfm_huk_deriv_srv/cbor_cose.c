@@ -73,6 +73,44 @@ static psa_status_t tfm_cose_encode_start(psa_key_handle_t key_handle,
 	return return_value;
 }
 
+psa_status_t tfm_cbor_encode(float inf_val,
+			     uint8_t *inf_val_encoded_buf,
+			     size_t inf_val_encoded_buf_size,
+			     size_t *inf_val_encoded_buf_len)
+{
+	QCBOREncodeContext cbor_enc_ctx;
+	struct q_useful_buf_c inf_val_buf;
+	struct q_useful_buf inf_val_encode;
+	struct q_useful_buf_c completed_inf_val_encode;
+	QCBORError qcbor_result;
+
+	inf_val_encode.ptr = inf_val_encoded_buf;
+	inf_val_encode.len = inf_val_encoded_buf_size;
+
+	QCBOREncode_Init(&cbor_enc_ctx, inf_val_encode);
+
+	inf_val_buf.ptr = &inf_val;
+	inf_val_buf.len = sizeof(inf_val);
+
+	QCBOREncode_OpenMap(&cbor_enc_ctx);
+	QCBOREncode_AddBytesToMapN(&cbor_enc_ctx,
+				   EAT_CBOR_LINARO_LABEL_INFERENCE_VALUE,
+				   inf_val_buf);
+	QCBOREncode_CloseMap(&cbor_enc_ctx);
+
+	qcbor_result = QCBOREncode_Finish(&cbor_enc_ctx, &completed_inf_val_encode);
+	if (qcbor_result == QCBOR_ERR_BUFFER_TOO_SMALL) {
+		return PSA_ERROR_BUFFER_TOO_SMALL;
+	} else if (qcbor_result != QCBOR_SUCCESS) {
+		return PSA_ERROR_PROGRAMMER_ERROR;
+	} else {
+		inf_val_encoded_buf = (uint8_t *)completed_inf_val_encode.ptr;
+		*inf_val_encoded_buf_len = completed_inf_val_encode.len;
+	}
+
+	return PSA_SUCCESS;
+}
+
 static psa_status_t
 tfm_cose_encode_finish(struct tfm_cose_encode_ctx *me,
 		       struct q_useful_buf_c *completed_token)

@@ -51,7 +51,8 @@ cmd_infer_get_sine_val(const struct shell *shell, size_t argc, char **argv)
 	float usr_in_val_start = 0,
 	      usr_in_val_end = 0,
 	      stride = 1.0,
-	      model_out_val;
+	      model_out_val,
+	      usr_in_val_deg;
 	uint8_t key_ctx_idx = KEY_C_SIGN;
 	uint8_t pubkey[KM_PUBLIC_KEY_SIZE] = { 0 };
 	size_t pubkey_len = sizeof(pubkey);
@@ -118,8 +119,11 @@ cmd_infer_get_sine_val(const struct shell *shell, size_t argc, char **argv)
 		    usr_in_val_start, usr_in_val_end, stride);
 
 	while (usr_in_val_start <= usr_in_val_end) {
-		status =  infer_get_cose_output(key_ctx_idx,
-						(usr_in_val_start * deg),
+		usr_in_val_deg = usr_in_val_start * deg;
+		status =  infer_get_cose_output(INFER_ENC_COSE_SIGN1,
+						INFER_MODEL_SINE,
+						(void *)&usr_in_val_deg,
+						sizeof(usr_in_val_deg),
 						&infval_enc_buf[0],
 						sizeof(infval_enc_buf),
 						&infval_enc_buf_len);

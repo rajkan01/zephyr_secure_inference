@@ -21,18 +21,24 @@
 
 #include "main_functions.h"
 
-typedef enum {
-	CLIENT_TLS      = 0x5001,       // Client TLS key id
-	C_SIGN          = 0x5002,       // COSE SIGN key id
-	C_ENCRYPT       = 0x5003,       // COSE ENCRYPT key id
-} key_type_t;
+typedef psa_status_t (*signal_handler_t)(psa_msg_t *);
 
-// These are the extra-label string passed as a seed to key derivation
-// for generating 3 ec unique keys which are going to be used for the
-// different use cases.
-const uint8_t *label[3] = { (const uint8_t *)"CLIENT_TLS",
-			    (const uint8_t *)"C_SIGN",
-			    (const uint8_t *)"C_ENCRYPT" };
+/* The model index is key to finding the tflm model from the tflm_models array
+ * and this gets validated in the tflm secure service to select the model to
+ * run the inference engine.
+ */
+typedef enum {
+	TFLM_MODEL_SINE = 0,                    /**< Sine inference model index*/
+	TFLM_MODEL_COUNT,                       /**< Number of models present */
+} tflm_model_idx_t;
+
+/* List of supported tflm models */
+const char *tflm_models[TFLM_MODEL_COUNT] = { "TFLM_MODEL_SINE" };
+
+typedef struct {
+	huk_enc_format_t enc_format;
+	tflm_model_idx_t model_idx;
+} tflm_config_t;
 
 // /* I2C driver name for LSM303 peripheral */
 // extern ARM_DRIVER_I2C LSM303_DRIVER;
@@ -182,14 +188,72 @@ const uint8_t *label[3] = { (const uint8_t *)"CLIENT_TLS",
 /**
  * \brief Run inference using Tensorflow lite-micro
  */
-void tfm_tflm_service_hello(void)
+psa_status_t tfm_tflm_infer_run(psa_msg_t *msg)
 {
-	psa_status_t status;
-	psa_msg_t msg;
+	psa_status_t status = PSA_SUCCESS;
 	float x_value, y_value;
 	uint8_t inf_val_encoded_buf[256];
 	size_t inf_val_encoded_buf_len = 0;
-	cose_cbor_config_t cose_enc_cfg;
+	tflm_config_t cfg;
+
+	// Check size of invec/outvec parameter
+	if (msg->in_size[1] != sizeof(tflm_config_t) ||
+	    msg->out_size[0] != sizeof(inf_val_encoded_buf)) {
+
+		status = PSA_ERROR_PROGRAMMER_ERROR;
+		goto err;
+	}
+
+	psa_read(msg->handle, 0, &x_value, msg->in_size[0]);
+	psa_read(msg->handle, 1, &cfg, sizeof(tflm_config_t));
+
+	if (cfg.model_idx < TFLM_MODEL_COUNT &&
+	    (strcmp(tflm_models[cfg.model_idx], "TFLM_MODEL_SINE") == 0)) {
+		/* This constant kXrange represents the range of x values our model
+		 * was trained on, which is from 0 to (2 * Pi). We approximate Pi
+		 * to avoid requiring additional libraries.
+		 */
+		if ((kXrange < x_value) || (x_value < 0.0f)) {
+			status = PSA_ERROR_PROGRAMMER_ERROR;
+			goto err;
+		}
+
+		/* Run inference */
+		LOG_INFFMT("[TFLM service] Starting secure inferencing...\r\n");
+		y_value = loop(x_value);
+
+		LOG_INFFMT("[TFLM service] Starting CBOR encoding and COSE signing...\
+				\r\n");
+		status = psa_huk_cose_sign(&y_value,
+					   cfg.enc_format,
+					   inf_val_encoded_buf,
+					   msg->out_size[0],
+					   &inf_val_encoded_buf_len);
+		if (status != PSA_SUCCESS) {
+			LOG_ERRFMT("[TFLM service] CBOR encoding and COSE signing failed with status %d\n" \
+				   , status);
+			goto err;
+		}
+
+		psa_write(msg->handle,
+			  0,
+			  inf_val_encoded_buf,
+			  inf_val_encoded_buf_len);
+		psa_write(msg->handle,
+			  1,
+			  &inf_val_encoded_buf_len,
+			  sizeof(inf_val_encoded_buf_len));
+	} else {
+		status = PSA_ERROR_NOT_SUPPORTED;
+	}
+err:
+	return status;
+}
+
+void tfm_tflm_signal_handle(psa_signal_t signal, signal_handler_t pfn)
+{
+	psa_status_t status;
+	psa_msg_t msg;
 
 	/* Retrieve the message corresponding to the TFLM hello service signal */
 	status = psa_get(TFM_TFLM_SERVICE_HELLO_SIGNAL, &msg);
@@ -204,83 +268,75 @@ void tfm_tflm_service_hello(void)
 	 */
 	case PSA_IPC_CONNECT:
 	case PSA_IPC_DISCONNECT:
-		/* This service does not require any setup or teardown on connect or
-		 * disconnect, so just reply with success.
-		 */
-		status = PSA_SUCCESS;
+		psa_reply(msg.handle, PSA_SUCCESS);
 		break;
 
 	case PSA_IPC_CALL:
-		// Check size of invec/outvec parameter
-		if (msg.in_size[0] != sizeof(psa_key_id_t) ||
-		    msg.in_size[1] != sizeof(x_value) ||
-		    msg.out_size[0] != sizeof(inf_val_encoded_buf)) {
-
-			status = PSA_ERROR_PROGRAMMER_ERROR;
-			break;
-		}
-
-		psa_read(msg.handle, 0, &cose_enc_cfg.key_id, sizeof(psa_key_id_t));
-		psa_read(msg.handle, 1, &x_value, sizeof(x_value));
-		cose_enc_cfg.max_buf_size = msg.out_size[0];
-		if (cose_enc_cfg.key_id == C_SIGN) {
-			cose_enc_cfg.cbor_encode_sign = true;
-		}
-		/* This constant kXrange represents the range of x values our model
-		 * was trained on, which is from 0 to (2 * Pi). We approximate Pi
-		 * to avoid requiring additional libraries.
-		 */
-		if ((kXrange < x_value) || (x_value < 0.0f)) {
-			status = PSA_ERROR_PROGRAMMER_ERROR;
-			break;
-		}
-
-		/* Run inference */
-		LOG_INFFMT("[TFLM service] Starting secure inferencing...\r\n");
-		y_value = loop(x_value);
-
-		LOG_INFFMT("[TFLM service] Starting CBOR encoding and COSE signing...\
-				\r\n");
-		psa_huk_cose_sign(&y_value,
-				  &cose_enc_cfg,
-				  inf_val_encoded_buf,
-				  &inf_val_encoded_buf_len);
-
-		psa_write(msg.handle, 0, inf_val_encoded_buf, inf_val_encoded_buf_len);
-		psa_write(msg.handle, 1, &inf_val_encoded_buf_len, sizeof(inf_val_encoded_buf_len));
-		status = PSA_SUCCESS;
+		status = pfn(&msg);
+		psa_reply(msg.handle, status);
 		break;
 	default:
-		/* Invalid message type */
-		status = PSA_ERROR_PROGRAMMER_ERROR;
-		break;
+		psa_panic();
 	}
-
-	/* Reply with the message result status to unblock the client */
-	psa_reply(msg.handle, status);
 }
 
 /**
  * \brief Generate EC key.
  */
-static void tfm_tflm_gen_ec_key(const uint8_t  *label,
-				size_t label_len,
+static void tfm_tflm_gen_ec_key(const uint8_t  *seed,
+				size_t seed_len,
 				psa_key_id_t ec_key_id,
 				psa_key_usage_t key_usage_flag)
 {
 	psa_status_t status;
 
 	status = psa_huk_deriv_ec_key(&ec_key_id,
-				      label,
-				      label_len,
+				      seed,
+				      seed_len,
 				      &key_usage_flag);
 
 	if (status != PSA_SUCCESS) {
-		LOG_ERRFMT("[TFLM service] HUK key derivation failed with status %d\n" \
-			   , status);
+		LOG_ERRFMT(
+			"[TFLM service] HUK key derivation failed with status %d\n",
+			status);
 	} else {
 		LOG_INFFMT("[TFLM service] Successfully derived the key from HUK for");
-		LOG_INFFMT(" %s\n", label);
+		LOG_INFFMT(" %s\n", seed);
+	}
+}
+
+/**
+ * \brief EC keys init function generates three unique EC keys using HUK
+ * derivation secure service.
+ */
+void tfm_tflm_ec_keys_init()
+{
+	static _Bool is_ec_keys_init_done = false;
+
+	if (!is_ec_keys_init_done) {
+		/** These are the seed passed to key derivation for generating three
+		 *  unique keys - Device client TLS, Device COSE SIGN, Device COSE
+		 *  encryption.
+		 */
+		const char *seed[3] = {
+			"CLIENT_TLS",
+			"COSE_SIGN",
+			"COSE_ENCRYPT"
+		};
+
+		tfm_tflm_gen_ec_key((const uint8_t *)seed[0],
+				    strlen(seed[0]),
+				    HUK_CLIENT_TLS,
+				    (PSA_KEY_USAGE_SIGN_HASH | PSA_KEY_USAGE_VERIFY_MESSAGE));
+		tfm_tflm_gen_ec_key((const uint8_t *)seed[1],
+				    strlen(seed[1]),
+				    HUK_COSE_SIGN,
+				    (PSA_KEY_USAGE_SIGN_HASH | PSA_KEY_USAGE_VERIFY_HASH));
+		tfm_tflm_gen_ec_key((const uint8_t *)seed[2],
+				    strlen(seed[2]),
+				    HUK_COSE_ENCRYPT,
+				    PSA_KEY_USAGE_SIGN_HASH | PSA_KEY_USAGE_ENCRYPT);
+		is_ec_keys_init_done = true;
 	}
 }
 
@@ -327,26 +383,8 @@ void tfm_tflm_service_req_mngr_init(void)
 
 	// LOG_INFFMT("[Example partition] Initialisation of I2C bus completed\r\n");
 
-	/* Create 3 EC keys
-
-	 | Key Name            | Added Label | Resulting Label              |
-	 |---------------------|-------------|------------------------------|
-	 | Device Client TLS   | CLIENT_TLS  | CLIENT_TLS_EC_PRIV_KEY_HI    |
-	 | Device COSE SIGN    | C_SIGN      | C_SIGN_TLS_EC_PRIV_KEY_HI    |
-	 | Device COSE ENCRYPT | C_ENCRYPT   | C_ENCRYPT_TLS_EC_PRIV_KEY_HI |
-	 */
-	tfm_tflm_gen_ec_key(label[0],
-			    strlen((char *)label[0]),
-			    CLIENT_TLS,
-			    (PSA_KEY_USAGE_SIGN_HASH | PSA_KEY_USAGE_VERIFY_MESSAGE));
-	tfm_tflm_gen_ec_key(label[1],
-			    strlen((char *)label[1]),
-			    C_SIGN,
-			    (PSA_KEY_USAGE_SIGN_HASH | PSA_KEY_USAGE_VERIFY_HASH));
-	tfm_tflm_gen_ec_key(label[2],
-			    strlen((char *)label[2]),
-			    C_ENCRYPT,
-			    PSA_KEY_USAGE_SIGN_HASH | PSA_KEY_USAGE_ENCRYPT);
+	/* Ec keys init */
+	tfm_tflm_ec_keys_init();
 
 	/* Tensorflow lite-micro initialisation */
 	setup();
@@ -364,7 +402,11 @@ void tfm_tflm_service_req_mngr_init(void)
 		// }
 
 		if (signals & TFM_TFLM_SERVICE_HELLO_SIGNAL) {
-			tfm_tflm_service_hello();
+			tfm_tflm_signal_handle(
+				TFM_TFLM_SERVICE_HELLO_SIGNAL,
+				tfm_tflm_infer_run);
+		} else {
+			psa_panic();
 		}
 	}
 }

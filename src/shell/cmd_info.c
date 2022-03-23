@@ -10,14 +10,6 @@
 
 #if CONFIG_SECURE_INFER_SHELL_CMD_SUPPORT
 
-// static int
-// invalid_arg(const struct shell *shell, char *arg_name)
-// {
-// 	shell_print(shell, "Error: invalid argument \"%s\"\n", arg_name);
-//
-// 	return -EINVAL;
-// }
-
 static int
 cmd_info_version(const struct shell *shell, size_t argc, char **argv)
 {

@@ -31,6 +31,19 @@ typedef struct {
 	infer_model_sts_t sts;
 } infer_ctx_t;
 
+/** Encoding format requested for the inference output. */
+typedef enum {
+	INFER_ENC_CBOR = 0,             /**< Request a simple CBOR payload. */
+	INFER_ENC_COSE_SIGN1,           /**< Request a COSE SIGN1 payload. */
+	INFER_ENC_COSE_ENCRYPT0,        /**< Request a COSE ENCRYPT0 payload. */
+} infer_enc_t;
+
+/* Inference config */
+typedef struct {
+	infer_enc_t enc_format;
+	infer_model_idx_t model_idx;
+} infer_config_t;
+
 /**
  * @brief Verifies the COSE SIGN1 signature of the supplied payload.
  *
@@ -51,16 +64,20 @@ psa_status_t infer_verify_signature(uint8_t *infval_enc_buf,
 /**
  * @brief Requests the inference engine to generate an output value.
  *
- * @param key_idx              Key context index.
- * @param input                The floating point value to provide as an input.
+ * @param enc_format           Inference output encoding format.
+ * @param model_idx            Model index.
+ * @param input                The input parameter.
+ * @param input_size           The input parameter size in bytes.
  * @param infval_enc_buf       Buffer for the COSE-encoded output.
  * @param inf_val_enc_buf_size Size of infval_enc_buf.
  * @param infval_enc_buf_len   Bytes written by the secure function.
  *
  * @return psa_status_t
  */
-psa_status_t infer_get_cose_output(km_key_idx_t key_idx,
-				   float input,
+psa_status_t infer_get_cose_output(infer_enc_t enc_format,
+				   infer_model_idx_t model_idx,
+				   void  *input,
+				   size_t input_size,
 				   uint8_t *infval_enc_buf,
 				   size_t inf_val_enc_buf_size,
 				   size_t *infval_enc_buf_len);

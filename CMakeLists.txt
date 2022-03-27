@@ -6,6 +6,10 @@
 
 cmake_minimum_required(VERSION 3.13.1)
 
+if((BOARD MATCHES "mps2_an521") OR (BOARD MATCHES "mps3_an547"))
+  list(APPEND QEMU_EXTRA_FLAGS -device lsm303dlhc_mag,id=lsm303,address=0x1E)
+endif()
+
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 
 get_target_property(TFM_BINARY_DIR tfm TFM_BINARY_DIR)

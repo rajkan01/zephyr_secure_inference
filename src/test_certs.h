@@ -30,7 +30,17 @@ extern const size_t device_key_len;
 
 /* The root of trust for the bootstrap service.
  */
+extern const unsigned char *caroot_crt;
+extern const size_t caroot_crt_len;
+
+/* The certificate and key for the bootstrap service.
+ */
 extern const unsigned char *bootstrap_crt;
 extern const size_t bootstrap_crt_len;
+
+/* The private key for the bootstrap service.
+ */
+extern const unsigned char *bootstrap_key;
+extern const size_t bootstrap_key_len;
 
 #endif /* not __TEST_CERTS_H__ */

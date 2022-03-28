@@ -9,7 +9,7 @@
 
 #include "util_sformat.h"
 
-static void sf_hex_ascii(unsigned char *data, size_t len, unsigned char nonvis)
+static void sf_hex_ascii(const unsigned char *data, size_t len, unsigned char nonvis)
 {
 	uint32_t idx;
 
@@ -22,7 +22,7 @@ static void sf_hex_ascii(unsigned char *data, size_t len, unsigned char nonvis)
 	}
 }
 
-void sf_hex_tabulate_16(struct sf_hex_tbl_fmt *fmt, unsigned char *data,
+void sf_hex_tabulate_16(struct sf_hex_tbl_fmt *fmt, const unsigned char *data,
 			size_t len)
 {
 	uint32_t idx;

@@ -5,6 +5,7 @@
  */
 #include <zephyr.h>
 #include <data/json.h>
+#include <nanocbor/nanocbor.h>
 
 #include "util_app_log.h"
 #include "x509_csr_gen.h"
@@ -355,6 +356,68 @@ psa_status_t x509_csr_generate(const km_key_idx_t key_idx,
 err:
 	al_dump_log();
 	mbedtls_x509write_csr_free(&req);
+	return status;
+}
+
+psa_status_t x509_csr_cbor(const km_key_idx_t key_idx,
+			   unsigned char *csr_cbor,
+			   size_t *csr_cbor_len,
+			   unsigned char *uuid,
+			   size_t uuid_size)
+{
+	char csr_subject_name[80] = { 0 };
+	km_key_context_t *ctx = km_context_get();
+	int status = PSA_SUCCESS;
+
+	printf("\nGenerating X.509 CSR for '%s' key:\n", ctx[key_idx].label);
+
+	// TODO: reject buffer overflow.
+	sprintf(csr_subject_name, "%s%s%s%s%s", X509_CSR_SUB_ORG,
+		",CN=", uuid, ",OU=", ctx[key_idx].label);
+
+	printf("Subject: %s\n", csr_subject_name);
+
+	mbedtls_x509write_csr req;
+	mbedtls_x509write_csr_init(&req);
+	memset(csr_cbor, 0, *csr_cbor_len);
+
+	mbedtls_x509write_csr_set_md_alg(&req, MBEDTLS_MD_SHA256);
+
+	/* Add subject name to CSR */
+	status = mbedtls_x509write_csr_set_subject_name(&req, csr_subject_name);
+	if (status != 0) {
+		LOG_ERR("Setting a CSR subject name failed with error %d", status);
+		goto err;
+	}
+
+	/* Generate CSR in DER format */
+	size_t csr_len = x509_csr_gen_der(&req, csr_cbor, *csr_cbor_len, key_idx);
+	if (csr_len < 0) {
+		goto err;
+	}
+
+	/* The above put the DER encoded packet at the end of the
+	 * buffer. */
+	size_t pos = *csr_cbor_len - csr_len;
+	printf("cert starts at 0x%x into buffer\n", *csr_cbor_len - csr_len);
+
+	/* Wrap the data in a single element CBOR array with the DER
+	 * data as a bstr. */
+	nanocbor_encoder_t encoder;
+	nanocbor_encoder_init(&encoder, csr_cbor, pos);
+
+	/* TODO: Handle overflow better. */
+	nanocbor_fmt_array(&encoder, 1);
+	nanocbor_fmt_bstr(&encoder, csr_len);
+
+	memcpy(encoder.cur, csr_cbor + (*csr_cbor_len - csr_len), csr_len);
+
+	*csr_cbor_len = encoder.len + csr_len;
+
+err:
+	al_dump_log();
+	mbedtls_x509write_csr_free(&req);
+
 	return status;
 }
 

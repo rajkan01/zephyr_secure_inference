@@ -58,6 +58,23 @@ psa_status_t x509_csr_generate(const km_key_idx_t key_idx,
 			       size_t uuid_size);
 
 /**
+ * @brief Generate device certificate signing request (CSR) using Mbed
+ * TLS X.509 and TF-M HUK CSR service.  The key will be DER encoded.
+ *
+ * @param key_idx    Key context index.
+ * @param csr_cbor   Buffer to store CSR.
+ * @param csr_len    in/out The size of the buffer, in bytes.  On
+ *                   return, will be set to the number of bytes used.
+ * @param uuid       UUID for the device ID of the CSR.
+ * @param uuid_size  Size of UUID
+ */
+psa_status_t x509_csr_cbor(const km_key_idx_t key_idx,
+			   unsigned char *csr_cbor,
+			   size_t *csr_cbor_len,
+			   unsigned char *uuid,
+			   size_t uuid_size);
+
+/**
  * @brief Encode CSR to JSON format.
  *
  * @param csr                Pointer to the buffer of stored CSR.

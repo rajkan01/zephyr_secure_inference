@@ -203,7 +203,7 @@ cmd_keys_csr(const struct shell *shell, size_t argc, char **argv)
 static int
 cmd_keys_ca(const struct shell *shell, size_t argc, char **argv)
 {
-	km_key_context_t *ctx = km_context_get();
+	km_key_context_t *ctx = km_get_context();
 
 	shell_print(shell, "argc: %d", argc);
 	if (argc < 2 || strcmp(argv[1], "help") == 0) {
@@ -215,7 +215,7 @@ cmd_keys_ca(const struct shell *shell, size_t argc, char **argv)
 	}
 
 	if (argc > 2) {
-		return cmd_keys_shell_invalid_arg(shell, argv[2]);
+		return shell_com_invalid_arg(shell, argv[2]);
 	}
 
 	/* Validate the Key ID. */
@@ -229,16 +229,16 @@ cmd_keys_ca(const struct shell *shell, size_t argc, char **argv)
 		}
 	}
 	if (!is_valid_key_id) {
-		return cmd_keys_shell_invalid_arg(shell, argv[1]);
+		return shell_com_invalid_arg(shell, argv[1]);
 	}
 
 	/* Get the UUID */
 	unsigned char uuid[37];
 	int status = al_psa_status(km_get_uuid(uuid, sizeof(uuid)), __func__);
 	if (status != PSA_SUCCESS) {
-		return cmd_keys_shell_rc_code(shell,
-					      "Unable to read UUID",
-					      status);
+		return shell_com_rc_code(shell,
+					 "Unable to read UUID",
+					 status);
 	}
 
 	LOG_INF("uuid: %s", uuid);
@@ -252,9 +252,9 @@ cmd_keys_ca(const struct shell *shell, size_t argc, char **argv)
 			       uuid,
 			       sizeof(uuid));
 	if (status != PSA_SUCCESS) {
-		return cmd_keys_shell_rc_code(shell,
-					      "Failed to generate CSR",
-					      status);
+		return shell_com_rc_code(shell,
+					 "Failed to generate CSR",
+					 status);
 	}
 	// struct sf_hex_tbl_fmt fmt = {
 	// 	.ascii = 1,
@@ -266,9 +266,9 @@ cmd_keys_ca(const struct shell *shell, size_t argc, char **argv)
 
 	status = caserver_cr(csr_cbor, cbor_len);
 	if (status != 0) {
-		return cmd_keys_shell_rc_code(shell,
-					      "Failed to talk to CAserver",
-					      status);
+		return shell_com_rc_code(shell,
+					 "Failed to talk to CAserver",
+					 status);
 	}
 
 	return 0;

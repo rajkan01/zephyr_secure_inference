@@ -366,7 +366,7 @@ psa_status_t x509_csr_cbor(const km_key_idx_t key_idx,
 			   size_t uuid_size)
 {
 	char csr_subject_name[80] = { 0 };
-	km_key_context_t *ctx = km_context_get();
+	km_key_context_t *ctx = km_get_context();
 	int status = PSA_SUCCESS;
 
 	printf("\nGenerating X.509 CSR for '%s' key:\n", ctx[key_idx].label);

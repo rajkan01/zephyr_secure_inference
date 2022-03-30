@@ -18,4 +18,4 @@
 #define CONFIG_SAMPLE_CLOUD_AZURE_USERNAME \
 	"<HUB-NAME>.azure-devices.net/<DEV-UUID>"
 
-#endif __AZURE_CONFIG_H__
+#endif /* not __AZURE_CONFIG_H__ */

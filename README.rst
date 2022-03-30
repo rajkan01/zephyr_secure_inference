@@ -3,6 +3,101 @@
 TF-M Confidential AI Project
 ############################
 
+Dependencies
+************
+
+This sample is based off the following Zephyr commit:
+``87448f99fe37e13ea340c99f467de07ec70b3d82``
+
+TensorFlow Lite Micro also requires us to enable CPP support in TF-M, which
+can be done with the following patch on top of TF-M commit
+``c8134809a9439571c54d36ef39210270dbee8f67``
+
+.. code-block::
+
+   diff --git a/CMakeLists.txt b/CMakeLists.txt
+   index 1e119997..395330ad 100644
+   --- a/CMakeLists.txt
+   +++ b/CMakeLists.txt
+   @@ -65,7 +65,7 @@ endif()
+   include(${TFM_TOOLCHAIN_FILE})
+   set(CMAKE_PROJECT_INCLUDE_BEFORE ${CMAKE_SOURCE_DIR}/cmake/disable_compiler_detection.cmake)
+   
+   -project("Trusted Firmware M" VERSION ${TFM_VERSION} LANGUAGES C ASM)
+   +project("Trusted Firmware M" VERSION ${TFM_VERSION} LANGUAGES C CXX ASM)
+   tfm_toolchain_reload_compiler()
+   
+   # Synchronise the install path variables. If CMAKE_INSTALL_PREFIX is manually
+   diff --git a/cmake/disable_compiler_detection.cmake b/cmake/disable_compiler_detection.cmake
+   index ebafca06..215221a2 100644
+   --- a/cmake/disable_compiler_detection.cmake
+   +++ b/cmake/disable_compiler_detection.cmake
+   @@ -7,3 +7,4 @@
+   
+   #Stop cmake running compiler tests.
+   set (CMAKE_C_COMPILER_FORCED true)
+   +set (CMAKE_CXX_COMPILER_FORCED true)
+   diff --git a/platform/ext/common/gcc/tfm_common_s.ld b/platform/ext/common/gcc/tfm_common_s.ld
+   index d3aada37..8257e2d3 100644
+   --- a/platform/ext/common/gcc/tfm_common_s.ld
+   +++ b/platform/ext/common/gcc/tfm_common_s.ld
+   @@ -183,7 +183,7 @@ SECTIONS
+      Image$$ER_CODE_SRAM$$Limit = ADDR(.ER_CODE_SRAM) + SIZEOF(.ER_CODE_SRAM);
+   #endif
+   
+   -#if TFM_LVL != 1
+   +/* #if TFM_LVL != 1 */
+      .ARM.extab :
+      {
+            *(.ARM.extab* .gnu.linkonce.armextab.*)
+   @@ -196,7 +196,7 @@ SECTIONS
+      } > FLASH
+      __exidx_end = .;
+   
+   -#endif /* TFM_LVL != 1 */
+   +/* #endif */
+   
+      .ER_TFM_CODE : ALIGN(4)
+      {
+   diff --git a/toolchain_GNUARM.cmake b/toolchain_GNUARM.cmake
+   index 9cb741c0..d4fb578e 100644
+   --- a/toolchain_GNUARM.cmake
+   +++ b/toolchain_GNUARM.cmake
+   @@ -47,9 +47,13 @@ macro(tfm_toolchain_reset_compiler_flags)
+            -funsigned-char
+            -mthumb
+            -nostdlib
+   -        -std=c99
+   +        $<$<COMPILE_LANGUAGE:C>:-std=c99>
+            $<$<OR:$<BOOL:${TFM_DEBUG_SYMBOLS}>,$<BOOL:${TFM_CODE_COVERAGE}>>:-g>
+      )
+   +
+   +    add_compile_options(
+   +        $<$<COMPILE_LANGUAGE:CXX>:-std=c++11>
+   +    )
+   endmacro()
+   
+   macro(tfm_toolchain_reset_linker_flags)
+   @@ -123,6 +127,7 @@ macro(tfm_toolchain_reload_compiler)
+      endif()
+   
+      unset(CMAKE_C_FLAGS_INIT)
+   +    unset(CMAKE_CXX_FLAGS_INIT)
+      unset(CMAKE_ASM_FLAGS_INIT)
+   
+      if (DEFINED TFM_SYSTEM_PROCESSOR)
+   @@ -138,6 +143,7 @@ macro(tfm_toolchain_reload_compiler)
+      endif()
+   
+      set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS_INIT})
+   +    set(CMAKE_CXX_FLAGS ${CMAKE_C_FLAGS_INIT})
+      set(CMAKE_ASM_FLAGS ${CMAKE_ASM_FLAGS_INIT})
+   
+      set(BL2_COMPILER_CP_FLAG -mfloat-abi=soft)
+
+
+
+
 Overview
 ********
 

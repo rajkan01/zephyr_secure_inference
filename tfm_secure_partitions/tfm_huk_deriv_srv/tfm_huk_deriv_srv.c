@@ -36,8 +36,10 @@ const char hex_digits[] = { '0', '1', '2', '3', '4', '5', '6', '7',
 			    '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
 
 #define UUID_STR_LEN ((KEY_LEN_BYTES * 2) + 4 + 1)
-#define UUID_7TH_BYTE_MASK  64U         /* 0b0100_0000*/
-#define UUID_9TH_BYTE_MASK  128U        /* 0b1000_0000*/
+#define UUID_7TH_BYTE_MASK  0x0f        /* 0b0000_1111*/
+#define UUID_7TH_BYTE_SET   0x40        /* 0b0100_0000 */
+#define UUID_9TH_BYTE_MASK  0x3f        /* 0b0011_1111*/
+#define UUID_9TH_BYTE_SET   0x80        /* 0b1000_0000*/
 #define TFM_HUK_ASN1_CONSTRUCTED      0x20
 #define TFM_HUK_ASN1_SEQUENCE         0x10
 #define TFM_HUK_ASN1_DATA_LENGTH_0_255 1
@@ -92,20 +94,18 @@ static psa_status_t tfm_encode_random_bytes_to_uuid(uint8_t *random_bytes,
 
 	for (int i = 0; i < random_bytes_len; i++) {
 		if (i == 6) {
-			random_bytes[i] |= UUID_7TH_BYTE_MASK;
+			random_bytes[i] =
+				(random_bytes[i] & UUID_7TH_BYTE_MASK) |
+				UUID_7TH_BYTE_SET;
 		}
 		if (i == 8) {
-			random_bytes[i] |= UUID_9TH_BYTE_MASK;
+			random_bytes[i] =
+				(random_bytes[i] & UUID_9TH_BYTE_MASK) |
+				UUID_9TH_BYTE_SET;
 		}
 
-		if (random_bytes[i] <= 0x0f) {
-			uuid_buf[j++] = '0';
-		}
-
-		do {
-			uuid_buf[j++] = hex_digits[random_bytes[i] & 0x0f];
-			random_bytes[i] >>= 4;
-		} while (random_bytes[i]);
+		uuid_buf[j++] = hex_digits[random_bytes[i] >> 4];
+		uuid_buf[j++] = hex_digits[random_bytes[i] & 0x0f];
 
 		if (j == hyphen_index) {
 			uuid_buf[j++] = '-';

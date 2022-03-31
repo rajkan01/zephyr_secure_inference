@@ -7,11 +7,11 @@ Dependencies
 ************
 
 This sample is based off the following Zephyr commit:
-``87448f99fe37e13ea340c99f467de07ec70b3d82``
+``ca842acdd7a3e9f84125a19ce89034a55c723d29``
 
 TensorFlow Lite Micro also requires us to enable CPP support in TF-M, which
 can be done with the following patch on top of TF-M commit
-``c8134809a9439571c54d36ef39210270dbee8f67``
+``b90420a2ffbf7d1329716508f1d3f9f880bc865b``
 
 .. code-block::
 
@@ -59,11 +59,44 @@ can be done with the following patch on top of TF-M commit
    
       .ER_TFM_CODE : ALIGN(4)
       {
+   diff --git a/platform/ext/target/stm/common/scripts/postbuild.sh b/platform/ext/target/stm/common/scripts/postbuild.sh
+   index 9f7a3734..5fca2f05 100644
+   --- a/platform/ext/target/stm/common/scripts/postbuild.sh
+   +++ b/platform/ext/target/stm/common/scripts/postbuild.sh
+   @@ -16,7 +16,11 @@
+   #  ******************************************************************************
+   # arg1 is optional, it fixes compiler full path if present
+   # Absolute path to this script
+   +if [[ "$OSTYPE" == "darwin"* ]]; then
+   +SCRIPT=$(greadlink -f $0)
+   +else
+   SCRIPT=$(readlink -f $0)
+   +fi
+   # Absolute path this script
+   projectdir=`dirname $SCRIPT`
+   source $projectdir/preprocess.sh
    diff --git a/toolchain_GNUARM.cmake b/toolchain_GNUARM.cmake
-   index 9cb741c0..d4fb578e 100644
+   index 9cb741c0..ca1e596d 100644
    --- a/toolchain_GNUARM.cmake
    +++ b/toolchain_GNUARM.cmake
-   @@ -47,9 +47,13 @@ macro(tfm_toolchain_reset_compiler_flags)
+   @@ -14,11 +14,16 @@ endif()
+   set(CMAKE_SYSTEM_NAME Generic)
+   
+   find_program(CMAKE_C_COMPILER ${CROSS_COMPILE}-gcc)
+   +find_program(CMAKE_CXX_COMPILER ${CROSS_COMPILE}-g++)
+   
+   if(CMAKE_C_COMPILER STREQUAL "CMAKE_C_COMPILER-NOTFOUND")
+      message(FATAL_ERROR "Could not find compiler: '${CROSS_COMPILE}-gcc'")
+   endif()
+   
+   +if(CMAKE_CXX_COMPILER STREQUAL "CMAKE_CXX_COMPILER-NOTFOUND")
+   +    message(FATAL_ERROR "Could not find compiler: '${CROSS_COMPILE}-g++'")
+   +endif()
+   +
+   set(CMAKE_ASM_COMPILER ${CMAKE_C_COMPILER})
+   
+   set(LINKER_VENEER_OUTPUT_FLAG -Wl,--cmse-implib,--out-implib=)
+   @@ -47,9 +52,13 @@ macro(tfm_toolchain_reset_compiler_flags)
             -funsigned-char
             -mthumb
             -nostdlib
@@ -78,7 +111,7 @@ can be done with the following patch on top of TF-M commit
    endmacro()
    
    macro(tfm_toolchain_reset_linker_flags)
-   @@ -123,6 +127,7 @@ macro(tfm_toolchain_reload_compiler)
+   @@ -123,6 +132,7 @@ macro(tfm_toolchain_reload_compiler)
       endif()
    
       unset(CMAKE_C_FLAGS_INIT)
@@ -86,7 +119,7 @@ can be done with the following patch on top of TF-M commit
       unset(CMAKE_ASM_FLAGS_INIT)
    
       if (DEFINED TFM_SYSTEM_PROCESSOR)
-   @@ -138,6 +143,7 @@ macro(tfm_toolchain_reload_compiler)
+   @@ -138,6 +148,7 @@ macro(tfm_toolchain_reload_compiler)
       endif()
    
       set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS_INIT})
@@ -94,9 +127,6 @@ can be done with the following patch on top of TF-M commit
       set(CMAKE_ASM_FLAGS ${CMAKE_ASM_FLAGS_INIT})
    
       set(BL2_COMPILER_CP_FLAG -mfloat-abi=soft)
-
-
-
 
 Overview
 ********

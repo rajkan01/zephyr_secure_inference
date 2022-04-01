@@ -79,6 +79,12 @@ static int walk_cbor(struct nanocbor_value *item)
 				return res;
 			LOG_INF("bstr: %d bytes", buf_len);
 			break;
+		case NANOCBOR_TYPE_TSTR:
+			res = nanocbor_get_tstr(item, &buf, &buf_len);
+			if (res < 0)
+				return res;
+			LOG_INF("tstr: %d bytes", buf_len);
+			break;
 		case NANOCBOR_TYPE_MAP:
 			res = nanocbor_enter_map(item, &map);
 			if (res < 0)
@@ -106,7 +112,13 @@ static int decode_ca_response(struct ca_response *response, const uint8_t *buf, 
 	int res;
 	uint32_t value;
 
+#ifdef DEBUG_WALK_CBOR
 	nanocbor_decoder_init(&decode, buf, len);
+	walk_cbor(&decode);
+#endif
+
+	nanocbor_decoder_init(&decode, buf, len);
+
 	res = nanocbor_enter_map(&decode, &map);
 	if (res < 0) {
 		return res;

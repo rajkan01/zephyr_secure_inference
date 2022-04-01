@@ -111,6 +111,9 @@ static int decode_ca_response(struct ca_response *response, const uint8_t *buf, 
 	struct nanocbor_value map;
 	int res;
 	uint32_t value;
+	const uint8_t *hubname;
+	size_t hubname_len;
+	uint32_t port;
 
 #ifdef DEBUG_WALK_CBOR
 	nanocbor_decoder_init(&decode, buf, len);
@@ -151,6 +154,42 @@ static int decode_ca_response(struct ca_response *response, const uint8_t *buf, 
 	}
 
 	res = nanocbor_get_bstr(&map, &response->cert_der, &response->cert_der_len);
+	if (res < 0) {
+		return res;
+	}
+
+	res = nanocbor_get_uint32(&map, &value);
+	if (res < 0) {
+		return res;
+	}
+
+	/* The third key myst be 3, for the hubname. */
+	if (value != 3) {
+		return -EINVAL;
+	}
+
+	res = nanocbor_get_tstr(&map, &hubname, &hubname_len);
+	if (res < 0) {
+		return res;
+	}
+	LOG_INF("Hubname len: %u", hubname_len);
+
+	res = nanocbor_get_uint32(&map, &value);
+	if (res < 0) {
+		return res;
+	}
+
+	/* The last key must be 4, for the port. */
+	if (value != 4) {
+		return -EINVAL;
+	}
+
+	res = nanocbor_get_uint32(&map, &port);
+	if (res < 0) {
+		return res;
+	}
+	LOG_INF("Port: %d", port);
+
 	nanocbor_leave_container(&decode, &map);
 	return res;
 }
@@ -171,7 +210,7 @@ static void caresponse_cb(struct http_response *rsp,
 	LOG_INF("Response to req");
 	LOG_INF("Status %s", rsp->http_status);
 
-	res = decode_ca_response(&response, rsp->body_start, rsp->content_length);
+	res = decode_ca_response(&response, rsp->body_frag_start, rsp->content_length);
 	LOG_INF("Result: %d", res);
 	LOG_INF("cert: %d bytes", response.cert_der_len);
 

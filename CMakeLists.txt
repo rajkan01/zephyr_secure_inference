@@ -21,7 +21,7 @@ configure_file(
 set_property(TARGET zephyr_property_target
   APPEND PROPERTY TFM_CMAKE_OPTIONS
   -DTFM_EXTRA_MANIFEST_LIST_FILES=${CMAKE_CURRENT_BINARY_DIR}/tfm_secure_partitions/tfm_manifest_list.yaml
-  -DTFM_EXTRA_PARTITION_PATHS="${CMAKE_CURRENT_LIST_DIR}/tfm_secure_partitions/tfm_huk_deriv_srv\\\;${CMAKE_CURRENT_LIST_DIR}/tfm_secure_partitions/tfm_tflm_service"
+  -DTFM_EXTRA_PARTITION_PATHS="${CMAKE_CURRENT_LIST_DIR}/tfm_secure_partitions/tfm_huk_deriv_srv\\\;${CMAKE_CURRENT_LIST_DIR}/tfm_secure_partitions/tfm_tflm_service\\\;${CMAKE_CURRENT_LIST_DIR}/tfm_secure_partitions/tfm_utvm_service"
   )
 
 # set_property(TARGET zephyr_property_target
@@ -43,6 +43,7 @@ target_sources(app PRIVATE
   src/main.c
   src/tfm_partition_huk.c
   src/tfm_partition_tflm.c
+  src/tfm_partition_utvm.c
   src/util_app_cfg.c
   src/util_app_log.c
   src/util_sformat.c
@@ -60,6 +61,7 @@ target_include_directories(app PRIVATE
 target_compile_definitions(app PRIVATE
   TFM_PARTITION_HUK_KEY_DERIVATION
   TFM_PARTITION_TFLM_SERVICE
+  TFM_PARTITION_UTVM_SERVICE
   NANOCBOR_BYTEORDER_HEADER=<sys/byteorder.h>
   NANOCBOR_BE64TOH_FUNC=sys_be64_to_cpu
   NANOCBOR_HTOBE64_FUNC=sys_cpu_to_be64

@@ -13,7 +13,8 @@
 
 /** Define the index for the model in the model context array. */
 typedef enum {
-	INFER_MODEL_SINE = 0,                   /**< Sine inference model */
+	INFER_MODEL_TFLM_SINE = 0,              /**< TFLM sine inference model */
+	INFER_MODEL_UTVM_SINE,                  /**< UTVM sine inference model */
 	INFER_MODEL_COUNT,                      /**< Number of models present */
 } infer_model_idx_t;
 
@@ -41,7 +42,7 @@ typedef enum {
 /* Inference config */
 typedef struct {
 	infer_enc_t enc_format;
-	infer_model_idx_t model_idx;
+	char models[32];
 } infer_config_t;
 
 /**
@@ -62,10 +63,10 @@ psa_status_t infer_verify_signature(uint8_t *infval_enc_buf,
 				    float *out_val);
 
 /**
- * @brief Requests the inference engine to generate an output value.
+ * @brief Requests the TFLM inference engine to generate an output value.
  *
  * @param enc_format           Inference output encoding format.
- * @param model_idx            Model index.
+ * @param model                Pointer to the buffer stores model info.
  * @param input                The input parameter.
  * @param input_size           The input parameter size in bytes.
  * @param infval_enc_buf       Buffer for the COSE-encoded output.
@@ -74,13 +75,57 @@ psa_status_t infer_verify_signature(uint8_t *infval_enc_buf,
  *
  * @return psa_status_t
  */
-psa_status_t infer_get_cose_output(infer_enc_t enc_format,
-				   infer_model_idx_t model_idx,
-				   void  *input,
-				   size_t input_size,
-				   uint8_t *infval_enc_buf,
-				   size_t inf_val_enc_buf_size,
-				   size_t *infval_enc_buf_len);
+psa_status_t infer_get_tflm_cose_output(infer_enc_t enc_format,
+					const char *model,
+					void  *input,
+					size_t input_size,
+					uint8_t *infval_enc_buf,
+					size_t inf_val_enc_buf_size,
+					size_t *infval_enc_buf_len);
+
+/**
+ * @brief Requests the UTVM inference engine to generate an output value.
+ *
+ * @param enc_format           Inference output encoding format.
+ * @param model                Pointer to the buffer stores model info.
+ * @param input                The input parameter.
+ * @param input_size           The input parameter size in bytes.
+ * @param infval_enc_buf       Buffer for the COSE-encoded output.
+ * @param inf_val_enc_buf_size Size of infval_enc_buf.
+ * @param infval_enc_buf_len   Bytes written by the secure function.
+ *
+ * @return psa_status_t
+ */
+psa_status_t infer_get_utvm_cose_output(infer_enc_t enc_format,
+					const char *model,
+					void  *input,
+					size_t input_size,
+					uint8_t *infval_enc_buf,
+					size_t inf_val_enc_buf_size,
+					size_t *infval_enc_buf_len);
+
+/**
+ * @brief Function pointer to represent inference engine function call
+ * (infer_get_tflm_cose_output or infer_get_utvm_cose_output) used in shell
+ * infer command calls.
+ *
+ * @param enc_format           Inference output encoding format.
+ * @param model                Pointer to the buffer stores model info.
+ * @param input                The input parameter.
+ * @param input_size           The input parameter size in bytes.
+ * @param infval_enc_buf       Buffer for the COSE-encoded output.
+ * @param inf_val_enc_buf_size Size of infval_enc_buf.
+ * @param infval_enc_buf_len   Bytes written by the secure function.
+ *
+ * @return psa_status_t
+ */
+typedef psa_status_t (*infer_get_cose_output)(infer_enc_t enc_format,
+					      const char *model,
+					      void  *input,
+					      size_t input_size,
+					      uint8_t *infval_enc_buf,
+					      size_t infval_enc_buf_size,
+					      size_t *infval_enc_buf_len);
 
 /**
  * @brief Get the inference model context

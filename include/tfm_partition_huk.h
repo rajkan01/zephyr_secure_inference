@@ -8,6 +8,7 @@
 
 #include "tfm_api.h"
 #include "psa/crypto.h"
+#include "key_mgmt.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -16,7 +17,7 @@ extern "C" {
 /**
  * \brief Get the public key from HUK export public key service
  *
- * \param[in] key_id                   EC key id for persistent key
+ * \param[in] key_id           EC key id for persistent key
  * \param[in] ec_pk_data       Buffer to which exported public key
  *                                     is written into
  * \param[in] ec_pk_data_size  Size of ec_pk_data in bytes
@@ -26,6 +27,17 @@ extern "C" {
 psa_status_t psa_huk_get_pubkey(psa_key_id_t *key_id,
 				uint8_t *ec_pk_data,
 				size_t ec_pk_data_size);
+
+/**
+ * \brief Get the EC key status from HUK EC key status secure service
+ *
+ * \param[in] key_id    EC key id for persistent key
+ * \param[in] stat      Pointer to the buffer to store the key status
+ *
+ * \return Returns error code as specified in \ref psa_status_t
+ */
+psa_status_t psa_huk_ec_key_stat(psa_key_id_t *key_id,
+				km_key_stat_t *stat);
 
 /**
  * \brief Get the UUID from HUK generate UUID service

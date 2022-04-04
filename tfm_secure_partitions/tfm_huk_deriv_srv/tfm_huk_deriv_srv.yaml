@@ -26,7 +26,7 @@
       "version_policy": "STRICT"
     },
     {
-      "name": "TFM_HUK_EXPORT_PUBKEY",
+      "name": "TFM_HUK_EC_KEY_STAT",
       "sid": "0xFFFFF002", # Bits [31:12] denote the vendor (change this),
                           # bits [11:0] are arbitrary at the discretion of the
                           # vendor.
@@ -35,8 +35,17 @@
       "version_policy": "STRICT"
     },
     {
-      "name": "TFM_HUK_COSE_CBOR_ENC_SIGN",
+      "name": "TFM_HUK_EXPORT_PUBKEY",
       "sid": "0xFFFFF003", # Bits [31:12] denote the vendor (change this),
+                          # bits [11:0] are arbitrary at the discretion of the
+                          # vendor.
+      "non_secure_clients": true,
+      "version": 1,
+      "version_policy": "STRICT"
+    },
+    {
+      "name": "TFM_HUK_COSE_CBOR_ENC_SIGN",
+      "sid": "0xFFFFF004", # Bits [31:12] denote the vendor (change this),
                           # bits [11:0] are arbitrary at the discretion of the
                           # vendor.
       "non_secure_clients": false,
@@ -45,7 +54,7 @@
     },
     {
       "name": "TFM_HUK_GEN_UUID",
-       "sid": "0xFFFFF004", # Bits [31:12] denote the vendor (change this),
+       "sid": "0xFFFFF005", # Bits [31:12] denote the vendor (change this),
                            # bits [11:0] are arbitrary at the discretion of the
                            # vendor.
         "non_secure_clients": true,
@@ -54,7 +63,7 @@
     },
     {
       "name": "TFM_HUK_HASH_SIGN",
-       "sid": "0xFFFFF005", # Bits [31:12] denote the vendor (change this),
+       "sid": "0xFFFFF006", # Bits [31:12] denote the vendor (change this),
                            # bits [11:0] are arbitrary at the discretion of the
                            # vendor.
         "non_secure_clients": true,

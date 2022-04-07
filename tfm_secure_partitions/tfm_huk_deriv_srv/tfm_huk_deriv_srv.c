@@ -20,12 +20,12 @@
 #include "tfm_huk_deriv_srv_api.h"
 
 #define KEY_LEN_BYTES 16
-/* This macro appends an optional HUK_DERIV_SEED_EXTRA string to the
+/* This macro appends an optional HUK_DERIV_LABEL_EXTRA string to the
  * label used for key derivation, enabling key diversity during testing
  * on emulated platforms with a fixed HUK value.
- * It can be set at compile time via '-DHUK_DERIV_SEED_EXTRA=value'.
+ * It can be set at compile time via '-DHUK_DERIV_LABEL_EXTRA=value'.
  */
-#define LABEL_CONCAT(A) #A HUK_DERIV_SEED_EXTRA
+#define LABEL_CONCAT(A) #A HUK_DERIV_LABEL_EXTRA
 #define LABEL_HI    LABEL_CONCAT(_EC_PRIV_KEY_HI)
 #define LABEL_LO    LABEL_CONCAT(_EC_PRIV_KEY_LO)
 #define LABEL_UUID  LABEL_CONCAT(UUID)

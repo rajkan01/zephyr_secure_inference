@@ -181,7 +181,7 @@ The following EC keys are currently generated:
 
 - Device Client TLS key (secp256r1)
 - Device COSE SIGN (secp256r1 with SHA-256 digest)
-- Device COSE ENCRYPT (secp256r14, ECDH ES w/concat KDF, AES key wrap, 256 bit keys)
+- Device COSE ENCRYPT (secp256r1, ECDH ES w/concat KDF, AES key wrap, 256 bit keys)
 
 The non-secure processing environment exposes a ``keys`` shell command that can
 be used to retrieve the public key component of the above private keys, as well
@@ -249,19 +249,19 @@ TF-M defines a hard-coded HUK value for the mps2 and mps3 platforms, meaning
 that every instance of this sample run on these platforms will derive the same
 key values.
 
-This project defines an optional ``HUK_DERIV_SEED_EXTRA`` value in the secure
+This project defines an optional ``HUK_DERIV_LABEL_EXTRA`` value in the secure
 parition that can be used to provide an additional label component for key
 derivation, enabling key diversity when testing on emulated platforms.
     
 A KConfig wrapper for this variable is also added via the
-``DCONFIG_SECURE_INFER_HUK_DERIV_SEED_EXTRA`` config flag to facilitate passing
-the seed from Zephyr's build system up to the TF-M build system.
+``DCONFIG_SECURE_INFER_HUK_DERIV_LABEL_EXTRA`` config flag to facilitate passing
+the label from Zephyr's build system up to the TF-M build system.
 
-The seed value must be less than 16 characters in size!
+The label value must be less than 16 characters in size!
 
 It can be defined at compile time with west via:
 
 ::
 
    $ west build -p -b mps2_an521_ns -t run -- \
-     -DCONFIG_SECURE_INFER_HUK_DERIV_SEED_EXTRA=\"123456789012345\"
+     -DCONFIG_SECURE_INFER_HUK_DERIV_LABEL_EXTRA=\"123456789012345\"

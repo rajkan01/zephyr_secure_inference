@@ -20,15 +20,30 @@ cmake_policy(SET CMP0079 NEW)
 # linker script will lay the partition in memory.
 add_library(tfm_app_rot_partition_tflm STATIC)
 
-file(GLOB_RECURSE TFLM_C_FILES ${CMAKE_CURRENT_LIST_DIR}/tensorflow/lite/c/*.c)
+file(GLOB_RECURSE
+    TFLM_C_FILES
+        ${CMAKE_CURRENT_LIST_DIR}/tensorflow/lite/c/*.c
+)
 
-file(GLOB_RECURSE TFLM_CORE_FILES ${CMAKE_CURRENT_LIST_DIR}/tensorflow/lite/core/*.cc)
+file(GLOB_RECURSE
+    TFLM_CORE_FILES
+        ${CMAKE_CURRENT_LIST_DIR}/tensorflow/lite/core/*.cc
+)
 
-file(GLOB_RECURSE TFLM_KERNELS_FILES ${CMAKE_CURRENT_LIST_DIR}/tensorflow/lite/kernels/*.cc)
+file(GLOB_RECURSE
+    TFLM_KERNELS_FILES
+        ${CMAKE_CURRENT_LIST_DIR}/tensorflow/lite/kernels/*.cc
+)
 
-file(GLOB_RECURSE TFLM_MICRO_FILES ${CMAKE_CURRENT_LIST_DIR}/tensorflow/lite/micro/*.cc)
+file(GLOB_RECURSE
+    TFLM_MICRO_FILES
+        ${CMAKE_CURRENT_LIST_DIR}/tensorflow/lite/micro/*.cc
+)
 
-file(GLOB_RECURSE TFLM_SCHEMA_FILES ${CMAKE_CURRENT_LIST_DIR}/tensorflow/lite/schema/*.cc)
+file(GLOB_RECURSE
+    TFLM_SCHEMA_FILES
+        ${CMAKE_CURRENT_LIST_DIR}/tensorflow/lite/schema/*.cc
+)
 
 target_sources(tfm_app_rot_partition_tflm
     PRIVATE

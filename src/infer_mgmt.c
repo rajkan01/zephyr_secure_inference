@@ -3,13 +3,14 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-
+#include <stdio.h>
 #include <logging/log.h>
 
 #include "cose/cose_verify.h"
 #include "cose/mbedtls_ecdsa_verify_sign.h"
 #include "psa_manifest/sid.h"
 #include "tfm_partition_tflm.h"
+#include "tfm_partition_utvm.h"
 #include "infer_mgmt.h"
 #include "util_app_log.h"
 
@@ -92,19 +93,19 @@ err:
 	return status;
 }
 
-psa_status_t infer_get_cose_output(infer_enc_t enc_format,
-				   infer_model_idx_t model_idx,
-				   void  *input,
-				   size_t input_size,
-				   uint8_t *infval_enc_buf,
-				   size_t infval_enc_buf_size,
-				   size_t *infval_enc_buf_len)
+psa_status_t infer_get_tflm_cose_output(infer_enc_t enc_format,
+					const char *model,
+					void  *input,
+					size_t input_size,
+					uint8_t *infval_enc_buf,
+					size_t infval_enc_buf_size,
+					size_t *infval_enc_buf_len)
 {
 	psa_status_t status;
 	infer_config_t infer_config;
 
 	infer_config.enc_format = enc_format;
-	infer_config.model_idx = model_idx;
+	sprintf(infer_config.models, "%s", model);
 	status = al_psa_status(
 		psa_si_tflm_hello(&infer_config,
 				  input,
@@ -112,6 +113,35 @@ psa_status_t infer_get_cose_output(infer_enc_t enc_format,
 				  infval_enc_buf,
 				  infval_enc_buf_size,
 				  infval_enc_buf_len),
+		__func__);
+
+	if (status != PSA_SUCCESS) {
+		LOG_ERR("Failed to get sine value using secure inference");
+	}
+	return status;
+}
+
+psa_status_t infer_get_utvm_cose_output(infer_enc_t enc_format,
+					const char *model,
+					void  *input,
+					size_t input_size,
+					uint8_t *infval_enc_buf,
+					size_t infval_enc_buf_size,
+					size_t *infval_enc_buf_len)
+{
+	psa_status_t status;
+	infer_config_t infer_config;
+
+	infer_config.enc_format = enc_format;
+	sprintf(infer_config.models, "%s", model);
+
+	status = al_psa_status(
+		psa_si_utvm(&infer_config,
+			    input,
+			    input_size,
+			    infval_enc_buf,
+			    infval_enc_buf_size,
+			    infval_enc_buf_len),
 		__func__);
 
 	if (status != PSA_SUCCESS) {
@@ -133,9 +163,16 @@ void infer_init()
 	infer_ctx_t *ctx = infer_context_get();
 
 	/* Initialise the TFLM sine wave model context. */
-	infer_model_ctx_init(&ctx[INFER_MODEL_SINE],
+	infer_model_ctx_init(&ctx[INFER_MODEL_TFLM_SINE],
 			     TFM_TFLM_SERVICE_HELLO_SID,
 			     TFM_TFLM_SERVICE_HELLO_VERSION,
 			     INFER_MODEL_STS_ACTIVE,
-			     "sine");
+			     "tflm_sine");
+
+	/* Initialise the UTVM sine wave model context. */
+	infer_model_ctx_init(&ctx[INFER_MODEL_UTVM_SINE],
+			     TFM_UTVM_SINE_MODEL_SERVICE_SID,
+			     TFM_UTVM_SINE_MODEL_SERVICE_VERSION,
+			     INFER_MODEL_STS_ACTIVE,
+			     "utvm_sine");
 }

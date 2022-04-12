@@ -7,15 +7,15 @@
 #include "tfm_huk_deriv_srv_api.h"
 
 psa_status_t psa_huk_deriv_ec_key(psa_key_id_t *ec_key_id,
-				  const uint8_t *seed,
-				  size_t seed_size,
+				  const uint8_t *hpke_info,
+				  size_t hpke_info_size,
 				  psa_key_usage_t *key_usage_flag)
 {
 	psa_status_t status;
 	psa_handle_t handle;
 
 	psa_invec in_vec[] = {
-		{ .base = seed, .len = seed_size },
+		{ .base = hpke_info, .len = hpke_info_size },
 		{ .base = ec_key_id, .len = sizeof(psa_key_id_t) },
 		{ .base = key_usage_flag, .len = sizeof(psa_key_usage_t) },
 	};

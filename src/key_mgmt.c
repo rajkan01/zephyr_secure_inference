@@ -33,9 +33,8 @@ void km_context_init(km_key_context_t *ctx,
 		     km_key_type_t key_id,
 		     const unsigned char *label)
 {
-	uint8_t public_key[KM_PUBLIC_KEY_SIZE] = { 0 };
-	size_t public_key_len = sizeof(public_key);
 	psa_status_t status;
+	km_key_stat_t stat;
 
 	/* Set the key ID to match the secure service list. */
 	ctx->key_id = key_id;
@@ -48,17 +47,15 @@ void km_context_init(km_key_context_t *ctx,
 		goto err;
 	}
 
-	/* Request the public key from the secure service. */
+	/* Get the key status from the secure service. */
 	status = al_psa_status(
-		psa_huk_get_pubkey(&ctx->key_id,
-				   public_key,
-				   public_key_len),
+		psa_huk_ec_key_stat(&ctx->key_id, &stat),
 		__func__);
 	if (status != PSA_SUCCESS) {
-		printf("Failed to export the_public_key with status %d\n", status);
+		printf("Failed to get the key status with %d\n", status);
 		goto err;
 	} else {
-		ctx->status = KEY_GEN;
+		ctx->status = stat;
 	}
 	return;
 err:

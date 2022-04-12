@@ -206,12 +206,90 @@ err_release_op:
 	return status;
 }
 
+static huk_key_context_t *tfm_huk_get_context()
+{
+	static huk_key_context_t huk_ctx[HUK_KEY_COUNT] = { 0 };
+
+	return huk_ctx;
+}
+
+static psa_status_t tfm_huk_key_context_init(huk_key_idx_t idx,
+					     psa_key_id_t key_id,
+					     huk_key_stat_t stat)
+{
+	if (idx > HUK_KEY_COUNT) {
+		return PSA_ERROR_INVALID_ARGUMENT;
+	}
+
+	huk_key_context_t *ctx = tfm_huk_get_context();
+	ctx[idx].key_id = key_id;
+	ctx[idx].status = stat;
+	return PSA_SUCCESS;
+}
+
+static psa_status_t tfm_huk_key_get_idx(psa_key_id_t key_id,
+					huk_key_idx_t *idx)
+{
+	/* Map the Key id to key idx */
+	if (key_id == HUK_CLIENT_TLS) {
+		*idx = HUK_KEY_CLIENT_TLS;
+	} else if (key_id == HUK_COSE_SIGN) {
+		*idx = HUK_KEY_C_SIGN;
+	} else if (key_id == HUK_COSE_ENCRYPT) {
+		*idx = HUK_KEY_C_ENCRYPT;
+	} else {
+		return PSA_ERROR_INVALID_ARGUMENT;
+	}
+	return PSA_SUCCESS;
+}
+
+static psa_status_t tfm_huk_key_get_status(huk_key_idx_t idx, huk_key_stat_t *stat)
+{
+	if (idx > HUK_KEY_COUNT) {
+		return PSA_ERROR_INVALID_ARGUMENT;
+	}
+
+	huk_key_context_t *ctx = tfm_huk_get_context();
+	*stat = ctx[idx].status;
+	return PSA_SUCCESS;
+}
+
+static psa_status_t tfm_huk_ec_key_status(psa_msg_t *msg)
+{
+	psa_key_id_t key_id;
+	huk_key_idx_t idx;
+	huk_key_stat_t stat;
+	psa_status_t status = PSA_SUCCESS;
+
+	/* Check size of invec parameters */
+	if (msg->in_size[0] != sizeof(psa_key_id_t)) {
+		return PSA_ERROR_PROGRAMMER_ERROR;
+	}
+	psa_read(msg->handle, 0, &key_id, msg->in_size[0]);
+
+	status = tfm_huk_key_get_idx(key_id, &idx);
+	if (status != PSA_SUCCESS) {
+		return status;
+	}
+
+	status = tfm_huk_key_get_status(idx, &stat);
+	if (status != PSA_SUCCESS) {
+		return status;
+	}
+
+	psa_write(msg->handle, 0, &stat, sizeof(huk_key_stat_t));
+	return status;
+}
+
 static psa_status_t tfm_huk_deriv_ec_key(psa_msg_t *msg)
 {
 	psa_status_t status = PSA_SUCCESS;
 	uint8_t ec_priv_key_data[KEY_LEN_BYTES * 2] = { 0 };
 	size_t ec_priv_key_data_len = 0;
 	psa_key_usage_t key_usage_flag;
+	huk_key_idx_t idx;
+	huk_key_stat_t stat;
+
 
 	// Check size of invec parameters
 	if (msg->in_size[0] == 0 ||
@@ -219,14 +297,30 @@ static psa_status_t tfm_huk_deriv_ec_key(psa_msg_t *msg)
 		return PSA_ERROR_PROGRAMMER_ERROR;
 	}
 
-	uint8_t label_hi[32] = { 0 };
-	uint8_t label_lo[32] = { 0 };
+	uint8_t label_hi[40] = { 0 };
+	uint8_t label_lo[40] = { 0 };
 	uint8_t rx_label[32] = { 0 };
 	psa_key_id_t key_id;
 
 	psa_read(msg->handle, 0, &rx_label, msg->in_size[0]);
 	psa_read(msg->handle, 1, &key_id, msg->in_size[1]);
 	psa_read(msg->handle, 2, &key_usage_flag, msg->in_size[2]);
+
+	status = tfm_huk_key_get_idx(key_id, &idx);
+	if (status != PSA_SUCCESS) {
+		return status;
+	}
+
+	status = tfm_huk_key_get_status(idx, &stat);
+	if (status != PSA_SUCCESS) {
+		return status;
+	}
+
+	if (stat == HUK_X_509_CERT_GEN || stat == HUK_KEY_GEN) {
+		return PSA_SUCCESS;
+	}
+
+	tfm_huk_key_context_init(idx, key_id, HUK_KEY_GEN);
 
 	/* Add LABEL_HI to rx_label to create label_hi. */
 	sprintf((char *)label_hi, "%s%s", rx_label, LABEL_HI);
@@ -282,6 +376,9 @@ static psa_status_t tfm_huk_deriv_ec_key(psa_msg_t *msg)
 	if (status != PSA_SUCCESS) {
 		LOG_ERRFMT("[HUK deriv unique key] psa_close_key returned: %d \n", status);
 	}
+
+	LOG_INFFMT("[HUK deriv unique key] Successfully derived the key for");
+	LOG_INFFMT(" %s\n", rx_label);
 
 	return status;
 }
@@ -564,6 +661,10 @@ psa_status_t tfm_huk_deriv_req_mgr_init(void)
 			tfm_huk_deriv_signal_handle(
 				TFM_HUK_EXPORT_PUBKEY_SIGNAL,
 				tfm_huk_export_pubkey);
+		} else if (signals & TFM_HUK_EC_KEY_STAT_SIGNAL) {
+			tfm_huk_deriv_signal_handle(
+				TFM_HUK_EC_KEY_STAT_SIGNAL,
+				tfm_huk_ec_key_status);
 		} else if (signals &
 			   TFM_HUK_COSE_CBOR_ENC_SIGN_SIGNAL) {
 			tfm_huk_deriv_signal_handle(

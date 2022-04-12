@@ -43,7 +43,11 @@ cmd_infer_list_models(const struct shell *shell, size_t argc, char **argv)
 }
 
 static int
-cmd_infer_get_sine_val(const struct shell *shell, size_t argc, char **argv)
+cmd_infer_get_sine_val(const struct shell *shell,
+		       size_t argc,
+		       char **argv,
+		       infer_get_cose_output cose_output,
+		       const char *model)
 {
 	psa_status_t status;
 	const float PI = 3.14159265359f;
@@ -120,13 +124,14 @@ cmd_infer_get_sine_val(const struct shell *shell, size_t argc, char **argv)
 
 	while (usr_in_val_start <= usr_in_val_end) {
 		usr_in_val_deg = usr_in_val_start * deg;
-		status =  infer_get_cose_output(INFER_ENC_COSE_SIGN1,
-						INFER_MODEL_SINE,
-						(void *)&usr_in_val_deg,
-						sizeof(usr_in_val_deg),
-						&infval_enc_buf[0],
-						sizeof(infval_enc_buf),
-						&infval_enc_buf_len);
+		status =  cose_output(
+			INFER_ENC_COSE_SIGN1,
+			model,
+			(void *)&usr_in_val_deg,
+			sizeof(usr_in_val_deg),
+			&infval_enc_buf[0],
+			sizeof(infval_enc_buf),
+			&infval_enc_buf_len);
 
 		if (status != 0) {
 			return shell_com_rc_code(shell,
@@ -170,6 +175,32 @@ cmd_infer_get_sine_val(const struct shell *shell, size_t argc, char **argv)
 }
 
 static int
+cmd_infer_get_tflm_sine_val(const struct shell *shell,
+			    size_t argc,
+			    char **argv)
+{
+	return
+		cmd_infer_get_sine_val(shell,
+				       argc,
+				       argv,
+				       infer_get_tflm_cose_output,
+				       "TFLM_MODEL_SINE");
+}
+
+static int
+cmd_infer_get_utvm_sine_val(const struct shell *shell,
+			    size_t argc,
+			    char **argv)
+{
+	return
+		cmd_infer_get_sine_val(shell,
+				       argc,
+				       argv,
+				       infer_get_utvm_cose_output,
+				       "UTVM_MODEL_SINE");
+}
+
+static int
 cmd_infer_get(const struct shell *shell, size_t argc, char **argv)
 {
 	infer_ctx_t *m_ctx = infer_context_get();
@@ -192,9 +223,11 @@ cmd_infer_get(const struct shell *shell, size_t argc, char **argv)
 
 /* Subcommand array for "model" (level 2). */
 SHELL_STATIC_SUBCMD_SET_CREATE(sub_cmd_model,
-    /* 'sine' command handler. */
-	SHELL_CMD_ARG(sine, NULL, "$ infer get sine <start> <[stop] [stride]>", cmd_infer_get_sine_val, 1, 3),
-    /* Array terminator. */
+	/* 'tflm_sine' command handler. */
+	SHELL_CMD_ARG(tflm_sine, NULL, "$ infer get tflm_sine start <[stop] [stride]>", cmd_infer_get_tflm_sine_val, 1, 3),
+	/* 'utvm_sine' command handler. */
+	SHELL_CMD_ARG(utvm_sine, NULL, "$ infer get utvm_sine start <[stop] [stride]>", cmd_infer_get_utvm_sine_val, 1, 3),
+	/* Array terminator. */
 	SHELL_SUBCMD_SET_END
 	);
 

@@ -37,7 +37,7 @@ const char *tflm_models[TFLM_MODEL_COUNT] = { "TFLM_MODEL_SINE" };
 
 typedef struct {
 	huk_enc_format_t enc_format;
-	tflm_model_idx_t model_idx;
+	char model[32];
 } tflm_config_t;
 
 // /* I2C driver name for LSM303 peripheral */
@@ -192,13 +192,13 @@ psa_status_t tfm_tflm_infer_run(psa_msg_t *msg)
 {
 	psa_status_t status = PSA_SUCCESS;
 	float x_value, y_value;
-	uint8_t inf_val_encoded_buf[256];
+	uint8_t inf_val_encoded_buf[msg->out_size[0]];
 	size_t inf_val_encoded_buf_len = 0;
 	tflm_config_t cfg;
+	_Bool is_model_supported = false;
 
 	// Check size of invec/outvec parameter
-	if (msg->in_size[1] != sizeof(tflm_config_t) ||
-	    msg->out_size[0] != sizeof(inf_val_encoded_buf)) {
+	if (msg->in_size[1] != sizeof(tflm_config_t)) {
 
 		status = PSA_ERROR_PROGRAMMER_ERROR;
 		goto err;
@@ -207,45 +207,55 @@ psa_status_t tfm_tflm_infer_run(psa_msg_t *msg)
 	psa_read(msg->handle, 0, &x_value, msg->in_size[0]);
 	psa_read(msg->handle, 1, &cfg, sizeof(tflm_config_t));
 
-	if (cfg.model_idx < TFLM_MODEL_COUNT &&
-	    (strcmp(tflm_models[cfg.model_idx], "TFLM_MODEL_SINE") == 0)) {
-		/* This constant kXrange represents the range of x values our model
-		 * was trained on, which is from 0 to (2 * Pi). We approximate Pi
-		 * to avoid requiring additional libraries.
-		 */
-		if ((kXrange < x_value) || (x_value < 0.0f)) {
-			status = PSA_ERROR_PROGRAMMER_ERROR;
-			goto err;
+	for (int i = 0; i < TFLM_MODEL_COUNT; i++) {
+		if (strcmp(tflm_models[i], cfg.model) == 0) {
+			is_model_supported = true;
+			break;
 		}
-
-		/* Run inference */
-		LOG_INFFMT("[TFLM service] Starting secure inferencing...\r\n");
-		y_value = loop(x_value);
-
-		LOG_INFFMT("[TFLM service] Starting CBOR encoding and COSE signing...\
-				\r\n");
-		status = psa_huk_cose_sign(&y_value,
-					   cfg.enc_format,
-					   inf_val_encoded_buf,
-					   msg->out_size[0],
-					   &inf_val_encoded_buf_len);
-		if (status != PSA_SUCCESS) {
-			LOG_ERRFMT("[TFLM service] CBOR encoding and COSE signing failed with status %d\n" \
-				   , status);
-			goto err;
-		}
-
-		psa_write(msg->handle,
-			  0,
-			  inf_val_encoded_buf,
-			  inf_val_encoded_buf_len);
-		psa_write(msg->handle,
-			  1,
-			  &inf_val_encoded_buf_len,
-			  sizeof(inf_val_encoded_buf_len));
-	} else {
-		status = PSA_ERROR_NOT_SUPPORTED;
 	}
+
+	if (!is_model_supported) {
+		LOG_ERRFMT("[TFLM service] %s model is not supported\r\n", cfg.model);
+		status = PSA_ERROR_NOT_SUPPORTED;
+		goto err;
+	}
+
+
+	/* This constant kXrange represents the range of x values our model
+	 * was trained on, which is from 0 to (2 * Pi). We approximate Pi
+	 * to avoid requiring additional libraries.
+	 */
+	if ((kXrange < x_value) || (x_value < 0.0f)) {
+		status = PSA_ERROR_PROGRAMMER_ERROR;
+		goto err;
+	}
+
+	/* Run inference */
+	LOG_INFFMT("[TFLM service] Starting secure inferencing...\r\n");
+	y_value = loop(x_value);
+
+	LOG_INFFMT("[TFLM service] Starting CBOR encoding and COSE signing...\
+				\r\n");
+	status = psa_huk_cose_sign(&y_value,
+				   cfg.enc_format,
+				   inf_val_encoded_buf,
+				   msg->out_size[0],
+				   &inf_val_encoded_buf_len);
+	if (status != PSA_SUCCESS) {
+		LOG_ERRFMT("[TFLM service] CBOR encoding and COSE signing failed with status %d\n" \
+			   , status);
+		goto err;
+	}
+
+	psa_write(msg->handle,
+		  0,
+		  inf_val_encoded_buf,
+		  inf_val_encoded_buf_len);
+	psa_write(msg->handle,
+		  1,
+		  &inf_val_encoded_buf_len,
+		  sizeof(inf_val_encoded_buf_len));
+
 err:
 	return status;
 }
@@ -283,16 +293,16 @@ void tfm_tflm_signal_handle(psa_signal_t signal, signal_handler_t pfn)
 /**
  * \brief Generate EC key.
  */
-static void tfm_tflm_gen_ec_key(const uint8_t  *seed,
-				size_t seed_len,
+static void tfm_tflm_gen_ec_key(const uint8_t  *hpke_info,
+				size_t hpke_info_len,
 				psa_key_id_t ec_key_id,
 				psa_key_usage_t key_usage_flag)
 {
 	psa_status_t status;
 
 	status = psa_huk_deriv_ec_key(&ec_key_id,
-				      seed,
-				      seed_len,
+				      hpke_info,
+				      hpke_info_len,
 				      &key_usage_flag);
 
 	if (status != PSA_SUCCESS) {
@@ -300,9 +310,6 @@ static void tfm_tflm_gen_ec_key(const uint8_t  *seed,
 			"[TFLM service] HUK key derivation failed with status %d\n",
 			status);
 		psa_panic();
-	} else {
-		LOG_INFFMT("[TFLM service] Successfully derived the key from HUK for");
-		LOG_INFFMT(" %s\n", seed);
 	}
 }
 
@@ -315,26 +322,26 @@ void tfm_tflm_ec_keys_init()
 	static _Bool is_ec_keys_init_done = false;
 
 	if (!is_ec_keys_init_done) {
-		/** These are the seed passed to key derivation for generating three
-		 *  unique keys - Device client TLS, Device COSE SIGN, Device COSE
-		 *  encryption.
+		/** These are the hpke_info passed to key derivation for generating
+		 *  three unique keys - Device client TLS, Device COSE SIGN, Device
+		 *  COSE encryption.
 		 */
-		const char *seed[3] = {
-			"CLIENT_TLS",
-			"COSE_SIGN",
-			"COSE_ENCRYPT"
+		const char *hpke_info[3] = {
+			"HUK_CLIENT_TLS",
+			"HUK_COSE_SIGN",
+			"HUK_COSE_ENCRYPT"
 		};
 
-		tfm_tflm_gen_ec_key((const uint8_t *)seed[0],
-				    strlen(seed[0]),
+		tfm_tflm_gen_ec_key((const uint8_t *)hpke_info[0],
+				    strlen(hpke_info[0]),
 				    HUK_CLIENT_TLS,
 				    (PSA_KEY_USAGE_SIGN_HASH | PSA_KEY_USAGE_VERIFY_MESSAGE));
-		tfm_tflm_gen_ec_key((const uint8_t *)seed[1],
-				    strlen(seed[1]),
+		tfm_tflm_gen_ec_key((const uint8_t *)hpke_info[1],
+				    strlen(hpke_info[1]),
 				    HUK_COSE_SIGN,
 				    (PSA_KEY_USAGE_SIGN_HASH | PSA_KEY_USAGE_VERIFY_HASH));
-		tfm_tflm_gen_ec_key((const uint8_t *)seed[2],
-				    strlen(seed[2]),
+		tfm_tflm_gen_ec_key((const uint8_t *)hpke_info[2],
+				    strlen(hpke_info[2]),
 				    HUK_COSE_ENCRYPT,
 				    PSA_KEY_USAGE_SIGN_HASH | PSA_KEY_USAGE_ENCRYPT);
 		is_ec_keys_init_done = true;

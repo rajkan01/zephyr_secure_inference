@@ -11,9 +11,12 @@
 #include "tfm_sp_log.h"
 #include "psa/service.h"
 #include "psa/crypto.h"
+#include "tfm_huk_deriv_srv_api.h"
 
 /* The algorithm used in COSE */
 #define T_COSE_ALGORITHM              T_COSE_ALGORITHM_ES256
+
+#define SERV_NAME "COSE SERVICE"
 
 static psa_status_t
 t_cose_err_to_psa_err(enum t_cose_err_t err)
@@ -203,7 +206,7 @@ psa_status_t tfm_cose_encode_sign(psa_key_handle_t key_handle,
 	status = tfm_cose_encode_finish(&encode_ctx,
 					&completed_inf_val_encode_sign);
 	if (status != PSA_SUCCESS) {
-		LOG_INFFMT("sign the payload failed: %d\n", status);
+		log_err_print("failed with %d", status);
 		return status;
 	}
 
@@ -231,10 +234,9 @@ psa_status_t tfm_cose_encode_sign(psa_key_handle_t key_handle,
 					    NULL);                              /* Don't return parameters */
 
 	if (return_value != T_COSE_SUCCESS) {
-		LOG_INFFMT("[COSE service] COSE signature verification failed: %d\n", \
-			   return_value);
+		log_err_print("failed with %d", return_value);
 	} else {
-		LOG_INFFMT("[COSE service] COSE signature verification succeeded\n");
+		log_info_print("COSE signature verification succeeded");
 	}
 #endif
 	return status;

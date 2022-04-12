@@ -30,6 +30,8 @@
 #define LABEL_LO    LABEL_CONCAT(_EC_PRIV_KEY_LO)
 #define LABEL_UUID  LABEL_CONCAT(UUID)
 
+#define SERV_NAME "HUK DERIV SERV"
+
 typedef psa_status_t (*signal_handler_t)(psa_msg_t *);
 
 const char hex_digits[] = { '0', '1', '2', '3', '4', '5', '6', '7',
@@ -194,7 +196,7 @@ static psa_status_t tfm_huk_deriv_unique_key(uint8_t *key_data,
 
 	status = psa_destroy_key(derived_key_id);
 	if (status != PSA_SUCCESS) {
-		LOG_INFFMT("[HUK deriv unique key] psa_destroy_key returned: %d \n", status);
+		log_err_print("failed with %d", status);
 		return status;
 	}
 
@@ -369,16 +371,15 @@ static psa_status_t tfm_huk_deriv_ec_key(psa_msg_t *msg)
 				sizeof(ec_priv_key_data),
 				&tflm_cose_key_handle);
 	if (status != PSA_SUCCESS) {
-		LOG_ERRFMT("[HUK deriv unique key] psa_import_key returned: %d \n", status);
+		log_err_print("failed with %d", status);
 		return status;
 	}
 	status = psa_close_key(tflm_cose_key_handle);
 	if (status != PSA_SUCCESS) {
-		LOG_ERRFMT("[HUK deriv unique key] psa_close_key returned: %d \n", status);
+		log_err_print("failed with %d", status);
 	}
 
-	LOG_INFFMT("[HUK deriv unique key] Successfully derived the key for");
-	LOG_INFFMT(" %s\n", rx_label);
+	log_info_print("Successfully derived the key for %s", rx_label);
 
 	return status;
 }
@@ -395,7 +396,7 @@ static psa_status_t tfm_huk_export_pubkey(psa_msg_t *msg)
 	psa_read(msg->handle, 0, &key_id, msg->in_size[0]);
 	status = psa_open_key(key_id, &key_handle);
 	if (status != PSA_SUCCESS) {
-		LOG_ERRFMT("[HUK export pubkey service] psa_open_key returned: %d \n", status);
+		log_err_print("failed with %d", status);
 		goto err;
 	}
 
@@ -404,13 +405,13 @@ static psa_status_t tfm_huk_export_pubkey(psa_msg_t *msg)
 				       sizeof(data_out),
 				       &data_len);
 	if (status != PSA_SUCCESS) {
-		LOG_ERRFMT("[HUK export pubkey service] psa_export_public_key returned: %d \n", status);
+		log_err_print("failed with %d", status);
 		goto err;
 	}
 
 	status = psa_close_key(key_handle);
 	if (status != PSA_SUCCESS) {
-		LOG_ERRFMT("[HUK export pubkey service] psa_close_key returned: %d \n", status);
+		log_err_print("failed with %d", status);
 		goto err;
 	}
 	psa_write(msg->handle, 0, data_out, data_len);
@@ -436,9 +437,7 @@ static psa_status_t tfm_huk_cose_encode_sign
 					 msg->out_size[0],
 					 &inf_val_encoded_buf_len);
 		if (status != PSA_SUCCESS) {
-			LOG_ERRFMT(
-				"[HUK COSE service] Failed to encode inference value: %d \n",
-				status);
+			log_err_print("failed with %d", status);
 			return status;
 		}
 	} else if (enc_format == HUK_ENC_COSE_SIGN1) {
@@ -448,14 +447,12 @@ static psa_status_t tfm_huk_cose_encode_sign
 					      msg->out_size[0],
 					      &inf_val_encoded_buf_len);
 		if (status != PSA_SUCCESS) {
-			LOG_ERRFMT(
-				"[HUK COSE service] tfm_cose_encode_sign returned: %d \n",
-				status);
+			log_err_print("failed with %d", status);
 			return status;
 		}
 
 	} else {
-		LOG_ERRFMT("[HUK COSE service] Invalid encode format \n");
+		log_err_print("Invalid encode format");
 		return PSA_ERROR_NOT_SUPPORTED;
 	}
 	psa_write(msg->handle,
@@ -497,22 +494,18 @@ static psa_status_t tfm_huk_hash_sign_csr(psa_msg_t *msg)
 				    msg->in_size[1],
 				    TFM_HUK_ASN1_CONSTRUCTED | TFM_HUK_ASN1_SEQUENCE);
 	if (status != PSA_SUCCESS) {
-		LOG_ERRFMT(
-			"[HUK CSR sign service] tfm_huk_csr_verify failed with: %d \n",
-			status);
+		log_err_print("failed with %d", status);
 		goto err;
 	} else {
-		LOG_INFFMT(
-			"[HUK CSR sign service] Verified ASN.1 tag and length of the payload\n");
+		log_info_print("Verified ASN.1 tag and length of the payload");
 	}
 
 	status = psa_open_key(key_id, &key_handle);
 	if (status != PSA_SUCCESS) {
-		LOG_ERRFMT(
-			"[HUK CSR sign service] psa_open_key returned: %d \n", status);
+		log_err_print("failed with %d", status);
 		goto err;
 	}
-	LOG_INFFMT("[HUK CSR sign service] Key id: 0x%x\n\n", key_id);
+	log_info_print("Key id: 0x%x", key_id);
 	if (!PSA_ALG_IS_ECDSA(psa_alg_id)) {
 		status = PSA_ERROR_NOT_SUPPORTED;
 		goto err;
@@ -560,21 +553,16 @@ static psa_status_t tfm_huk_hash_sign_csr(psa_msg_t *msg)
 
 
 	if (status != PSA_SUCCESS) {
-		LOG_ERRFMT("[HUK CSR sign service] hash sign verification failed: %d \n", status);
+		log_err_print("failed with %d", status);
 		goto err;
 	} else {
-		LOG_ERRFMT("[HUK CSR sign service] hash sign verification passed: %d \n", status);
+		log_info_print("hash sign verification passed");
 	}
-	LOG_INFFMT("[HUK CSR sign service] Signed value from S-side\n");
-	for (int i = 0; i < signature_len; i++) {
-		LOG_INFFMT("0x%x, ", sig[i]);
-	}
-	LOG_INFFMT("\n");
 #endif
 
 	status = psa_close_key(key_handle);
 	if (status != PSA_SUCCESS) {
-		LOG_ERRFMT("[HUK CSR sign service] psa_close_key returned: %d \n", status);
+		log_err_print("failed with %d", status);
 		goto err;
 	}
 	psa_write(msg->handle,
@@ -619,7 +607,7 @@ static psa_status_t tfm_huk_gen_uuid(psa_msg_t *msg)
 						uuid_encoded,
 						sizeof(uuid_encoded));
 		is_uuid_generated = 1;
-		LOG_INFFMT("[UUID service] Generated UUID: %s\n", uuid_encoded);
+		log_info_print("Generated UUID: %s", uuid_encoded);
 	}
 	psa_write(msg->handle, 0, uuid_encoded, sizeof(uuid_encoded));
 	return status;

@@ -1,106 +1,160 @@
-# Tensorflow lite-micro as TF-M secure service
+#TensorFlow Lite for Microcontrollers as TF-M secure service
 
-TensorFlow Lite for Microcontrollers (TFLM) is designed to run machine learning models on microcontrollers and other devices with only few kilobytes of memory. The core runtime just fits in 16 KB on an Arm Cortex M3 and can run many basic models. [ref](https://www.tensorflow.org/lite/microcontrollers).
+TensorFlow Lite for Microcontrollers (TFLM) is designed to run machine learning
+models on microcontrollers and other devices with only a few kilobytes of
+memory.
 
-Description about the structure of [repository](https://github.com/tensorflow/tflite-micro/tree/main/tensorflow/lite/micro) can be found [here](https://www.tensorflow.org/lite/microcontrollers/library).
+The core runtime just fits in 16 KB on an Arm Cortex M3 and can run many basic
+models [ref](https://www.tensorflow.org/lite/microcontrollers).
 
-This work is still in prototyping stage, therefore the code is residing in my fork of Zephyr and TF-M.
 
-Zephyr fork: https://github.com/urutva/zephyr
-branch: [tfm-example-partition-tflm](https://github.com/urutva/zephyr/tree/tfm-example-partition-tflm)
+## Prerequisites
 
-TF-M fork: https://github.com/urutva/zephyr-trusted-firmware-m
-branch: [tfm-example-partition-tflm](https://github.com/urutva/zephyr-trusted-firmware-m/tree/tfm-example-partition-tflm)
+## Installing dependency for Ubuntu:
 
-## Zephyr setup
-Setting up environment required to build Zephyr is described [here](https://docs.zephyrproject.org/latest/getting_started/index.html). Use my [fork of Zephyr](https://github.com/urutva/zephyr/tree/tfm-example-partition-tflm) instead of upstream Zephyr.
+1. Run the command to install python3, pip, git:
 
-If you have followed all the instructions correctly, then you should be able to build blinky example using `west build -p auto -b <your-board-name> samples/basic/blinky`.
+    ```bash
+    $ sudo apt install python3 python3-pip git
+    ```
 
-## Exporting tensorflow lite-micro
+## Installing dependency for macOS
 
-Tensorflow lite-micro provides a [python script](https://github.com/tensorflow/tflite-micro/blob/main/tensorflow/lite/micro/tools/project_generation/create_tflm_tree.py) to export sources without build system. However, in order to build TFLM with TF-M, we need to add `CMakeLists.txt`. Currently, this is done manually, but it can be automated using a python script.
+1. Download and install [Python 3 from the official website](https://www.python.org/downloads/mac-osx/).
+2. Run the command to install Git:
 
-```bash
-git clone git@github.com:tensorflow/tflite-micro.git
-cd tflite-micro
+    ```bash
+    $ brew install git
+    ```
 
-python3 tensorflow/lite/micro/tools/project_generation/create_tflm_tree.py \
-        -e hello_world \
-        /tmp/tflm-tree
-```
+## Exporting TFLM hello_world and run time
 
-After successful execution of the script, TFLM source and [hello_world](https://github.com/tensorflow/tflite-micro/tree/main/tensorflow/lite/micro/examples/hello_world) example can be found in `/tmp/tflm-tree`.
+1. Run the command to clone the tflite-micro repository:
 
-### Copy TFLM runtime to TF-M
+     ```bash
+     $ git clone git@github.com:tensorflow/tflite-micro.git
+     ```
 
-```bash
-cp /tmp/tflm-tree/tensorflow path/to/zephyrproject/modules/tee/tfm/trusted-firmware-m/secure_fw/partitions/example_partition/tflm/
-cp /tmp/tflm-tree/third_party path/to/zephyrproject/modules/tee/tfm/trusted-firmware-m/secure_fw/partitions/example_partition/tflm/
-```
+2. Change directory to cloned tflite-micro:
 
-Modify `CMakeLists.txt` in `path/to/zephyrproject/modules/tee/tfm/trusted-firmware-m/secure_fw/partitions/example_partition/tflm/` if necessary.
+     ```bash
+     $ cd tflite-micro
+     ```
 
-### Copy TFLM example to TF-M
+3. Tensorflow lite-micro provides a python script to export sources without a
+build system and run the command to export hello_world example and tflm
+runtime:
 
-```bash
-cp /tmp/tflm-tree/examples/hello_world/* path/to/zephyrproject/modules/tee/tfm/trusted-firmware-m/secure_fw/partitions/example_partition/hello_world
-```
+     ```bash
+     $ python3 tensorflow/lite/micro/tools/project_generation/create_tflm_tree.py \
+             -e hello_world \
+             /tmp/tflm-tree
+     ```
 
-Ensure that necessary changes are done so that the example can run as a secure service. Modify `CMakeLists.txt` in `path/to/zephyrproject/modules/tee/tfm/trusted-firmware-m/secure_fw/partitions/example_partition/hello_world` if necessary.
+4. You can find the exported hello_world and runtime sources under
+`/tmp/tflm-tree`, and the directory layout looks below:
 
-## Zephyr NS sample
+    ```
+    tflm-tree
+    │
+    └───tensorflow
+    │   └─── lite
+    └───examples
+    │   └─── hello_world
+    └───third_party
+        │─── flatbuffers
+        │─── gemmlowp
+        │─── kissfft
+        └─── ruy
+     ```
 
-Add/update Zephyr NS sample (for example `path/to/zephyrproject/samples/tfm_integration/psa_custom_service`) that can invoke the secure service and handle the output.
+## Copy hello_world and TFLM runtime to TF-M
+
+1. Run the `cp` command to copy hello_world example, TFLM runtime and
+third_party to TFM tflm secure service:
+
+     ```bash
+     $ cp /tmp/tflm-tree/tensorflow path/to/zephyr_secure_inference/tfm_secure_partitions/tfm_tflm_service/tflm
+     $ cp /tmp/tflm-tree/third_party path/to/path/to/zephyr_secure_inference/tfm_secure_partitions/tfm_tflm_service/tflm
+     $ cp /tmp/tflm-tree/examples/hello_world/* path/to/zephyr_secure_inference/tfm_secure_partitions/tfm_tflm_service/hello_world
+     ```
+
+2. Update `CMakeLists.txt` in `path/to/zephyr_secure_inference/tfm_secure_partitions/tfm_tflm_service/hello_world`, `path/to/zephyr_secure_inference/tfm_secure_partitions/tfm_tflm_service/tflm/` if necessary.
 
 ## Build and run
 
-Build:
-```bash
-west build -p -b mps2_an521_ns samples/tfm_integration/psa_custom_service
-```
+1. Zephyr setup - setting up the environment required to build Zephyr is
+described [here](https://docs.zephyrproject.org/latest/getting_started/index.html).
+Use [fork of Zephyr](https://github.com/microbuilder/zephyr) instead of
+upstream Zephyr and check out the `tfm_secure_inference` branch.
 
-Run:
-```bash
-qemu-system-arm -M mps2-an521 -device loader,file=./build/tfm_merged.hex -serial stdio \
-  -monitor tcp:localhost:4444,server,nowait \
-  -device lsm303dlhc_mag,id=lsm303,address=0x1E
-```
+2. Build basic blinky example to confirm zephyr setup using
+`west build -p auto -b mps2_an521 samples/basic/blinky` command.
 
-Expected output:
-```bash
-...
-[00:00:00.046,000] <inf> app: Get sine value using secure inference
-[Example partition] Starting secure inferencing...
-Model: Sine of 0 deg is: 0.000000	C Mathlib: Sine of 0 deg is: 0.000000	Deviation: 0.000000
-[Example partition] Starting secure inferencing...
-Model: Sine of 1 deg is: 0.016944	C Mathlib: Sine of 1 deg is: 0.017452	Deviation: 0.000508
-[Example partition] Starting secure inferencing...
-Model: Sine of 2 deg is: 0.059304	C Mathlib: Sine of 2 deg is: 0.034899	Deviation: 0.024405
-[Example partition] Starting secure inferencing...
-Model: Sine of 3 deg is: 0.101664	C Mathlib: Sine of 3 deg is: 0.052336	Deviation: 0.049328
-[Example partition] Starting secure inferencing...
-Model: Sine of 4 deg is: 0.101664	C Mathlib: Sine of 4 deg is: 0.069756	Deviation: 0.031908
-[Example partition] Starting secure inferencing...
-Model: Sine of 5 deg is: 0.101664	C Mathlib: Sine of 5 deg is: 0.087156	Deviation: 0.014508
-[Example partition] Starting secure inferencing...
-Model: Sine of 6 deg is: 0.160968	C Mathlib: Sine of 6 deg is: 0.104528	Deviation: 0.056440
-[Example partition] Starting secure inferencing...
-Model: Sine of 7 deg is: 0.160968	C Mathlib: Sine of 7 deg is: 0.121869	Deviation: 0.039099
-[Example partition] Starting secure inferencing...
-Model: Sine of 8 deg is: 0.186384	C Mathlib: Sine of 8 deg is: 0.139173	Deviation: 0.047211
-[Example partition] Starting secure inferencing...
-Model: Sine of 9 deg is: 0.203328	C Mathlib: Sine of 9 deg is: 0.156434	Deviation: 0.046894
-[Example partition] Starting secure inferencing...
-Model: Sine of 10 deg is: 0.237216	C Mathlib: Sine of 10 deg is: 0.173648	Deviation: 0.063568
-...
-````
+3. Copy the `zephyr_secure_inference` directory to
+`path/to/zephyr/modules/outoftree/`.
 
+4. Run the command to build and run secure inference using QEMU:
+
+    ```bash
+    $ west build -p auto -b mps2_an521_ns modules/outoftree/zephyr_secure_inference -t run
+    ```
+
+5. Expected output:
+
+    ```bash
+     TF-M FP mode: Software
+     Booting TFM v1.5.0
+     Creating an empty ITS flash layout.
+     Creating an empty PS flash layout.
+     [HUK DERIV SERV] tfm_huk_deriv_ec_key()::382 Successfully derived the key for HUK_CLIENT_TLS1
+     [HUK DERIV SERV] tfm_huk_deriv_ec_key()::382 Successfully derived the key for HUK_COSE_SIGN1
+     [HUK DERIV SERV] tfm_huk_deriv_ec_key()::382 Successfully derived the key for HUK_COSE_ENCRYPT1
+     [UTVM SERVICE] tfm_utvm_service_req_mngr_init()::215 UTVM initalisation completed
+     [TFLM SERVICE] tfm_tflm_service_req_mngr_init()::398 initalisation completed
+     *** Booting Zephyr OS build v2.7.99-2785-ge3c585041afe  ***
+     [HUK DERIV SERV] tfm_huk_gen_uuid()::610 Generated UUID: 5319786e-d335-4f9e-93bd-701c20259073
+
+
+     uart:~$
+     ```
+
+6. Type the `infer get tflm_sine 1` shell command:
+
+    ```bash
+    uart:~$ infer get tflm_sine 1
+    ```
+
+7. Secure inference logs:
+
+    ```bash
+     Start: 1.00 End: 1.00 stride: 1.00
+     [TFLM SERVICE] tfm_tflm_infer_run()::236 Starting secure inferencing...
+     [TFLM SERVICE] tfm_tflm_infer_run()::239 Starting CBOR encoding and COSE signing...
+     CBOR encoded and COSE signed inference value:
+     00000000: d2 84 43 a1 01 26 a0 4b  a1 3a 00 01 38 7f 44 2c |..C..&.K .:..8.D,|
+     00000010: ce 8a 3c 58 40 36 fb fb  d9 f5 8e ce f9 d0 3e dc |..<X@6.. ......>.|
+     00000020: 2c 3f 40 52 4e 91 51 cd  86 4b 84 f0 90 7d d1 ee |,?@RN.Q. .K...}..|
+     00000030: 3c 20 06 1b 5a 1e 3f d3  4f 24 71 b1 c0 a6 ec 7d |< ..Z.?. O$q....}|
+     00000040: 5f 51 0f 90 0f e4 99 bc  4f c9 7f 79 4c 59 c2 10 |_Q...... O..yLY..|
+     00000050: b0 3e 75 a1 f1                                   |.>u..            |
+     Verified the signature using the public key.
+     Model: Sine of 1.00 deg is: 0.016944
+     C Mathlib: Sine of 1.00 deg is: 0.017452
+     Deviation: 0.824527
+
+     uart:~$
+    ```
 
 ## Debugging
-The size of TF-M + TFLM is higher than the memory allocated to TF-M when debugging is enabled. In order to debug both TF-M + TFLM and Zephyr, we need to modify linker scripts to increase the memory allocated to TF-M at the same time reducing the memory allocated to Zephyr.
+
+The size of TF-M + TFLM is higher than the memory allocated to TF-M when
+debugging is enabled. In order to debug both TF-M + TFLM and Zephyr, we need
+to modify linker scripts to increase the memory allocated to TF-M at the same
+time reducing the memory allocated to Zephyr.
 
 Zephyr:
+
 ```bash
 --- a/boards/arm/mps2_an521/mps2_an521_ns.dts
 +++ b/boards/arm/mps2_an521/mps2_an521_ns.dts
@@ -115,6 +169,7 @@ Zephyr:
 ```
 
 TF-M:
+
 ```
 --- a/trusted-firmware-m/platform/ext/target/arm/mps2/an521/partition/flash_layout.h
 +++ b/trusted-firmware-m/platform/ext/target/arm/mps2/an521/partition/flash_layout.h
@@ -132,7 +187,10 @@ TF-M:
 ```
 
 ## Observations
-The linker variable `__exidx_end` is not defined for `TFM_LVL == 1`, however, adding TFLM causes build failure due to missing `__exidx_end`. We need to check this with TF-M.
+
+The linker variable `__exidx_end` is not defined for `TFM_LVL == 1`, however,
+adding TFLM causes build failure due to missing `__exidx_end`. We need to
+check this with TF-M.
 
 ```bash
 --- a/trusted-firmware-m/platform/ext/common/gcc/tfm_common_s.ld

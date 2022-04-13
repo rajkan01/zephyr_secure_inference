@@ -21,6 +21,8 @@
 
 #include "main_functions.h"
 
+#define SERV_NAME "TFLM SERVICE"
+
 typedef psa_status_t (*signal_handler_t)(psa_msg_t *);
 
 /* The model index is key to finding the tflm model from the tflm_models array
@@ -215,7 +217,7 @@ psa_status_t tfm_tflm_infer_run(psa_msg_t *msg)
 	}
 
 	if (!is_model_supported) {
-		LOG_ERRFMT("[TFLM service] %s model is not supported\r\n", cfg.model);
+		log_err_print("%s model is not supported", cfg.model);
 		status = PSA_ERROR_NOT_SUPPORTED;
 		goto err;
 	}
@@ -231,19 +233,17 @@ psa_status_t tfm_tflm_infer_run(psa_msg_t *msg)
 	}
 
 	/* Run inference */
-	LOG_INFFMT("[TFLM service] Starting secure inferencing...\r\n");
+	log_info_print("Starting secure inferencing...");
 	y_value = loop(x_value);
 
-	LOG_INFFMT("[TFLM service] Starting CBOR encoding and COSE signing...\
-				\r\n");
+	log_info_print("Starting CBOR encoding and COSE signing...");
 	status = psa_huk_cose_sign(&y_value,
 				   cfg.enc_format,
 				   inf_val_encoded_buf,
 				   msg->out_size[0],
 				   &inf_val_encoded_buf_len);
 	if (status != PSA_SUCCESS) {
-		LOG_ERRFMT("[TFLM service] CBOR encoding and COSE signing failed with status %d\n" \
-			   , status);
+		log_err_print("failed with %d", status);
 		goto err;
 	}
 
@@ -306,9 +306,7 @@ static void tfm_tflm_gen_ec_key(const uint8_t  *hpke_info,
 				      &key_usage_flag);
 
 	if (status != PSA_SUCCESS) {
-		LOG_ERRFMT(
-			"[TFLM service] HUK key derivation failed with status %d\n",
-			status);
+		log_err_print("failed with %d", status);
 		psa_panic();
 	}
 }
@@ -397,7 +395,7 @@ void tfm_tflm_service_req_mngr_init(void)
 	/* Tensorflow lite-micro initialisation */
 	setup();
 
-	LOG_INFFMT("[TFLM service] TFLM initalisation completed\r\n");
+	log_info_print("initalisation completed");
 
 	/* Continually wait for one or more of the partition's RoT Service or
 	 * interrupt signals to be asserted and then handle the asserted signal(s).

@@ -18,6 +18,56 @@
 	mbedtls_md_update(&md_ctx, buf, nanocbor_encoded_len(&nc)); \
 	mbedtls_md_update(&md_ctx, bstr, len_bstr);
 
+/**
+ * @brief Decode a SIGN1 COSE payload
+ */
+int cose_sign1_decode(const uint8_t *obj,
+		      const size_t len_obj,
+		      const uint8_t **pld, size_t *len_pld,
+		      const uint8_t **sig, size_t *len_sig)
+{
+	nanocbor_value_t nc, arr;
+
+	nanocbor_decoder_init(&nc, obj, len_obj);
+	nanocbor_skip(&nc);
+
+	if (nanocbor_enter_array(&nc, &arr) < 0) {
+		return COSE_ERROR_DECODE;
+	}
+
+	nanocbor_skip(&arr);
+	nanocbor_skip(&arr);
+	nanocbor_get_bstr(&arr, pld, len_pld);
+
+	if (sig != NULL) {
+		nanocbor_get_bstr(&arr, sig, len_sig);
+	}
+
+	return COSE_ERROR_NONE;
+}
+
+int cose_payload_decode(const uint8_t *obj,
+			const size_t len_obj,
+			float *inf_sig_value)
+{
+	nanocbor_value_t nc, arr;
+	size_t pld_len = sizeof(float);
+	uint8_t temp = 0;
+	uint8_t *sig = &temp;
+
+	nanocbor_decoder_init(&nc, obj, len_obj);
+
+	if (nanocbor_enter_map(&nc, &arr) < 0) {
+		return COSE_ERROR_DECODE;
+	}
+
+	nanocbor_skip(&arr);
+	nanocbor_get_bstr(&arr, (const uint8_t **)&sig, &pld_len);
+	*inf_sig_value = *(float *)sig;
+	return COSE_ERROR_NONE;
+}
+
+#if CONFIG_NONSECURE_COSE_VERIFY_SIGN
 static int cose_encode_prot(nanocbor_encoder_t *nc)
 {
 	nanocbor_fmt_map(nc, 1);
@@ -28,15 +78,13 @@ static int cose_encode_prot(nanocbor_encoder_t *nc)
 
 /**
  * @brief Calculate a SHA256 hash for SIGN1 verification.
- * 
- * @param ctx 		Signing context to use for this operation.
- * @param pld 		Payload buffer.
- * @param len_pld 	Size of the payload buffer.
- * @param hash 		Placeholder for the calculate hash value.
- * @return int 
+ *
+ * @param pld           Payload buffer.
+ * @param len_pld       Size of the payload buffer.
+ * @param hash          Placeholder for the calculated hash value.
+ * @return int
  */
-int cose_sign1_hash(cose_sign_context_t *ctx,
-		    const uint8_t *pld,
+int cose_sign1_hash(const uint8_t *pld,
 		    const size_t len_pld,
 		    uint8_t *hash)
 {
@@ -76,34 +124,6 @@ int cose_sign1_hash(cose_sign_context_t *ctx,
 	return COSE_ERROR_NONE;
 }
 
-/**
- * @brief Decode a SIGN1 COSE payload
- */
-int cose_sign1_decode(cose_sign_context_t *ctx,
-		      const uint8_t *obj, const size_t len_obj,
-		      const uint8_t **pld, size_t *len_pld,
-		      const uint8_t **sig, size_t *len_sig,
-		      uint8_t *hash)
-{
-	nanocbor_value_t nc, arr;
-
-	nanocbor_decoder_init(&nc, obj, len_obj);
-	nanocbor_skip(&nc);
-
-	if (nanocbor_enter_array(&nc, &arr) < 0) {
-		return COSE_ERROR_DECODE;
-	}
-
-	nanocbor_skip(&arr);
-	nanocbor_skip(&arr);
-	nanocbor_get_bstr(&arr, pld, len_pld);
-
-	cose_sign1_hash(ctx, *pld, *len_pld, hash);
-
-	nanocbor_get_bstr(&arr, sig, len_sig);
-	return COSE_ERROR_NONE;
-}
-
 int cose_sign_init(cose_sign_context_t *ctx)
 {
 	mbedtls_ecp_group_id grp_id =
@@ -126,15 +146,20 @@ int cose_verify_sign1(cose_sign_context_t *ctx,
 		      size_t *len_pld)
 {
 	uint8_t hash[ctx->len_hash];
-	uint8_t *sig;
+	uint8_t *sig = NULL;
 	size_t len_sig;
 
-	if (cose_sign1_decode(ctx,
-			      obj, len_obj,
-			      pld, len_pld,
-			      (const uint8_t **) &sig,
-			      &len_sig, hash)) {
+	if (cose_sign1_decode(obj,
+			      len_obj,
+			      pld,
+			      len_pld,
+			      (const uint8_t **)&sig,
+			      &len_sig)) {
 		return COSE_ERROR_DECODE;
+	}
+
+	if (cose_sign1_hash(*pld, *len_pld, hash)) {
+		return COSE_ERROR_HASH;
 	}
 
 	if (mbedtls_ecdsa_verify_sign(
@@ -146,28 +171,9 @@ int cose_verify_sign1(cose_sign_context_t *ctx,
 	return COSE_ERROR_NONE;
 }
 
-int cose_payload_decode(const uint8_t *obj,
-			const size_t len_obj,
-			float *inf_sig_value)
-{
-	nanocbor_value_t nc, arr;
-	size_t pld_len = sizeof(float);
-	uint8_t temp = 0;
-	uint8_t *sig = &temp;
-
-	nanocbor_decoder_init(&nc, obj, len_obj);
-
-	if (nanocbor_enter_map(&nc, &arr) < 0) {
-		return COSE_ERROR_DECODE;
-	}
-
-	nanocbor_skip(&arr);
-	nanocbor_get_bstr(&arr, (const uint8_t **)&sig, &pld_len);
-	*inf_sig_value = *(float *)sig;
-	return COSE_ERROR_NONE;
-}
-
 void cose_sign_free(cose_sign_context_t *ctx)
 {
 	mbedtls_pk_free(&ctx->pk);
 }
+
+#endif /* CONFIG_NONSECURE_COSE_VERIFY_SIGN */

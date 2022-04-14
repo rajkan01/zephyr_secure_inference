@@ -11,6 +11,9 @@
 #include <psa/error.h>
 #include "key_mgmt.h"
 
+/* Inference encoded buffer maximum supported size */
+#define INFER_ENC_MAX_VALUE_SZ (256)
+
 /** Define the index for the model in the model context array. */
 typedef enum {
 	INFER_MODEL_TFLM_SINE = 0,              /**< TFLM sine inference model */
@@ -37,6 +40,7 @@ typedef enum {
 	INFER_ENC_CBOR = 0,             /**< Request a simple CBOR payload. */
 	INFER_ENC_COSE_SIGN1,           /**< Request a COSE SIGN1 payload. */
 	INFER_ENC_COSE_ENCRYPT0,        /**< Request a COSE ENCRYPT0 payload. */
+	INFER_ENC_NONE,
 } infer_enc_t;
 
 /* Inference config */
@@ -45,14 +49,16 @@ typedef struct {
 	char models[32];
 } infer_config_t;
 
+#if CONFIG_NONSECURE_COSE_VERIFY_SIGN
 /**
- * @brief Verifies the COSE SIGN1 signature of the supplied payload.
+ * @brief  Verifies the COSE SIGN1 signature of the supplied payload and gets
+ * inference value
  *
  * @param infval_enc_buf     Buffer containing the COSE SIGN1 packet to verify.
  * @param infval_enc_buf_len Size of infval_enc_buf.
  * @param pubkey             The EC pubkey to use to verify the signature.
  * @param pubkey_len         Size of pubkey.
- * @param out_val            Results of the signature verification.
+ * @param out_val            Inference value.
  *
  * @return psa_status_t
  */
@@ -61,6 +67,24 @@ psa_status_t infer_verify_signature(uint8_t *infval_enc_buf,
 				    uint8_t *pubkey,
 				    size_t pubkey_len,
 				    float *out_val);
+#endif
+
+/**
+ * @brief Get inference value from the supplied COSE payload, COSE Payload
+ * encoded in CBOR or COSE SIGN1 or COSE Encrypt0 form.
+ *
+ * @param enc_fmt            Inference output encoded format.
+ * @param infval_enc_buf     Buffer containing the COSE payload to read the
+ *                           inference value from.
+ * @param infval_enc_buf_len Size of infval_enc_buf.
+ * @param out_val            Inference value.
+ *
+ * @return psa_status_t
+ */
+psa_status_t infer_get_value(infer_enc_t enc_fmt,
+			     uint8_t *infval_enc_buf,
+			     size_t infval_enc_buf_len,
+			     float *out_val);
 
 /**
  * @brief Requests the TFLM inference engine to generate an output value.

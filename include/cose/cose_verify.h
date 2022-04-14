@@ -14,6 +14,13 @@
 
 #include "key_mgmt.h"
 
+#define COSE_ERROR_NONE                 0x00
+#define COSE_ERROR_UNSUPPORTED          0x01
+#define COSE_ERROR_DECODE               0x02
+#define COSE_ERROR_AUTHENTICATE         0x03
+#define COSE_ERROR_HASH                 0x04
+
+#if CONFIG_NONSECURE_COSE_VERIFY_SIGN
 #ifndef CONFIG_MBEDTLS_CFG_FILE
 #include "mbedtls/config-tls-generic.h"
 #else
@@ -29,12 +36,6 @@
 
 #define COSE_ALG_ECDSA_SHA256 -7
 #define COSE_CONTEXT_SIGN1 "Signature1"
-
-#define COSE_ERROR_NONE                 0x00
-#define COSE_ERROR_UNSUPPORTED          0x01
-#define COSE_ERROR_DECODE               0x02
-#define COSE_ERROR_AUTHENTICATE         0x03
-#define COSE_ERROR_HASH                 0x04
 
 typedef enum {
 	cose_header_algorithm           = 1,
@@ -100,6 +101,36 @@ int cose_verify_sign1(cose_sign_context_t *ctx,
 		      size_t *len_pld);
 
 /**
+ * @brief Free underlying MbedTLS contexts
+ *
+ * @param ctx MbedTLS signing contexts to free.
+ */
+void cose_sign_free(cose_sign_context_t *ctx);
+
+#endif /* CONFIG_NONSECURE_COSE_VERIFY_SIGN */
+
+/**
+ * @brief Decode a SIGN1 COSE payload
+ *
+ * @param       obj     Pointer to the encoded COSE object
+ * @param       len_obj Length of encode COSE object
+ * @param[out]  pld     Pointer to payload within COSE object
+ * @param[out]  len_pld Payload length
+ * @param[out]  sig     Pointer to extracted sign payload within COSE object
+ * @param[out]  len_sig sign payload length
+ *
+ * Note:
+ *  if sig arg is NULL, then this function does only get the payload from
+ *  encoded COSE object.
+ *
+ * @return COSE_ERROR_NONE              Success
+ *         COSE_ERROR_DECODE            Failed to decode COSE object
+ */
+int cose_sign1_decode(const uint8_t *obj, const size_t len_obj,
+		      const uint8_t **pld, size_t *len_pld,
+		      const uint8_t **sig, size_t *len_sig);
+
+/**
  * @brief Retrieve the inference value from a COSE encoded payload
  *
  * @param       obj            Pointer to the encoded COSE encoded payload
@@ -114,12 +145,5 @@ int cose_verify_sign1(cose_sign_context_t *ctx,
 int cose_payload_decode(const uint8_t *obj,
 			const size_t len_obj,
 			float *inf_sig_value);
-
-/**
- * @brief Free underlying MbedTLS contexts
- * 
- * @param ctx MbedTLS signing contexts to free.
- */
-void cose_sign_free(cose_sign_context_t *ctx);
 
 #endif /* COSE_VERIFY_H */

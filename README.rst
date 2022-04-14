@@ -226,8 +226,8 @@ Sample Output
       00000030 5E 50 8C 5C 90 F0 B7 09 7F 55 0C 7E 04 67 84 FC ^P.\.....U.~.g..
       00000040 36                                              6
 
-      [TFLM service] Starting secure inferencing...
-      [TFLM service] Starting CBOR encoding and COSE signing...
+      [TFLM service] Starting secure inferencing
+      [TFLM service] Starting CBOR/COSE encoding
 
                0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
       00000000 D2 84 43 A1 01 26 A0 4B A1 3A 00 01 38 7F 44 2C ..C..&.K.:..8.D,

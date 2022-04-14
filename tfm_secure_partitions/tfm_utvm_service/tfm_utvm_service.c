@@ -89,7 +89,7 @@ psa_status_t tfm_utvm_infer_run(psa_msg_t *msg)
 		goto err;
 	}
 
-	log_info_print("Starting CBOR encoding and COSE signing...");
+	log_info_print("Starting CBOR/COSE encoding");
 	status = psa_huk_cose_sign(&model_out_val,
 				   cfg.enc_format,
 				   inf_val_encoded_buf,

@@ -233,10 +233,10 @@ psa_status_t tfm_tflm_infer_run(psa_msg_t *msg)
 	}
 
 	/* Run inference */
-	log_info_print("Starting secure inferencing...");
+	log_info_print("Starting secure inferencing");
 	y_value = loop(x_value);
 
-	log_info_print("Starting CBOR encoding and COSE signing...");
+	log_info_print("Starting CBOR/COSE encoding");
 	status = psa_huk_cose_sign(&y_value,
 				   cfg.enc_format,
 				   inf_val_encoded_buf,

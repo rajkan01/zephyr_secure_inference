@@ -450,11 +450,14 @@ static psa_status_t tfm_huk_cose_encode_sign
 			log_err_print("failed with %d", status);
 			return status;
 		}
-
-	} else {
-		log_err_print("Invalid encode format");
+	} else if (enc_format == HUK_ENC_COSE_ENCRYPT0) {
+		log_err_print(" COSE ENCRYPT0 encode format is not supported");
 		return PSA_ERROR_NOT_SUPPORTED;
+	} else {
+		log_err_print(" Invalid encode format");
+		return PSA_ERROR_INVALID_ARGUMENT;
 	}
+
 	psa_write(msg->handle,
 		  0,
 		  inf_val_encoded_buf,

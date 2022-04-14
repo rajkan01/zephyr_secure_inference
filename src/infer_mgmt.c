@@ -46,6 +46,7 @@ void infer_model_ctx_init(infer_ctx_t *ctx,
 	ctx->sts = status;
 }
 
+#if CONFIG_NONSECURE_COSE_VERIFY_SIGN
 psa_status_t infer_verify_signature(uint8_t *infval_enc_buf,
 				    size_t infval_enc_buf_len,
 				    uint8_t *pubkey,
@@ -90,6 +91,45 @@ psa_status_t infer_verify_signature(uint8_t *infval_enc_buf,
 err:
 	al_dump_log();
 	cose_sign_free(&ctx);
+	return status;
+}
+#endif /* CONFIG_NONSECURE_COSE_VERIFY_SIGN */
+
+psa_status_t infer_get_value(infer_enc_t enc_fmt,
+			     uint8_t *infval_enc_buf,
+			     size_t infval_enc_buf_len,
+			     float *out_val)
+{
+	uint8_t *dec;
+	size_t len_dec;
+	int status;
+
+	if (enc_fmt == INFER_ENC_COSE_SIGN1) {
+		status = cose_sign1_decode(infval_enc_buf,
+					   infval_enc_buf_len,
+					   (const uint8_t **)&dec,
+					   &len_dec,
+					   NULL,
+					   NULL);
+		if (status != COSE_ERROR_NONE) {
+			LOG_ERR("Failed to decode COSE payload.\n");
+			goto err;
+		}
+	} else if (enc_fmt == INFER_ENC_COSE_ENCRYPT0) {
+		LOG_ERR("ENCRYPT0 support not yet implemented.\n");
+	} else {
+		dec = infval_enc_buf;
+		len_dec = infval_enc_buf_len;
+	}
+
+	status = cose_payload_decode(dec, len_dec, out_val);
+	if (status != COSE_ERROR_NONE) {
+		LOG_ERR("Failed to decode payload.\n");
+		goto err;
+	}
+	return status;
+err:
+	al_dump_log();
 	return status;
 }
 

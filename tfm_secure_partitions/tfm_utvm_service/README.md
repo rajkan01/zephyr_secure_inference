@@ -24,6 +24,12 @@ natural extension to target bare metal devices.
     $ ansible --version
     ```
 
+3. Run the command to install python3, pip, git:
+
+     ```
+     $ sudo apt install python3 python3-pip git
+     ```
+
 ### Installing Ansible on MacOS
 
 1. Install Ansible run these commands:
@@ -53,6 +59,14 @@ configuration:
 
     ```bash
     $ ansible-config dump | grep DEFAULT_HOST_LIST
+    ```
+
+5. Download and install [Python 3 from the official website](https://www.python.org/downloads/mac-osx/).
+
+6. Run the command to install Git:
+
+    ```bash
+    $ brew install git
     ```
 
 ## Setup TVM build environment
@@ -207,18 +221,19 @@ upstream Zephyr and check out the `tfm_secure_inference` branch.
     ```
 
 5. Expected output:
+
     ```bash
     TF-M FP mode: Software
     Booting TFM v1.5.0
     Creating an empty ITS flash layout.
     Creating an empty PS flash layout.
-    [HUK deriv unique key] Successfully derived the key for HUK_CLIENT_TLS1
-    [HUK deriv unique key] Successfully derived the key for HUK_COSE_SIGN1
-    [HUK deriv unique key] Successfully derived the key for HUK_COSE_ENCRYPT1
-    [UTVM service] UTVM initalisation completed
-    [TFLM service] TFLM initalisation completed
+    [HUK DERIV SERV] tfm_huk_deriv_ec_key()::382 Successfully derived the key for HUK_CLIENT_TLS1
+    [HUK DERIV SERV] tfm_huk_deriv_ec_key()::382 Successfully derived the key for HUK_COSE_SIGN1
+    [HUK DERIV SERV] tfm_huk_deriv_ec_key()::382 Successfully derived the key for HUK_COSE_ENCRYPT1
+    [UTVM SERVICE] tfm_utvm_service_req_mngr_init()::215 UTVM initalisation completed
+    [TFLM SERVICE] tfm_tflm_service_req_mngr_init()::398 initalisation completed
     *** Booting Zephyr OS build v2.7.99-2785-ge3c585041afe  ***
-    [UUID service] Generated UUID: 5319786e-d335-4f9e-93bd-701c20259073
+    [HUK DERIV SERV] tfm_huk_gen_uuid()::610 Generated UUID: 5319786e-d335-4f9e-93bd-701c20259073
 
     uart:~$
     ```
@@ -233,15 +248,15 @@ upstream Zephyr and check out the `tfm_secure_inference` branch.
 
     ```bash
     Start: 1.00 End: 1.00 stride: 1.00
-    [UTVM service] Starting secure inferencing
-    [UTVM service] Starting CBOR/COSE encoding
+    [UTVM SERVICE] tfm_utvm_infer_run()::85 Starting secure inferencing
+    [UTVM SERVICE] tfm_utvm_infer_run()::92 Starting CBOR encoding and COSE signing...
     CBOR encoded and COSE signed inference value:
     00000000: d2 84 43 a1 01 26 a0 4b  a1 3a 00 01 38 7f 44 80 |..C..&.K .:..8.D.|
-    00000010: 50 45 3d 58 40 36 fb fb  d9 f5 8e ce f9 d0 3e dc |PE=X@6.. ......>.|
-    00000020: 2c 3f 40 52 4e 91 51 cd  86 4b 84 f0 90 7d d1 ee |,?@RN.Q. .K...}..|
-    00000030: 3c 20 06 1b 5a ae 9c 08  39 5d 1a 1d 9c 4a c7 99 |< ..Z... 9]...J..|
-    00000040: a7 c4 1f 9a bb 26 1b c3  2d 6a a0 71 67 82 c6 8d |.....&.. -j.qg...|
-    00000050: a2 ca d0 58 28                                   |...X(            |
+    00000010: 50 45 3d 58 40 59 23 3e  80 5e e0 9f fa e3 f4 14 |PE=X@Y#> .^......|
+    00000020: 62 d3 15 a5 b0 95 b5 e5  cb 79 92 f8 f1 a0 fe 14 |b....... .y......|
+    00000030: 0c 6c 84 2a 41 ea f4 16  58 83 7b 65 87 7f 4f ac |.l.*A... X.{e..O.|
+    00000040: 52 4d c4 a4 9b 9d ed 5c  f2 77 5c 4e de 27 70 99 |RM.....\ .w\N.'p.|
+    00000050: f9 2d 78 64 b4                                   |.-xd.            |
     Verified the signature using the public key.
     Model: Sine of 1.00 deg is: 0.048172
     C Mathlib: Sine of 1.00 deg is: 0.017452
@@ -258,6 +273,7 @@ modify linker scripts to increase the memory allocated to TF-M at the same time
 reducing the memory allocated to Zephyr.
 
 Zephyr:
+
 ```bash
 --- a/boards/arm/mps2_an521/mps2_an521_ns.dts
 +++ b/boards/arm/mps2_an521/mps2_an521_ns.dts
@@ -272,6 +288,7 @@ Zephyr:
 ```
 
 TF-M:
+
 ```
 --- a/trusted-firmware-m/platform/ext/target/arm/mps2/an521/partition/flash_layout.h
 +++ b/trusted-firmware-m/platform/ext/target/arm/mps2/an521/partition/flash_layout.h

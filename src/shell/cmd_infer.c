@@ -102,6 +102,10 @@ cmd_infer_get_sine_val(const struct shell *shell,
 		return shell_com_invalid_arg(shell, argv[1]);
 	}
 
+	if (argc == 2) {
+		return shell_com_missing_arg(shell, "start");
+	}
+
 	if (!shell_com_str_to_float_min_max(argv[2],
 					    &usr_in_val_start,
 					    SINE_INPUT_MIN,
@@ -160,7 +164,7 @@ cmd_infer_get_sine_val(const struct shell *shell,
 						 status);
 		} else {
 			shell_print(shell,
-				    "COSE %s inference value:", payload_format[enc_fmt]);
+				    "%s encoded inference value:", payload_format[enc_fmt]);
 			shell_hexdump(shell, infval_enc_buf, infval_enc_buf_len);
 		}
 

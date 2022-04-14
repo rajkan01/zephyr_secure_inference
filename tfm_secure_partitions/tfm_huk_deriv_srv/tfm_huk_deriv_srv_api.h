@@ -51,6 +51,7 @@ typedef enum {
 	HUK_ENC_CBOR = 0,               /**< Request a simple CBOR payload. */
 	HUK_ENC_COSE_SIGN1,             /**< Request a COSE SIGN1 payload. */
 	HUK_ENC_COSE_ENCRYPT0,          /**< Request a COSE ENCRYPT0 payload. */
+	HUK_ENC_NONE,
 } huk_enc_format_t;
 
 /** Key context. */

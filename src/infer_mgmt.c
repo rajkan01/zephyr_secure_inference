@@ -115,6 +115,8 @@ psa_status_t infer_get_value(infer_enc_t enc_fmt,
 			LOG_ERR("Failed to decode COSE payload.\n");
 			goto err;
 		}
+	} else if (enc_fmt == INFER_ENC_COSE_ENCRYPT0) {
+		LOG_ERR("ENCRYPT0 support not yet implemented.\n");
 	} else {
 		dec = infval_enc_buf;
 		len_dec = infval_enc_buf_len;

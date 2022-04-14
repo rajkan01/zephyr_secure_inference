@@ -70,8 +70,8 @@ psa_status_t infer_verify_signature(uint8_t *infval_enc_buf,
 #endif
 
 /**
- * @brief Get inference value from the supplied COSE payload, COSE Payload
- * encoded in CBOR or COSE SIGN1 or COSE Encrypt0 form.
+ * @brief Get the inference value from the supplied CBOR, COSE SIGN1, or COSE
+ * ENCRYPT0 payload.
  *
  * @param enc_fmt            Inference output encoded format.
  * @param infval_enc_buf     Buffer containing the COSE payload to read the

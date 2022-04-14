@@ -233,8 +233,8 @@ upstream Zephyr and check out the `tfm_secure_inference` branch.
 
     ```bash
     Start: 1.00 End: 1.00 stride: 1.00
-    [UTVM service] Starting secure inferencing...
-    [UTVM service] Starting CBOR encoding and COSE signing...
+    [UTVM service] Starting secure inferencing
+    [UTVM service] Starting CBOR/COSE encoding
     CBOR encoded and COSE signed inference value:
     00000000: d2 84 43 a1 01 26 a0 4b  a1 3a 00 01 38 7f 44 80 |..C..&.K .:..8.D.|
     00000010: 50 45 3d 58 40 36 fb fb  d9 f5 8e ce f9 d0 3e dc |PE=X@6.. ......>.|

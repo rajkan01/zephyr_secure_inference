@@ -1,4 +1,4 @@
-#TensorFlow Lite for Microcontrollers as TF-M secure service
+# TensorFlow Lite for Microcontrollers as TF-M secure service
 
 TensorFlow Lite for Microcontrollers (TFLM) is designed to run machine learning
 models on microcontrollers and other devices with only a few kilobytes of

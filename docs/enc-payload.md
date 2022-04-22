@@ -3,7 +3,7 @@
 One aspect of Confidential AI has to do with getting the resulting
 payload from the device in a manner that ensures both authentication
 (we know the data is coming from an authorized device), and
-confidentiality (observers of the protocol will unable to determine
+confidentiality (observers of the protocol will be unable to determine
 the contents).  This document will describe how this communication
 happens.
 

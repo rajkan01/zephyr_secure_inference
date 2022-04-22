@@ -14,7 +14,7 @@
 #include "target_cfg.h"
 
 #include "constants.h"
-#include "tfm_huk_deriv_srv_api.h"
+#include "../tfm_huk_deriv_srv/tfm_huk_deriv_srv_api.h"
 #include <string.h>
 // #include "Driver_I2C.h"
 #include "platform_regs.h"

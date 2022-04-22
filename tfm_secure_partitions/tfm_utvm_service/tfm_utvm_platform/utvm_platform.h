@@ -11,7 +11,7 @@
 #include <psa/service.h>
 #include <string.h>
 
-#include "tfm_huk_deriv_srv_api.h"
+#include "../../tfm_huk_deriv_srv/tfm_huk_deriv_srv_api.h"
 #include "tvmgen_default.h"
 
 /* Memory footprint for running the inference model */

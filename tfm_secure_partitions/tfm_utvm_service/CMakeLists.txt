@@ -55,6 +55,7 @@ target_link_libraries(tfm_app_rot_partition_utvm_service
         platform_s
         tfm_sprt
         tfm_app_rot_partition_utvm_model
+        tfm_app_rot_partition_huk_deriv
 )
 
 ############################ Partition Defs ####################################

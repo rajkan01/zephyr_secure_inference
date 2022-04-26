@@ -49,7 +49,7 @@ static K_SEM_DEFINE(mqtt_start, 0, 1);
 
 /* Stack used by the Azure thread.  Note that most of the stack will
  * be used by Mbed TLS, which runs in the work queue thread. */
-#define STACKSIZE 2048
+#define STACKSIZE 4096
 
 /* Application TLS configuration. */
 #define TLS_SNI_HOSTNAME "davidb-zephyr.azure-devices.net"

@@ -14,6 +14,23 @@ extern "C" {
 #endif
 
 /**
+ * @brief Base for persistent storage used by this app.
+ */
+#define APP_PS_BASE  0x3e28e8993c690000
+
+/** Device certificate.  Returned from CA server.
+ */
+#define APP_PS_DEVICE_CERT (APP_PS_BASE + 0x0001)
+
+/** MQTT Broker hub name.  Stored as a string.
+ */
+#define APP_PS_HUBNAME (APP_PS_BASE + 0x0002)
+
+/** MQTT Broker port.  Stored as a uint16_t.
+ */
+#define APP_PS_HUBPORT (APP_PS_BASE + 0x0003)
+
+/**
  * @brief Size in bytes of the bootstrap private key.
  */
 #define APP_CFG_CA_BOOTSTRAP_KEYSZ (121)

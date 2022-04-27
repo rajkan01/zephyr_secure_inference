@@ -13,13 +13,16 @@
 #include "test_certs.h"
 #include <util_sformat.h>
 
+#include <util_app_cfg.h>
+#include <psa/protected_storage.h>
+
 #include <logging/log.h>
 LOG_MODULE_DECLARE(app, CONFIG_LOG_DEFAULT_LEVEL);
 
 #define HTTPS_PORT 1443
 #define HTTPS_PORT_TEXT "1443"
-#define URL "https://vaco.davidb.org/"
-#define HOST "vaco.davidb.org"
+#define URL "https://davidbca.davidb.org/"
+#define HOST "davidbca.davidb.org"
 
 /* These tags need to be globally allocated across the app. */
 #define APP_CA_CERT_TAG 5
@@ -110,6 +113,7 @@ static int decode_ca_response(struct ca_response *response, const uint8_t *buf, 
 	struct nanocbor_value decode;
 	struct nanocbor_value map;
 	int res;
+	psa_status_t pres;
 	uint32_t value;
 	const uint8_t *hubname;
 	size_t hubname_len;
@@ -158,6 +162,13 @@ static int decode_ca_response(struct ca_response *response, const uint8_t *buf, 
 		return res;
 	}
 
+	/* Store the certificate in persistent storage. */
+	pres = psa_ps_set(APP_PS_DEVICE_CERT, response->cert_der_len, response->cert_der,
+			  PSA_STORAGE_FLAG_NONE);
+	if (pres < 0) {
+		return -EINVAL;
+	}
+
 	res = nanocbor_get_uint32(&map, &value);
 	if (res < 0) {
 		return res;
@@ -174,6 +185,11 @@ static int decode_ca_response(struct ca_response *response, const uint8_t *buf, 
 	}
 	LOG_INF("Hubname len: %u", hubname_len);
 
+	pres = psa_ps_set(APP_PS_HUBNAME, hubname_len, hubname, PSA_STORAGE_FLAG_NONE);
+	if (pres < 0) {
+		return -EINVAL;
+	}
+
 	res = nanocbor_get_uint32(&map, &value);
 	if (res < 0) {
 		return res;
@@ -189,6 +205,13 @@ static int decode_ca_response(struct ca_response *response, const uint8_t *buf, 
 		return res;
 	}
 	LOG_INF("Port: %d", port);
+
+	uint16_t hubport_16;
+	hubport_16 = port;
+	pres = psa_ps_set(APP_PS_HUBPORT, sizeof(uint16_t), &hubport_16, PSA_STORAGE_FLAG_NONE);
+	if (pres < 0) {
+		return -EINVAL;
+	}
 
 	nanocbor_leave_container(&decode, &map);
 	return res;

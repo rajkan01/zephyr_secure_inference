@@ -4,6 +4,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#ifndef __UTIL_APP_LOG_H__
+#define __UTIL_APP_LOG_H__
+
 #include <stdarg.h>
 
 #include "psa/error.h"
@@ -33,3 +36,5 @@ void al_dump_log(void);
 #ifdef __cplusplus
 }
 #endif
+
+#endif /* not __UTIL_APP_LOG_H__ */

@@ -4,6 +4,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#ifndef __UTIL_APP_CFG_H__
+#define __UTIL_APP_CFG_H__
+
 #include <zephyr.h>
 
 #include "psa/error.h"
@@ -229,3 +232,5 @@ psa_status_t cfg_load_data(struct cfg_data *p_cfg_data);
 #ifdef __cplusplus
 }
 #endif
+
+#endif /* not __UTIL_APP_CFG_H__ */

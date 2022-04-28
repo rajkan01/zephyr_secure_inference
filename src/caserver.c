@@ -13,8 +13,7 @@
 #include "test_certs.h"
 #include <util_sformat.h>
 
-#include <util_app_cfg.h>
-#include <psa/protected_storage.h>
+#include <provision.h>
 
 #include <logging/log.h>
 LOG_MODULE_DECLARE(app, CONFIG_LOG_DEFAULT_LEVEL);
@@ -47,12 +46,6 @@ static const char *cbor_header[] = {
 #define RECV_BUF_LEN 1025
 
 static uint8_t recv_buf[RECV_BUF_LEN];
-
-struct ca_response {
-	uint32_t status;
-	const uint8_t *cert_der;
-	size_t cert_der_len;
-};
 
 #ifdef DEBUG_WALK_CBOR
 /* Walk a CBOR structure, at least with certain fields.  This can help
@@ -108,15 +101,12 @@ static int walk_cbor(struct nanocbor_value *item)
 }
 #endif /* DEBUG_WALK_CBOR */
 
-static int decode_ca_response(struct ca_response *response, const uint8_t *buf, size_t len)
+static int decode_ca_response(struct provision_data *prov, const uint8_t *buf, size_t len)
 {
 	struct nanocbor_value decode;
 	struct nanocbor_value map;
 	int res;
-	psa_status_t pres;
 	uint32_t value;
-	const uint8_t *hubname;
-	size_t hubname_len;
 	uint32_t port;
 
 #ifdef DEBUG_WALK_CBOR
@@ -145,7 +135,8 @@ static int decode_ca_response(struct ca_response *response, const uint8_t *buf, 
 	if (res < 0) {
 		return res;
 	}
-	response->status = value;
+	LOG_ERR("Status: %d", value);
+	// TODO: response->status = value;
 
 	res = nanocbor_get_uint32(&map, &value);
 	if (res < 0) {
@@ -157,16 +148,9 @@ static int decode_ca_response(struct ca_response *response, const uint8_t *buf, 
 		return -EINVAL;
 	}
 
-	res = nanocbor_get_bstr(&map, &response->cert_der, &response->cert_der_len);
+	res = nanocbor_get_bstr(&map, &prov->cert_der, &prov->cert_der_len);
 	if (res < 0) {
 		return res;
-	}
-
-	/* Store the certificate in persistent storage. */
-	pres = psa_ps_set(APP_PS_DEVICE_CERT, response->cert_der_len, response->cert_der,
-			  PSA_STORAGE_FLAG_NONE);
-	if (pres < 0) {
-		return -EINVAL;
 	}
 
 	res = nanocbor_get_uint32(&map, &value);
@@ -179,16 +163,12 @@ static int decode_ca_response(struct ca_response *response, const uint8_t *buf, 
 		return -EINVAL;
 	}
 
-	res = nanocbor_get_tstr(&map, &hubname, &hubname_len);
+	res = nanocbor_get_tstr(&map, (const uint8_t **)&prov->hubname, &prov->hubname_len);
 	if (res < 0) {
 		return res;
 	}
-	LOG_INF("Hubname len: %u", hubname_len);
-
-	pres = psa_ps_set(APP_PS_HUBNAME, hubname_len, hubname, PSA_STORAGE_FLAG_NONE);
-	if (pres < 0) {
-		return -EINVAL;
-	}
+	LOG_INF("Hubname len: %u", prov->hubname_len);
+	LOG_INF("Hubname: %s", prov->hubname);
 
 	res = nanocbor_get_uint32(&map, &value);
 	if (res < 0) {
@@ -206,12 +186,7 @@ static int decode_ca_response(struct ca_response *response, const uint8_t *buf, 
 	}
 	LOG_INF("Port: %d", port);
 
-	uint16_t hubport_16;
-	hubport_16 = port;
-	pres = psa_ps_set(APP_PS_HUBPORT, sizeof(uint16_t), &hubport_16, PSA_STORAGE_FLAG_NONE);
-	if (pres < 0) {
-		return -EINVAL;
-	}
+	prov->hubport = port;
 
 	nanocbor_leave_container(&decode, &map);
 	return res;
@@ -221,7 +196,7 @@ static void caresponse_cb(struct http_response *rsp,
 			  enum http_final_call final_data,
 			  void *user_data)
 {
-	struct ca_response response;
+	struct provision_data prov;
 	int res;
 
 	if (final_data == HTTP_DATA_MORE) {
@@ -233,16 +208,24 @@ static void caresponse_cb(struct http_response *rsp,
 	LOG_INF("Response to req");
 	LOG_INF("Status %s", rsp->http_status);
 
-	res = decode_ca_response(&response, rsp->body_frag_start, rsp->content_length);
+	res = decode_ca_response(&prov, rsp->body_frag_start, rsp->content_length);
 	LOG_INF("Result: %d", res);
-	LOG_INF("cert: %d bytes", response.cert_der_len);
+	LOG_INF("cert: %d bytes", prov.cert_der_len);
+
+	if (res >= 0) {
+		/* Provided the provisioning worked, store the information in persistent storage. */
+		res = provision_store(&prov);
+	}
+
+	/* TODO: How should we handle errors here.  Presumably, we won't store
+	 * the provision data, and may retry later. */
 
 	struct sf_hex_tbl_fmt fmt = {
 		.ascii = 1,
 		.addr_label = 1,
 		.addr = 0,
 	};
-	sf_hex_tabulate_16(&fmt, response.cert_der, response.cert_der_len);
+	sf_hex_tabulate_16(&fmt, prov.cert_der, prov.cert_der_len);
 }
 
 static int get_caserver_addrinfo(void)

@@ -45,6 +45,7 @@ target_sources(app PRIVATE
   src/dhcpwait.c
   src/key_mgmt.c
   src/main.c
+  src/provision.c
   src/test_certs.c
   src/tfm_partition_huk.c
   src/tfm_partition_tflm.c

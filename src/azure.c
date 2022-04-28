@@ -13,14 +13,26 @@
 
 #include <azure.h>
 #include "dhcpwait.h"
+#include <provision.h>
 #include "test_certs.h"
 #include "azure-config.h"
+
+/* TODO: For debugging only. */
+#include <util_sformat.h>
 
 LOG_MODULE_DECLARE(app, CONFIG_LOG_DEFAULT_LEVEL);
 
 /* Buffers for MQTT client. */
 static uint8_t rx_buffer[APP_MQTT_BUFFER_SIZE];
 static uint8_t tx_buffer[APP_MQTT_BUFFER_SIZE];
+
+/* Provisioned data. */
+#define PROV_BUFFER_SIZE                                                                           \
+	1024 /**< The number of bytes needed for provisioned
+                               * data.  This includes the device certificate. */
+static struct provision_data mqtt_provision;
+static uint8_t prov_buffer[PROV_BUFFER_SIZE];
+static size_t prov_buffer_used;
 
 /* The mqtt client struct */
 static struct mqtt_client client_ctx;
@@ -65,6 +77,34 @@ static struct mqtt_subscription_list subs_list;
 
 static void mqtt_event_handler(struct mqtt_client *const client,
 			       const struct mqtt_evt *evt);
+
+static int azure_load_provision(void)
+{
+	int rc;
+
+	/* Wait for provisioning data to become available. */
+	rc = provision_wait();
+	if (rc) {
+		return rc;
+	}
+
+	rc = provision_get(&mqtt_provision, prov_buffer, PROV_BUFFER_SIZE);
+	if (rc < 0) {
+		return rc;
+	}
+
+	/* Print out what we got to make sure it works. */
+	struct sf_hex_tbl_fmt fmt = {
+		.ascii = 1,
+		.addr_label = 1,
+		.addr = 0,
+	};
+	sf_hex_tabulate_16(&fmt, mqtt_provision.cert_der, mqtt_provision.cert_der_len);
+
+	LOG_INF("provisioned host: %s, port %d", mqtt_provision.hubname, mqtt_provision.hubport);
+
+	return 0;
+}
 
 static int tls_init(void)
 {
@@ -472,6 +512,15 @@ void azure_thread(void)
 	if (rc) {
 		return;
 	}
+
+	/* Before trying to start up, wait until we have been provisioned. */
+	LOG_INF("Azure: Waiting for provisioning...");
+	rc = azure_load_provision();
+	rc = provision_wait();
+	if (rc) {
+		return;
+	}
+	LOG_INF("Azure: Provisioning available");
 
 	/* Start a worker to publish messages when possible to do. */
 	k_work_init_delayable(&pub_message, publish_timeout);

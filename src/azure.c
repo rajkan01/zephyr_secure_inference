@@ -10,6 +10,7 @@
 #include <net/socket.h>
 #include <net/mqtt.h>
 #include <random/rand32.h>
+#include <stdio.h>
 
 #include <azure.h>
 #include "dhcpwait.h"
@@ -29,10 +30,15 @@ static uint8_t tx_buffer[APP_MQTT_BUFFER_SIZE];
 /* Provisioned data. */
 #define PROV_BUFFER_SIZE                                                                           \
 	1024 /**< The number of bytes needed for provisioned
-                               * data.  This includes the device certificate. */
+              * data.  This includes the device certificate. */
+#define PROV_UUID_SIZE 37 /**< Number of bytes needed to store a UUID. */
 static struct provision_data mqtt_provision;
 static uint8_t prov_buffer[PROV_BUFFER_SIZE];
-static size_t prov_buffer_used;
+// static size_t prov_buffer_used;
+static char prov_clientid[37];
+static char *azure_hostname;
+static char azure_port[6];
+static char *azure_username;
 
 /* The mqtt client struct */
 static struct mqtt_client client_ctx;
@@ -71,7 +77,9 @@ static sec_tag_t m_sec_tags[] = {
 	APP_CA_CERT_TAG,
 };
 
-static uint8_t topic[] = "devices/" MQTT_CLIENTID "/messages/devicebound/#";
+static uint8_t *device_topic;
+static uint8_t *event_topic;
+//static uint8_t device_topic[] = "devices/" MQTT_CLIENTID "/messages/devicebound/#";
 static struct mqtt_topic subs_topic;
 static struct mqtt_subscription_list subs_list;
 
@@ -81,6 +89,10 @@ static void mqtt_event_handler(struct mqtt_client *const client,
 static int azure_load_provision(void)
 {
 	int rc;
+	int count;
+	psa_status_t pres;
+	char *buf;
+	size_t buf_len;
 
 	/* Wait for provisioning data to become available. */
 	rc = provision_wait();
@@ -92,6 +104,59 @@ static int azure_load_provision(void)
 	if (rc < 0) {
 		return rc;
 	}
+	if (rc > PROV_BUFFER_SIZE) {
+		return -ENOSPC;
+	}
+	buf = prov_buffer + rc;
+	buf_len = PROV_BUFFER_SIZE - rc;
+
+	/* Retrieve our UUID. */
+	pres = km_get_uuid(prov_clientid, sizeof(prov_clientid));
+	if (pres != PSA_SUCCESS) {
+		return -EINVAL;
+	}
+
+	/* Build the topic with this ID. */
+	count = snprintf(buf, buf_len, "devices/%s/messages/devicebound/#", prov_clientid);
+	if (count < 0 || count >= buf_len) {
+		return -ENOSPC;
+	}
+	device_topic = buf;
+	buf += count;
+	buf_len -= count;
+
+	/* Build the event stream topic. */
+	count = snprintf(buf, buf_len, "devices/%s/messages/events/", prov_clientid);
+	if (count < 0 || count >= buf_len) {
+		return -ENOSPC;
+	}
+	event_topic = buf;
+	buf += count;
+	buf_len -= count;
+
+	/* Construct the hostname. */
+	count = snprintf(buf, buf_len, "%s.azure-devices.net", mqtt_provision.hubname);
+	if (count < 0 || count >= buf_len) {
+		return -ENOSPC;
+	}
+	azure_hostname = buf;
+	buf += count;
+	buf_len -= count;
+
+	/* Construct the port (which is a string, for some reason). */
+	count = snprintf(azure_port, sizeof(azure_port), "%d", mqtt_provision.hubport);
+	if (count < 0 || count >= sizeof(azure_port)) {
+		return -ENOSPC;
+	}
+
+	/* Construct the username. */
+	count = snprintf(buf, buf_len, "%s.azure-devices.net/%s", mqtt_provision.hubname, prov_clientid);
+	if (count < 0 || count >= buf_len) {
+		return -ENOSPC;
+	}
+	azure_username = buf;
+	buf += count;
+	buf_len -= count;
 
 	/* Print out what we got to make sure it works. */
 	struct sf_hex_tbl_fmt fmt = {
@@ -102,6 +167,12 @@ static int azure_load_provision(void)
 	sf_hex_tabulate_16(&fmt, mqtt_provision.cert_der, mqtt_provision.cert_der_len);
 
 	LOG_INF("provisioned host: %s, port %d", mqtt_provision.hubname, mqtt_provision.hubport);
+	LOG_INF("our uuid: %s", prov_clientid);
+	LOG_INF("Device Topic: %s", device_topic);
+	LOG_INF("Event Topic: %s", event_topic);
+	LOG_INF("Azure hostname: %s", azure_hostname);
+	LOG_INF("Azure port: %s", azure_port);
+	LOG_INF("Azure user: %s", azure_username);
 
 	return 0;
 }
@@ -173,7 +244,8 @@ static void broker_init(void)
 	struct sockaddr_in *broker4 = (struct sockaddr_in *)&broker;
 
 	broker4->sin_family = AF_INET;
-	broker4->sin_port = htons(SERVER_PORT);
+	/* Unclear if this is the same port, as the definitions were different in the Azure sample app. */
+	broker4->sin_port = htons(mqtt_provision.hubport);
 
 #if defined(CONFIG_DNS_RESOLVER)
 	net_ipaddr_copy(&broker4->sin_addr,
@@ -205,8 +277,8 @@ static void client_init(struct mqtt_client *client)
 	client->broker = &broker;
 	client->evt_cb = mqtt_event_handler;
 
-	client->client_id.utf8 = (uint8_t *)MQTT_CLIENTID;
-	client->client_id.size = strlen(MQTT_CLIENTID);
+	client->client_id.utf8 = (uint8_t *)prov_clientid;
+	client->client_id.size = strlen(prov_clientid);
 
 	// password.utf8 = (uint8_t *)CONFIG_SAMPLE_CLOUD_AZURE_PASSWORD;
 	// password.size = strlen(CONFIG_SAMPLE_CLOUD_AZURE_PASSWORD);
@@ -214,8 +286,8 @@ static void client_init(struct mqtt_client *client)
 	/* client->password = &password; */
 	client->password = NULL;
 
-	username.utf8 = (uint8_t *)CONFIG_SAMPLE_CLOUD_AZURE_USERNAME;
-	username.size = strlen(CONFIG_SAMPLE_CLOUD_AZURE_USERNAME);
+	username.utf8 = (uint8_t *)azure_username;
+	username.size = strlen(azure_username);
 
 	client->user_name = &username;
 
@@ -326,27 +398,26 @@ static void subscribe(struct mqtt_client *client)
 	int err;
 
 	/* subscribe */
-	subs_topic.topic.utf8 = topic;
-	subs_topic.topic.size = strlen(topic);
+	subs_topic.topic.utf8 = device_topic;
+	subs_topic.topic.size = strlen(device_topic);
 	subs_list.list = &subs_topic;
 	subs_list.list_count = 1U;
 	subs_list.message_id = 1U;
 
 	err = mqtt_subscribe(client, &subs_list);
 	if (err) {
-		LOG_ERR("Failed on topic %s", topic);
+		LOG_ERR("Failed on topic %s", device_topic);
 	}
 }
 
 static int publish(struct mqtt_client *client, enum mqtt_qos qos)
 {
 	char payload[] = "{id=123}";
-	char topic[] = "devices/" MQTT_CLIENTID "/messages/events/";
-	uint8_t len = strlen(topic);
+	uint8_t len = strlen(event_topic);
 	struct mqtt_publish_param param;
 
 	param.message.topic.qos = qos;
-	param.message.topic.topic.utf8 = (uint8_t *)topic;
+	param.message.topic.topic.utf8 = (uint8_t *)event_topic;
 	param.message.topic.topic.size = len;
 	param.message.payload.data = payload;
 	param.message.payload.len = strlen(payload);
@@ -450,19 +521,19 @@ static int get_mqtt_broker_addrinfo(void)
 		hints.ai_socktype = SOCK_STREAM;
 		hints.ai_protocol = 0;
 
-		rc = zsock_getaddrinfo(CONFIG_SAMPLE_CLOUD_AZURE_HOSTNAME, "8883",
+		rc = zsock_getaddrinfo(azure_hostname, azure_port,
 				       &hints, &haddr);
 		if (rc == 0) {
 			LOG_INF("DNS resolved for %s:%d",
-			CONFIG_SAMPLE_CLOUD_AZURE_HOSTNAME,
-			CONFIG_SAMPLE_CLOUD_AZURE_SERVER_PORT);
+			azure_hostname,
+			mqtt_provision.hubport);
 
 			return 0;
 		}
 
 		LOG_ERR("DNS not resolved for %s:%d, retrying",
-			CONFIG_SAMPLE_CLOUD_AZURE_HOSTNAME,
-			CONFIG_SAMPLE_CLOUD_AZURE_SERVER_PORT);
+			azure_hostname,
+			mqtt_provision.hubport);
 	}
 
 	return rc;

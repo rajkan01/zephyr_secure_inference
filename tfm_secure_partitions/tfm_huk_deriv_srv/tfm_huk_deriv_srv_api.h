@@ -17,8 +17,8 @@
 #define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
 
 #define log_info_print(FMT, ARGS ...)		   \
-	do { LOG_INFFMT("[%s] %s()::%d " FMT "\n", \
-			SERV_NAME, __func__, __LINE__, ## ARGS); } while (0)
+	do { LOG_INFFMT("[%s] " FMT "\n", \
+			SERV_NAME, ## ARGS); } while (0)
 
 #define log_err_print(FMT, ARGS ...)						\
 	do { LOG_ERRFMT("[%s] <err> %s:%s():%d " FMT "\n",			\

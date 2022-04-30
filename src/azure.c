@@ -83,8 +83,7 @@ static uint8_t *event_topic;
 static struct mqtt_topic subs_topic;
 static struct mqtt_subscription_list subs_list;
 
-static void mqtt_event_handler(struct mqtt_client *const client,
-			       const struct mqtt_evt *evt);
+static void mqtt_event_handler(struct mqtt_client *const client, const struct mqtt_evt *evt);
 
 static int azure_load_provision(void)
 {
@@ -150,7 +149,8 @@ static int azure_load_provision(void)
 	}
 
 	/* Construct the username. */
-	count = snprintf(buf, buf_len, "%s.azure-devices.net/%s", mqtt_provision.hubname, prov_clientid);
+	count = snprintf(buf, buf_len, "%s.azure-devices.net/%s", mqtt_provision.hubname,
+			 prov_clientid);
 	if (count < 0 || count >= buf_len) {
 		return -ENOSPC;
 	}
@@ -181,23 +181,23 @@ static int tls_init(void)
 {
 	int err;
 
-	err = tls_credential_add(APP_CA_CERT_TAG, TLS_CREDENTIAL_CA_CERTIFICATE,
-				 ca_certificate, ca_certificate_len);
+	err = tls_credential_add(APP_CA_CERT_TAG, TLS_CREDENTIAL_CA_CERTIFICATE, ca_certificate,
+				 ca_certificate_len);
 	if (err < 0) {
 		LOG_ERR("Failed to register public certificate: %d", err);
 		return err;
 	}
 
 #if 1
-	err = tls_credential_add(APP_CA_CERT_TAG, TLS_CREDENTIAL_SERVER_CERTIFICATE,
-				 device_crt, device_crt_len);
+	err = tls_credential_add(APP_CA_CERT_TAG, TLS_CREDENTIAL_SERVER_CERTIFICATE, device_crt,
+				 device_crt_len);
 	if (err < 0) {
 		LOG_ERR("Failed to register device public certificate: %d", err);
 		return err;
 	}
 
-	err = tls_credential_add(APP_CA_CERT_TAG, TLS_CREDENTIAL_PRIVATE_KEY,
-				 device_key, device_key_len);
+	err = tls_credential_add(APP_CA_CERT_TAG, TLS_CREDENTIAL_PRIVATE_KEY, device_key,
+				 device_key_len);
 	if (err < 0) {
 		LOG_ERR("Failed to register device private key: %d", err);
 		return err;
@@ -244,12 +244,12 @@ static void broker_init(void)
 	struct sockaddr_in *broker4 = (struct sockaddr_in *)&broker;
 
 	broker4->sin_family = AF_INET;
-	/* Unclear if this is the same port, as the definitions were different in the Azure sample app. */
+	/* Unclear if this is the same port, as the definitions were different in
+	 * the Azure sample app. */
 	broker4->sin_port = htons(mqtt_provision.hubport);
 
 #if defined(CONFIG_DNS_RESOLVER)
-	net_ipaddr_copy(&broker4->sin_addr,
-			&net_sin(haddr->ai_addr)->sin_addr);
+	net_ipaddr_copy(&broker4->sin_addr, &net_sin(haddr->ai_addr)->sin_addr);
 #else
 	zsock_inet_pton(AF_INET, SERVER_ADDR, &broker4->sin_addr);
 #endif
@@ -312,14 +312,12 @@ static void client_init(struct mqtt_client *client)
 
 #if defined(CONFIG_SOCKS)
 	mqtt_client_set_proxy(client, &socks5_proxy,
-			      socks5_proxy.sa_family == AF_INET ?
-			      sizeof(struct sockaddr_in) :
-			      sizeof(struct sockaddr_in6));
+			      socks5_proxy.sa_family == AF_INET ? sizeof(struct sockaddr_in) :
+									sizeof(struct sockaddr_in6));
 #endif
 }
 
-static void mqtt_event_handler(struct mqtt_client *const client,
-			       const struct mqtt_evt *evt)
+static void mqtt_event_handler(struct mqtt_client *const client, const struct mqtt_evt *evt)
 {
 	struct mqtt_puback_param puback;
 	uint8_t data[33];
@@ -369,10 +367,9 @@ static void mqtt_event_handler(struct mqtt_client *const client,
 			evt->param.publish.message.topic.qos);
 
 		while (len) {
-			bytes_read = mqtt_read_publish_payload(&client_ctx,
-					data,
-					len >= sizeof(data) - 1 ?
-					sizeof(data) - 1 : len);
+			bytes_read = mqtt_read_publish_payload(
+				&client_ctx, data,
+				len >= sizeof(data) - 1 ? sizeof(data) - 1 : len);
 			if (bytes_read < 0 && bytes_read != -EAGAIN) {
 				LOG_ERR("failure to read payload");
 				break;
@@ -497,8 +494,7 @@ static int try_to_connect(struct mqtt_client *client)
 
 		if (mqtt_connected) {
 			subscribe(client);
-			k_work_reschedule(&pub_message,
-					  K_SECONDS(timeout_for_publish()));
+			k_work_reschedule(&pub_message, K_SECONDS(timeout_for_publish()));
 			return 0;
 		}
 
@@ -521,18 +517,14 @@ static int get_mqtt_broker_addrinfo(void)
 		hints.ai_socktype = SOCK_STREAM;
 		hints.ai_protocol = 0;
 
-		rc = zsock_getaddrinfo(azure_hostname, azure_port,
-				       &hints, &haddr);
+		rc = zsock_getaddrinfo(azure_hostname, azure_port, &hints, &haddr);
 		if (rc == 0) {
-			LOG_INF("DNS resolved for %s:%d",
-			azure_hostname,
-			mqtt_provision.hubport);
+			LOG_INF("DNS resolved for %s:%d", azure_hostname, mqtt_provision.hubport);
 
 			return 0;
 		}
 
-		LOG_ERR("DNS not resolved for %s:%d, retrying",
-			azure_hostname,
+		LOG_ERR("DNS not resolved for %s:%d, retrying", azure_hostname,
 			mqtt_provision.hubport);
 	}
 
@@ -603,5 +595,4 @@ void azure_thread(void)
 	connect_to_cloud_and_publish();
 }
 
-K_THREAD_DEFINE(azure_worker, STACKSIZE, azure_thread, NULL, NULL, NULL,
-		PRIORITY, 0, 500);
+K_THREAD_DEFINE(azure_worker, STACKSIZE, azure_thread, NULL, NULL, NULL, PRIORITY, 0, 500);

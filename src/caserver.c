@@ -192,8 +192,7 @@ static int decode_ca_response(struct provision_data *prov, const uint8_t *buf, s
 	return res;
 }
 
-static void caresponse_cb(struct http_response *rsp,
-			  enum http_final_call final_data,
+static void caresponse_cb(struct http_response *rsp, enum http_final_call final_data,
 			  void *user_data)
 {
 	struct provision_data prov;
@@ -201,7 +200,7 @@ static void caresponse_cb(struct http_response *rsp,
 
 	if (final_data == HTTP_DATA_MORE) {
 		LOG_INF("Partial data %zd bytes", rsp->data_len);
-	}  else if (final_data == HTTP_DATA_FINAL) {
+	} else if (final_data == HTTP_DATA_FINAL) {
 		LOG_INF("All data received %zd bytes", rsp->data_len);
 	}
 
@@ -262,18 +261,15 @@ int caserver_cr(unsigned char *payload, size_t payload_len)
 	}
 
 	/* Add credentials. */
-	rc = setsockopt(sock, SOL_TLS, TLS_HOSTNAME,
-			HOST,
-			sizeof(HOST)
-			);
+	rc = setsockopt(sock, SOL_TLS, TLS_HOSTNAME, HOST, sizeof(HOST));
 	if (rc < 0) {
-		LOG_ERR("Failed to set %s TLS_HOSTNAME "
-			"option (%d)", "IPv4", -errno);
+		LOG_ERR("Failed to set %s TLS_HOSTNAME option (%d)",
+			"IPv4", -errno);
 		return rc;
 	}
 
-	rc = tls_credential_add(APP_CA_CERT_TAG, TLS_CREDENTIAL_CA_CERTIFICATE,
-				caroot_crt, caroot_crt_len);
+	rc = tls_credential_add(APP_CA_CERT_TAG, TLS_CREDENTIAL_CA_CERTIFICATE, caroot_crt,
+				caroot_crt_len);
 	if (rc < 0) {
 		LOG_ERR("Failed to register public certificate: %d", rc);
 		return rc;
@@ -286,8 +282,8 @@ int caserver_cr(unsigned char *payload, size_t payload_len)
 		return rc;
 	}
 
-	rc = tls_credential_add(APP_SERVER_KEY_TAG, TLS_CREDENTIAL_PRIVATE_KEY,
-				bootstrap_key, bootstrap_key_len);
+	rc = tls_credential_add(APP_SERVER_KEY_TAG, TLS_CREDENTIAL_PRIVATE_KEY, bootstrap_key,
+				bootstrap_key_len);
 	if (rc < 0) {
 		LOG_ERR("Failed to register bootstrap certificate key: %d", rc);
 		return rc;
@@ -296,17 +292,13 @@ int caserver_cr(unsigned char *payload, size_t payload_len)
 	// TODO: How do we get these symbols without bringing in all
 	// of the MbedTLS headers?
 	int peer_verify = 2;
-	rc = zsock_setsockopt(sock, SOL_TLS, TLS_PEER_VERIFY,
-			      &peer_verify, sizeof(peer_verify));
+	rc = zsock_setsockopt(sock, SOL_TLS, TLS_PEER_VERIFY, &peer_verify, sizeof(peer_verify));
 	if (rc < 0) {
 		LOG_ERR("Failed to set peer verify");
 		return rc;
 	}
 
-	rc = zsock_setsockopt(sock, SOL_TLS,
-			      TLS_SEC_TAG_LIST,
-			      m_sec_tags,
-			      3 * sizeof(sec_tag_t));
+	rc = zsock_setsockopt(sock, SOL_TLS, TLS_SEC_TAG_LIST, m_sec_tags, 3 * sizeof(sec_tag_t));
 	if (rc < 0) {
 		LOG_ERR("Failed to set tls configuration");
 		return rc;
@@ -317,8 +309,7 @@ int caserver_cr(unsigned char *payload, size_t payload_len)
 	daddr.sin_family = AF_INET;
 	daddr.sin_port = htons(HTTPS_PORT);
 
-	net_ipaddr_copy(&daddr.sin_addr,
-			&net_sin(haddr->ai_addr)->sin_addr);
+	net_ipaddr_copy(&daddr.sin_addr, &net_sin(haddr->ai_addr)->sin_addr);
 
 	/* Attempt to connect */
 	LOG_ERR("Attempting to connect");

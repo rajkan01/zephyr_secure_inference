@@ -172,6 +172,9 @@ been sent for it.  For example
 Again the number of sends and frequency of them is beyond the scope of
 this document.
 
+If the underlying protocol can guarantee reliable delivery of the messages
+containing the CEK-1, it will be unnecessary to use the staggered protocol.
+
 ## Wrappers
 
 As can be seen from the above, the `COSE_Encrypt0` package makes an

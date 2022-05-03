@@ -65,10 +65,6 @@ static K_SEM_DEFINE(mqtt_command_start, 0, 1);
 /* Semaphore to indicate networking has come up. */
 static K_SEM_DEFINE(mqtt_start, 0, 1);
 
-/* Stack used by the Azure thread.  Note that most of the stack will
- * be used by Mbed TLS, which runs in the work queue thread. */
-#define STACKSIZE 4096
-
 /* Application TLS configuration. */
 #define TLS_SNI_HOSTNAME "davidb-zephyr.azure-devices.net"
 #define APP_CA_CERT_TAG 1
@@ -595,4 +591,5 @@ void azure_thread(void)
 	connect_to_cloud_and_publish();
 }
 
-K_THREAD_DEFINE(azure_worker, STACKSIZE, azure_thread, NULL, NULL, NULL, PRIORITY, 0, 500);
+K_THREAD_DEFINE(azure_worker, CONFIG_AZURE_STACK_SIZE, azure_thread, NULL, NULL, NULL, PRIORITY, 0,
+		500);

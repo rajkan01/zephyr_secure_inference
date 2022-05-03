@@ -34,4 +34,12 @@ config AZURE_SHELL_CMD_SUPPORT
 	  Enabling this option will make shell commands available for
 	  controlling communication with the Azure IoT Hub service.
 
+config AZURE_STACK_SIZE
+	int "Size of stack for main Azure thread"
+	default 4096
+	help
+	  Size of the stack to be used by the Azure worker thread.  Note that
+	  some of the work is done in this thread, and some is done in a worker
+	  thread.
+
 source "Kconfig.zephyr"

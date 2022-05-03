@@ -567,11 +567,6 @@ void azure_thread(void)
 	LOG_INF("Azure: waiting for network...");
 	await_dhcp();
 
-	rc = tls_init();
-	if (rc) {
-		return;
-	}
-
 	/* Before trying to start up, wait until we have been provisioned. */
 	LOG_INF("Azure: Waiting for provisioning...");
 	rc = azure_load_provision();
@@ -580,6 +575,11 @@ void azure_thread(void)
 		return;
 	}
 	LOG_INF("Azure: Provisioning available");
+
+	rc = tls_init();
+	if (rc) {
+		return;
+	}
 
 	/* Start a worker to publish messages when possible to do. */
 	k_work_init_delayable(&pub_message, publish_timeout);

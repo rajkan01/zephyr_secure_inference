@@ -117,8 +117,8 @@ static int azure_load_provision(void)
 		return -ENOSPC;
 	}
 	device_topic = buf;
-	buf += count;
-	buf_len -= count;
+	buf += count + 1;
+	buf_len -= count + 1;
 
 	/* Build the event stream topic. */
 	count = snprintf(buf, buf_len, "devices/%s/messages/events/", prov_clientid);
@@ -126,8 +126,8 @@ static int azure_load_provision(void)
 		return -ENOSPC;
 	}
 	event_topic = buf;
-	buf += count;
-	buf_len -= count;
+	buf += count + 1;
+	buf_len -= count + 1;
 
 	/* Construct the hostname. */
 	count = snprintf(buf, buf_len, "%s.azure-devices.net", mqtt_provision.hubname);
@@ -135,8 +135,8 @@ static int azure_load_provision(void)
 		return -ENOSPC;
 	}
 	azure_hostname = buf;
-	buf += count;
-	buf_len -= count;
+	buf += count + 1;
+	buf_len -= count + 1;
 
 	/* Construct the port (which is a string, for some reason). */
 	count = snprintf(azure_port, sizeof(azure_port), "%d", mqtt_provision.hubport);
@@ -151,8 +151,8 @@ static int azure_load_provision(void)
 		return -ENOSPC;
 	}
 	azure_username = buf;
-	buf += count;
-	buf_len -= count;
+	buf += count + 1;
+	buf_len -= count + 1;
 
 	/* Print out what we got to make sure it works. */
 	struct sf_hex_tbl_fmt fmt = {

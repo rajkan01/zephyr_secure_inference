@@ -42,4 +42,15 @@ config AZURE_STACK_SIZE
 	  some of the work is done in this thread, and some is done in a worker
 	  thread.
 
+config TLS_PSA_KEY_WORKAROUND
+	bool "Work around the early support for the TLS code using the PSA API"
+	default y
+	help
+	  This is a temporary workaround until Mbed TLS TLS code can fully
+	  work with PSA-based keys.  Instead of using a key on the secure
+	  side, it uses the private key to derive a local key, which is
+	  kept in RAM on the non-secure side.  This configuration is less
+	  secure, and should not be used once Mbed TLS and Zephyr fully
+	  support using a psa_key_id within the TLS stack.
+
 source "Kconfig.zephyr"

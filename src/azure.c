@@ -66,7 +66,6 @@ static K_SEM_DEFINE(mqtt_command_start, 0, 1);
 static K_SEM_DEFINE(mqtt_start, 0, 1);
 
 /* Application TLS configuration. */
-#define TLS_SNI_HOSTNAME "davidb-zephyr.azure-devices.net"
 #define APP_CA_CERT_TAG 1
 
 static sec_tag_t m_sec_tags[] = {
@@ -304,7 +303,7 @@ static void client_init(struct mqtt_client *client)
 	tls_config->cipher_list = NULL;
 	tls_config->sec_tag_list = m_sec_tags;
 	tls_config->sec_tag_count = ARRAY_SIZE(m_sec_tags);
-	tls_config->hostname = TLS_SNI_HOSTNAME;
+	tls_config->hostname = azure_hostname;
 
 #if defined(CONFIG_SOCKS)
 	mqtt_client_set_proxy(client, &socks5_proxy,

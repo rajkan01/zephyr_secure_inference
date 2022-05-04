@@ -194,11 +194,12 @@ This app is built as a Zephyr application, and can be built with the west
 command.  There are a few config options that need to be set in order for it to
 build successfully.  A sample configuration could be:
 
-::
-  $ west build -p always -b mps2_an521_ns . -- \
-      -DOVERLAY_CONFIG=overlay-smsc911x.conf \
-      -DCONFIG_NET_QEMU_USER=y \
-      -DCONFIG_BOOTSTRAP_SERVER_HOST="hostname.domain.com"
+.. code-block:: console
+
+   $ west build -p always -b mps2_an521_ns . -- \
+       -DOVERLAY_CONFIG=overlay-smsc911x.conf \
+       -DCONFIG_NET_QEMU_USER=y \
+       -DCONFIG_BOOTSTRAP_SERVER_HOST=\"hostname.domain.com\"
 
 On Target
 =========
@@ -213,76 +214,76 @@ Refer to :ref:`tfm_ipc` for detailed instructions.
 Sample Output
 =============
 
-   .. code-block:: console
+.. code-block:: console
 
-      $ west build -t run
-      -- west build: running target run
-      [0/18] Performing build step for 'tfm'
-      ninja: no work to do.
-      [1/2] To exit from QEMU enter: 'CTRL+a, x'[QEMU] CPU: cortex-m33
-      char device redirected to /dev/pts/10 (label hostS0)
-      [INF] Beginning TF-M provisioning
-      [WRN] TFM_DUMMY_PROVISIONING is not suitable for production! This device is NOT SECURE
-      [Sec Thread] Secure image initializing!
-      Booting TF-M v1.6.0-RC3+31d4dce6
-      Creating an empty ITS flash layout.
-      Creating an empty PS flash layout.
-      [HUK DERIV SERV] tfm_huk_deriv_ec_key()::382 Successfully derived the key for HUK_CLIENT_TLS1
-      [HUK DERIV SERV] tfm_huk_deriv_ec_key()::382 Successfully derived the key for HUK_COSE_SIGN1
-      [HUK DERIV SERV] tfm_huk_deriv_ec_key()::382 Successfully derived the key for HUK_COSE_ENCRYPT1
-      [UTVM SERVICE] tfm_utvm_service_req_mngr_init()::215 UTVM initalisation completed
-      [TFLM SERVICE] tfm_tflm_service_req_mngr_init()::398 initalisation completed
-      
-      
-      uart:~$ *** Booting Zephyr OS build zephyr-v3.0.0-2694-g7cedc5d85e09  ***
-      [    2.131000] <inf> app: app_cfg: Creating default config file with UID 0x55CFDA7A
-      [    2.133000] <err> app: Invalid argument
-      [    2.133000] <err> app: Function: 'cfg_create_data'
-      [    2.134000] <err> app: Invalid argument
-      [    2.134000] <err> app: Function: 'cfg_load_data'
-      [    2.135000] <err> app: Error loading/generating app config data in PS.
-      uart:~$ [HUK DERIV SERV] tfm_huk_gen_uuid()::613 Generated UUID: d74696ad-cb3b-4275-b74a-c346ffe71ea9
-      [    2.631000] <inf> app: Azure: waiting for network...
-      [    7.141000] <inf> app: Azure: Waiting for provisioning...
+   $ west build -t run
+   -- west build: running target run
+   [0/18] Performing build step for 'tfm'
+   ninja: no work to do.
+   [1/2] To exit from QEMU enter: 'CTRL+a, x'[QEMU] CPU: cortex-m33
+   char device redirected to /dev/pts/10 (label hostS0)
+   [INF] Beginning TF-M provisioning
+   [WRN] TFM_DUMMY_PROVISIONING is not suitable for production! This device is NOT SECURE
+   [Sec Thread] Secure image initializing!
+   Booting TF-M v1.6.0-RC3+31d4dce6
+   Creating an empty ITS flash layout.
+   Creating an empty PS flash layout.
+   [HUK DERIV SERV] tfm_huk_deriv_ec_key()::382 Successfully derived the key for HUK_CLIENT_TLS1
+   [HUK DERIV SERV] tfm_huk_deriv_ec_key()::382 Successfully derived the key for HUK_COSE_SIGN1
+   [HUK DERIV SERV] tfm_huk_deriv_ec_key()::382 Successfully derived the key for HUK_COSE_ENCRYPT1
+   [UTVM SERVICE] tfm_utvm_service_req_mngr_init()::215 UTVM initalisation completed
+   [TFLM SERVICE] tfm_tflm_service_req_mngr_init()::398 initalisation completed
+   
+   
+   uart:~$ *** Booting Zephyr OS build zephyr-v3.0.0-2694-g7cedc5d85e09  ***
+   [    2.131000] <inf> app: app_cfg: Creating default config file with UID 0x55CFDA7A
+   [    2.133000] <err> app: Invalid argument
+   [    2.133000] <err> app: Function: 'cfg_create_data'
+   [    2.134000] <err> app: Invalid argument
+   [    2.134000] <err> app: Function: 'cfg_load_data'
+   [    2.135000] <err> app: Error loading/generating app config data in PS.
+   uart:~$ [HUK DERIV SERV] tfm_huk_gen_uuid()::613 Generated UUID: d74696ad-cb3b-4275-b74a-c346ffe71ea9
+   [    2.631000] <inf> app: Azure: waiting for network...
+   [    7.141000] <inf> app: Azure: Waiting for provisioning...
 
 After waiting for the "Waiting for provisioning" message, the ``keys ca 5001``
 command can be used to query the bootstrap server.
 
-   .. code-block:: console
+.. code-block:: console
 
-      uart:~$ keys ca 5001
-      argc: 2
-      [    9.288000] <inf> app: uuid: d74696ad-cb3b-4275-b74a-c346ffe71ea9
+   uart:~$ keys ca 5001
+   argc: 2
+   [    9.288000] <inf> app: uuid: d74696ad-cb3b-4275-b74a-c346ffe71ea9
 
-      Generating X.509 CSR for 'Device Client TLS' key:
-      Subject: O=Linaro,CN=d74696ad-cb3b-4275-b74a-c346ffe71ea9,OU=Device Client TLS
-      [HUK DERIV SERV] tfm_huk_hash_sign_csr()::503 Verified ASN.1 tag and length of the payload
-      [HUK DERIV SERV] tfm_huk_hash_sign_csr()::511 Key id: 0x5001
-      cert starts at 0x2e2 into buffer
-      [    9.527000] <inf> app: Got DNS for linaroca
-      [    9.658000] <inf> app: All data received 595 bytes
-      [    9.658000] <inf> app: Response to req
-      [    9.658000] <inf> app: Status OK
-      [    9.659000] <inf> app: Result: 3
-      [    9.659000] <inf> app: cert: 460 bytes
-      
-               0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-      00000000 30 82 01 C8 30 82 01 6F A0 03 02 01 02 02 08 16 0...0..o........
-      00000010 EB F5 18 21 87 AE 38 30 0A 06 08 2A 86 48 CE 3D ...!..80...*.H.=
-      ...
-      [    9.725000] <inf> app: provisioned host: davidb-zephyr, port 8883
-      [    9.725000] <inf> app: our uuid: d74696ad-cb3b-4275-b74a-c346ffe71ea9
-      [    9.726000] <inf> app: Device Topic: devices/d74696ad-cb3b-4275-b74a-c346ffe71ea9/messages/devicebound/#
-      [    9.727000] <inf> app: Event Topic: devices/d74696ad-cb3b-4275-b74a-c346ffe71ea9/messages/events/
-      [    9.727000] <inf> app: Azure hostname: davidb-zephyr.azure-devices.net
-      [    9.728000] <inf> app: Azure port: 8883
-      [    9.728000] <inf> app: Azure user: davidb-zephyr.azure-devices.net/d74696ad-cb3b-4275-b74a-c346ffe71ea9
-      [    9.729000] <inf> app: Azure: Provisioning available
+   Generating X.509 CSR for 'Device Client TLS' key:
+   Subject: O=Linaro,CN=d74696ad-cb3b-4275-b74a-c346ffe71ea9,OU=Device Client TLS
+   [HUK DERIV SERV] tfm_huk_hash_sign_csr()::503 Verified ASN.1 tag and length of the payload
+   [HUK DERIV SERV] tfm_huk_hash_sign_csr()::511 Key id: 0x5001
+   cert starts at 0x2e2 into buffer
+   [    9.527000] <inf> app: Got DNS for linaroca
+   [    9.658000] <inf> app: All data received 595 bytes
+   [    9.658000] <inf> app: Response to req
+   [    9.658000] <inf> app: Status OK
+   [    9.659000] <inf> app: Result: 3
+   [    9.659000] <inf> app: cert: 460 bytes
+   
+            0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+   00000000 30 82 01 C8 30 82 01 6F A0 03 02 01 02 02 08 16 0...0..o........
+   00000010 EB F5 18 21 87 AE 38 30 0A 06 08 2A 86 48 CE 3D ...!..80...*.H.=
+   ...
+   [    9.725000] <inf> app: provisioned host: davidb-zephyr, port 8883
+   [    9.725000] <inf> app: our uuid: d74696ad-cb3b-4275-b74a-c346ffe71ea9
+   [    9.726000] <inf> app: Device Topic: devices/d74696ad-cb3b-4275-b74a-c346ffe71ea9/messages/devicebound/#
+   [    9.727000] <inf> app: Event Topic: devices/d74696ad-cb3b-4275-b74a-c346ffe71ea9/messages/events/
+   [    9.727000] <inf> app: Azure hostname: davidb-zephyr.azure-devices.net
+   [    9.728000] <inf> app: Azure port: 8883
+   [    9.728000] <inf> app: Azure user: davidb-zephyr.azure-devices.net/d74696ad-cb3b-4275-b74a-c346ffe71ea9
+   [    9.729000] <inf> app: Azure: Provisioning available
 
-               0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-      00000000 30 82 01 C8 30 82 01 6F A0 03 02 01 02 02 08 16 0...0..o........
-      00000010 EB F5 18 21 87 AE 38 30 0A 06 08 2A 86 48 CE 3D ...!..80...*.H.=
-      ...
+            0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+   00000000 30 82 01 C8 30 82 01 6F A0 03 02 01 02 02 08 16 0...0..o........
+   00000010 EB F5 18 21 87 AE 38 30 0A 06 08 2A 86 48 CE 3D ...!..80...*.H.=
+   ...
 
 Common Problems
 ***************
@@ -306,7 +307,7 @@ The label value must be less than 16 characters in size!
 
 It can be defined at compile time with west via:
 
-::
+.. code-block:: console
 
    $ west build -p -b mps2_an521_ns -t run -- \
      -DCONFIG_SECURE_INFER_HUK_DERIV_LABEL_EXTRA=\"123456789012345\"

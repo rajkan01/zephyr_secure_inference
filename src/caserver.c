@@ -308,6 +308,7 @@ int caserver_cr(unsigned char *payload, size_t payload_len)
 	rc = connect(sock, (struct sockaddr *)&daddr, sizeof(daddr));
 	if (rc < 0) {
 		LOG_ERR("Failed to connect to caserver: %d", -errno);
+		return rc;
 	}
 
 	struct http_request req;

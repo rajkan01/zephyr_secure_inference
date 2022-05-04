@@ -7,7 +7,7 @@
 #ifndef KEY_MGMT_H
 #define KEY_MGMT_H
 
-#include "psa/crypto_types.h"
+#include "psa/crypto.h"
 
 #define EC_PUBLIC_PEM_BEGIN          "-----BEGIN PUBLIC KEY-----\n"
 #define EC_PUBLIC_PEM_END             "-----END PUBLIC KEY-----\n"

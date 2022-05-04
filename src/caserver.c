@@ -135,8 +135,6 @@ static int decode_ca_response(struct provision_data *prov, const uint8_t *buf, s
 	if (res < 0) {
 		return res;
 	}
-	LOG_ERR("Status: %d", value);
-	// TODO: response->status = value;
 
 	res = nanocbor_get_uint32(&map, &value);
 	if (res < 0) {
@@ -167,8 +165,6 @@ static int decode_ca_response(struct provision_data *prov, const uint8_t *buf, s
 	if (res < 0) {
 		return res;
 	}
-	LOG_INF("Hubname len: %u", prov->hubname_len);
-	LOG_INF("Hubname: %s", prov->hubname);
 
 	res = nanocbor_get_uint32(&map, &value);
 	if (res < 0) {
@@ -184,8 +180,6 @@ static int decode_ca_response(struct provision_data *prov, const uint8_t *buf, s
 	if (res < 0) {
 		return res;
 	}
-	LOG_INF("Port: %d", port);
-
 	prov->hubport = port;
 
 	nanocbor_leave_container(&decode, &map);
@@ -312,13 +306,10 @@ int caserver_cr(unsigned char *payload, size_t payload_len)
 	net_ipaddr_copy(&daddr.sin_addr, &net_sin(haddr->ai_addr)->sin_addr);
 
 	/* Attempt to connect */
-	LOG_ERR("Attempting to connect");
 	rc = connect(sock, (struct sockaddr *)&daddr, sizeof(daddr));
 	if (rc < 0) {
 		LOG_ERR("Failed to connect to caserver: %d", -errno);
 	}
-
-	LOG_ERR("Connected: %d", sock);
 
 	struct http_request req;
 	memset(&req, 0, sizeof(req));
@@ -335,7 +326,7 @@ int caserver_cr(unsigned char *payload, size_t payload_len)
 	req.header_fields = cbor_header;
 
 	rc = http_client_req(sock, &req, 5 * MSEC_PER_SEC, "CSR Request");
-	LOG_ERR("Request result: %d", rc);
+	LOG_INF("Request result: %d", rc);
 
 	return rc < 0 ? rc : 0;
 }

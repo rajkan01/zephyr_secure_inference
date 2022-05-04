@@ -53,4 +53,11 @@ config TLS_PSA_KEY_WORKAROUND
 	  secure, and should not be used once Mbed TLS and Zephyr fully
 	  support using a psa_key_id within the TLS stack.
 
+config BOOTSTRAP_SERVER_HOST
+	string "hostname for bootstrap server"
+	help
+	  DNS hostname for the bootstrap server.  This is the address
+	  provisioning will connect to to retrieve this devices
+	  initial provisioning data.
+
 source "Kconfig.zephyr"

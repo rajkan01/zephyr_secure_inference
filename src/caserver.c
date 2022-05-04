@@ -20,8 +20,7 @@ LOG_MODULE_DECLARE(app, CONFIG_LOG_DEFAULT_LEVEL);
 
 #define HTTPS_PORT 1443
 #define HTTPS_PORT_TEXT "1443"
-#define URL "https://davidbca.davidb.org/"
-#define HOST "davidbca.davidb.org"
+#define HOST CONFIG_BOOTSTRAP_SERVER_HOST
 
 /* These tags need to be globally allocated across the app. */
 #define APP_CA_CERT_TAG 5

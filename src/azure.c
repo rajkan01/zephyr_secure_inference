@@ -183,7 +183,7 @@ static int tls_init(void)
 		return err;
 	}
 
-#if 1
+#if 0
 	err = tls_credential_add(APP_CA_CERT_TAG, TLS_CREDENTIAL_SERVER_CERTIFICATE, device_crt,
 				 device_crt_len);
 	if (err < 0) {

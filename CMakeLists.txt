@@ -32,15 +32,21 @@ set_property(TARGET zephyr_property_target
 project(tfm_secure_inference)
 
 target_sources(app PRIVATE
+  src/azure.c
+  src/caserver.c
   src/cose/cose_verify.c
   src/cose/mbedtls_ecdsa_verify_sign.c
+  src/shell/cmd_azure.c
   src/shell/cmd_infer.c
   src/shell/cmd_info.c
   src/shell/cmd_keys.c
   src/shell/shell_common.c
   src/infer_mgmt.c
+  src/dhcpwait.c
   src/key_mgmt.c
   src/main.c
+  src/provision.c
+  src/test_certs.c
   src/tfm_partition_huk.c
   src/tfm_partition_tflm.c
   src/tfm_partition_utvm.c

@@ -27,4 +27,37 @@ config SECURE_INFER_HUK_DERIV_LABEL_EXTRA
 	  is exposed here for convenience purposes so that the Zephyr build
 	  system can pass it through to TF-M.
 
+config AZURE_SHELL_CMD_SUPPORT
+	bool "Enable custom shell commands for Azure"
+	depends on SHELL
+	help
+	  Enabling this option will make shell commands available for
+	  controlling communication with the Azure IoT Hub service.
+
+config AZURE_STACK_SIZE
+	int "Size of stack for main Azure thread"
+	default 4096
+	help
+	  Size of the stack to be used by the Azure worker thread.  Note that
+	  some of the work is done in this thread, and some is done in a worker
+	  thread.
+
+config TLS_PSA_KEY_WORKAROUND
+	bool "Work around the early support for the TLS code using the PSA API"
+	default y
+	help
+	  This is a temporary workaround until Mbed TLS TLS code can fully
+	  work with PSA-based keys.  Instead of using a key on the secure
+	  side, it uses the private key to derive a local key, which is
+	  kept in RAM on the non-secure side.  This configuration is less
+	  secure, and should not be used once Mbed TLS and Zephyr fully
+	  support using a psa_key_id within the TLS stack.
+
+config BOOTSTRAP_SERVER_HOST
+	string "hostname for bootstrap server"
+	help
+	  DNS hostname for the bootstrap server.  This is the address
+	  provisioning will connect to to retrieve this devices
+	  initial provisioning data.
+
 source "Kconfig.zephyr"

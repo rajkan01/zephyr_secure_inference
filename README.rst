@@ -190,6 +190,16 @@ as generate a certificate signing request (CSR) for a specific key.
 Building and Running
 ********************
 
+This app is built as a Zephyr application, and can be built with the west
+command.  There are a few config options that need to be set in order for it to
+build successfully.  A sample configuration could be:
+
+::
+  $ west build -p always -b mps2_an521_ns . -- \
+      -DOVERLAY_CONFIG=overlay-smsc911x.conf \
+      -DCONFIG_NET_QEMU_USER=y \
+      -DCONFIG_BOOTSTRAP_SERVER_HOST="hostname.domain.com"
+
 On Target
 =========
 
@@ -205,39 +215,74 @@ Sample Output
 
    .. code-block:: console
 
+      $ west build -t run
+      -- west build: running target run
+      [0/18] Performing build step for 'tfm'
+      ninja: no work to do.
+      [1/2] To exit from QEMU enter: 'CTRL+a, x'[QEMU] CPU: cortex-m33
+      char device redirected to /dev/pts/10 (label hostS0)
       [INF] Beginning TF-M provisioning
       [WRN] TFM_DUMMY_PROVISIONING is not suitable for production! This device is NOT SECURE
       [Sec Thread] Secure image initializing!
-      TF-M FP mode: Software
-      Booting TFM v1.5.0
+      Booting TF-M v1.6.0-RC3+31d4dce6
       Creating an empty ITS flash layout.
       Creating an empty PS flash layout.
-      [TFLM service] Successfully derived the key from HUK for CLIENT_TLS
-      [TFLM service] Successfully derived the key from HUK for C_SIGN
-      [TFLM service] Successfully derived the key from HUK for C_ENCRYPT
-      [TFLM service] TFLM initalisation completed
-      *** Booting Zephyr OS build v2.7.99-2785-ge3c585041afe  ***
-      [UUID service] Generated UUID: 359187E6-3D53-F7E9-3DDB-07C102520937
+      [HUK DERIV SERV] tfm_huk_deriv_ec_key()::382 Successfully derived the key for HUK_CLIENT_TLS1
+      [HUK DERIV SERV] tfm_huk_deriv_ec_key()::382 Successfully derived the key for HUK_COSE_SIGN1
+      [HUK DERIV SERV] tfm_huk_deriv_ec_key()::382 Successfully derived the key for HUK_COSE_ENCRYPT1
+      [UTVM SERVICE] tfm_utvm_service_req_mngr_init()::215 UTVM initalisation completed
+      [TFLM SERVICE] tfm_tflm_service_req_mngr_init()::398 initalisation completed
+      
+      
+      uart:~$ *** Booting Zephyr OS build zephyr-v3.0.0-2694-g7cedc5d85e09  ***
+      [    2.131000] <inf> app: app_cfg: Creating default config file with UID 0x55CFDA7A
+      [    2.133000] <err> app: Invalid argument
+      [    2.133000] <err> app: Function: 'cfg_create_data'
+      [    2.134000] <err> app: Invalid argument
+      [    2.134000] <err> app: Function: 'cfg_load_data'
+      [    2.135000] <err> app: Error loading/generating app config data in PS.
+      uart:~$ [HUK DERIV SERV] tfm_huk_gen_uuid()::613 Generated UUID: d74696ad-cb3b-4275-b74a-c346ffe71ea9
+      [    2.631000] <inf> app: Azure: waiting for network...
+      [    7.141000] <inf> app: Azure: Waiting for provisioning...
+
+After waiting for the "Waiting for provisioning" message, the ``keys ca 5001``
+command can be used to query the bootstrap server.
+
+   .. code-block:: console
+
+      uart:~$ keys ca 5001
+      argc: 2
+      [    9.288000] <inf> app: uuid: d74696ad-cb3b-4275-b74a-c346ffe71ea9
+
+      Generating X.509 CSR for 'Device Client TLS' key:
+      Subject: O=Linaro,CN=d74696ad-cb3b-4275-b74a-c346ffe71ea9,OU=Device Client TLS
+      [HUK DERIV SERV] tfm_huk_hash_sign_csr()::503 Verified ASN.1 tag and length of the payload
+      [HUK DERIV SERV] tfm_huk_hash_sign_csr()::511 Key id: 0x5001
+      cert starts at 0x2e2 into buffer
+      [    9.527000] <inf> app: Got DNS for linaroca
+      [    9.658000] <inf> app: All data received 595 bytes
+      [    9.658000] <inf> app: Response to req
+      [    9.658000] <inf> app: Status OK
+      [    9.659000] <inf> app: Result: 3
+      [    9.659000] <inf> app: cert: 460 bytes
+      
+               0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+      00000000 30 82 01 C8 30 82 01 6F A0 03 02 01 02 02 08 16 0...0..o........
+      00000010 EB F5 18 21 87 AE 38 30 0A 06 08 2A 86 48 CE 3D ...!..80...*.H.=
+      ...
+      [    9.725000] <inf> app: provisioned host: davidb-zephyr, port 8883
+      [    9.725000] <inf> app: our uuid: d74696ad-cb3b-4275-b74a-c346ffe71ea9
+      [    9.726000] <inf> app: Device Topic: devices/d74696ad-cb3b-4275-b74a-c346ffe71ea9/messages/devicebound/#
+      [    9.727000] <inf> app: Event Topic: devices/d74696ad-cb3b-4275-b74a-c346ffe71ea9/messages/events/
+      [    9.727000] <inf> app: Azure hostname: davidb-zephyr.azure-devices.net
+      [    9.728000] <inf> app: Azure port: 8883
+      [    9.728000] <inf> app: Azure user: davidb-zephyr.azure-devices.net/d74696ad-cb3b-4275-b74a-c346ffe71ea9
+      [    9.729000] <inf> app: Azure: Provisioning available
 
                0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-      00000000 04 64 79 7F 68 E0 CE E7 97 BA 11 71 AB 3E 36 98 .dy.h......q.>6.
-      00000010 24 9B 96 E7 71 CF D1 E3 E1 4E 4A BB 58 F2 0A 68 $...q....NJ.X..h
-      00000020 AD BD 99 17 99 2E 9C A9 B5 AF 86 11 DE D5 28 F9 ..............(.
-      00000030 5E 50 8C 5C 90 F0 B7 09 7F 55 0C 7E 04 67 84 FC ^P.\.....U.~.g..
-      00000040 36                                              6
-
-      [TFLM service] Starting secure inferencing
-      [TFLM service] Starting CBOR/COSE encoding
-
-               0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-      00000000 D2 84 43 A1 01 26 A0 4B A1 3A 00 01 38 7F 44 2C ..C..&.K.:..8.D,
-      00000010 CE 8A 3C 58 40 B7 61 7C 38 29 4B 0E 78 BF 92 B5 ..<X@.a|8)K.x...
-      00000020 93 74 9C 6C 40 72 13 71 B0 6A 8A 02 49 4F A4 AD .t.l@r.q.j..IO..
-      00000030 7B 15 08 10 4A 75 98 37 9C 3D 31 3D ED 10 EC 60 {...Ju.7.=1=...`
-      00000040 2E 45 FE 20 2B F3 A5 F3 F8 65 0A E0 2A 68 CC 7A .E. +....e..*h.z
-      00000050 3E A5 A2 48 9D                                  >..H.
-
-      Model: Sine of 1 deg is: 0.016944       C Mathlib: Sine of 1 deg is: 0.017452   Deviation: 0.000508
+      00000000 30 82 01 C8 30 82 01 6F A0 03 02 01 02 02 08 16 0...0..o........
+      00000010 EB F5 18 21 87 AE 38 30 0A 06 08 2A 86 48 CE 3D ...!..80...*.H.=
+      ...
 
 Common Problems
 ***************

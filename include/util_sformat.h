@@ -35,7 +35,7 @@ struct sf_hex_tbl_fmt {
  * @param data  Pointer to the data to render.
  * @param len   The number of bytes to render from data.
  */
-void sf_hex_tabulate_16(struct sf_hex_tbl_fmt *fmt, unsigned char *data,
+void sf_hex_tabulate_16(struct sf_hex_tbl_fmt *fmt, const unsigned char *data,
 			size_t len);
 
 #ifdef __cplusplus

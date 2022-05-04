@@ -8,6 +8,8 @@
 #include <shell_common.h>
 #include <logging/log.h>
 
+#include <util_sformat.h>
+#include <caserver.h>
 #include "tfm_partition_huk.h"
 #include "key_mgmt.h"
 #include "x509_csr_gen.h"
@@ -198,14 +200,90 @@ cmd_keys_csr(const struct shell *shell, size_t argc, char **argv)
 	return 0;
 }
 
+static int
+cmd_keys_ca(const struct shell *shell, size_t argc, char **argv)
+{
+	km_key_context_t *ctx = km_get_context();
+
+	shell_print(shell, "argc: %d", argc);
+	if (argc < 2 || strcmp(argv[1], "help") == 0) {
+		shell_print(shell, "Request certificate from CA for the given key\n");
+		shell_print(shell, "$ %s %s ca <Key ID>\n", argv[-1], argv[0]);
+		shell_print(shell, "Run 'status' for key ID list\n");
+		shell_print(shell, "Example: $ %s %s 5001", argv[-1], argv[0]);
+		return 0;
+	}
+
+	if (argc > 2) {
+		return shell_com_invalid_arg(shell, argv[2]);
+	}
+
+	/* Validate the Key ID. */
+	uint32_t key_id = strtoul(argv[1], NULL, 16);
+	uint8_t key_idx;
+	bool is_valid_key_id = false;
+	for (key_idx = 0; key_idx < KEY_COUNT; key_idx++) {
+		if (ctx[key_idx].key_id == key_id) {
+			is_valid_key_id = true;
+			break;
+		}
+	}
+	if (!is_valid_key_id) {
+		return shell_com_invalid_arg(shell, argv[1]);
+	}
+
+	/* Get the UUID */
+	unsigned char uuid[37];
+	int status = al_psa_status(km_get_uuid(uuid, sizeof(uuid)), __func__);
+	if (status != PSA_SUCCESS) {
+		return shell_com_rc_code(shell,
+					 "Unable to read UUID",
+					 status);
+	}
+
+	LOG_INF("uuid: %s", uuid);
+
+	/* Generate the CSR request */
+	static char csr_cbor[1024];
+	static size_t cbor_len = sizeof(csr_cbor);
+	status = x509_csr_cbor(key_idx,
+			       csr_cbor,
+			       &cbor_len,
+			       uuid,
+			       sizeof(uuid));
+	if (status != PSA_SUCCESS) {
+		return shell_com_rc_code(shell,
+					 "Failed to generate CSR",
+					 status);
+	}
+	// struct sf_hex_tbl_fmt fmt = {
+	// 	.ascii = 1,
+	// 	.addr_label = 1,
+	// 	.addr = 0,
+	// };
+	// TODO: not sizeof, but size needs to be passed out.
+	// sf_hex_tabulate_16(&fmt, csr_cbor, cbor_len);
+
+	status = caserver_cr(csr_cbor, cbor_len);
+	if (status != 0) {
+		return shell_com_rc_code(shell,
+					 "Failed to talk to CAserver",
+					 status);
+	}
+
+	return 0;
+}
+
 /* Subcommand array for "keys" (level 1). */
 SHELL_STATIC_SUBCMD_SET_CREATE(sub_cmd_keys,
 	/* 'Status' command handler. */
 	SHELL_CMD(status, NULL, "Device keys status", cmd_keys_key_stat),
 	/* 'Public key' command handler. */
 	SHELL_CMD(public, NULL, "List public key(s) and key IDs", cmd_keys_pubkey),
-    /* 'CSR' command handler. */
+	/* 'CSR' command handler. */
 	SHELL_CMD(csr, NULL, "Generate and display CSR on given key ID", cmd_keys_csr),
+	/* 'CA' command handler. */
+	SHELL_CMD(ca, NULL, "Request certificate from CA", cmd_keys_ca),
 	/* Array terminator. */
 	SHELL_SUBCMD_SET_END
 	);

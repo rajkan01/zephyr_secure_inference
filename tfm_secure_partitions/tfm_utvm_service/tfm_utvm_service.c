@@ -13,7 +13,7 @@
 #include "tfm_sp_log.h"
 #include "tfm_plat_test.h"
 #include "target_cfg.h"
-#include "tfm_huk_deriv_srv_api.h"
+#include "../tfm_huk_deriv_srv/tfm_huk_deriv_srv_api.h"
 #include "platform_regs.h"
 #include "tvmgen_default.h"
 #include "utvm_platform.h"

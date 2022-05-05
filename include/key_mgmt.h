@@ -34,11 +34,11 @@ enum km_key_stat {
 };
 
 /** ID in the HUK key derivation service for the specified key. */
-typedef enum {
+enum km_key_type {
 	KEY_ID_CLIENT_TLS       = 0x5001,       /**< Client TLS key ID */
 	KEY_ID_C_SIGN           = 0x5002,       /**< COSE SIGN key ID */
 	KEY_ID_C_ENCRYPT        = 0x5003,       /**< COSE ENCRYPT key ID */
-} km_key_type_t;
+};
 
 /** Key context. */
 typedef struct {

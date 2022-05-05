@@ -26,11 +26,11 @@ LOG_MODULE_DECLARE(app, CONFIG_LOG_DEFAULT_LEVEL);
  *        before the key context can be used.
  *
  * @param ctx      Pointer to the key context.
- * @param key_id   The key ID in the HUK secure service (see km_key_type_t).
+ * @param key_id   The key ID in the HUK secure service (see enum km_key_type).
  * @param label    Unique, descriptive string describing this key context.
  */
 void km_context_init(km_key_context_t *ctx,
-		     km_key_type_t key_id,
+		     enum km_key_type key_id,
 		     const unsigned char *label)
 {
 	psa_status_t status;

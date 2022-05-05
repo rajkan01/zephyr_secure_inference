@@ -17,7 +17,7 @@
     #   "name": "TFM_READ_LSM303",
     #   # SIDs must be unique, ones that are currently in use are documented in
     #   # tfm_secure_partition_addition.rst on line 184
-    #   "sid": "0xFFFFF006", # Bits [31:12] denote the vendor (change this),
+    #   "sid": "0xFFFFF010", # Bits [31:12] denote the vendor (change this),
     #                       # bits [11:0] are arbitrary at the discretion of the
     #                       # vendor.
     #   "non_secure_clients": true,
@@ -28,7 +28,7 @@
       "name": "TFM_TFLM_SERVICE_HELLO",
       # SIDs must be unique, ones that are currently in use are documented in
       # tfm_secure_partition_addition.rst on line 184
-      "sid": "0xFFFFF007", # Bits [31:12] denote the vendor (change this),
+      "sid": "0xFFFFF011", # Bits [31:12] denote the vendor (change this),
                           # bits [11:0] are arbitrary at the discretion of the
                           # vendor.
       "non_secure_clients": true,

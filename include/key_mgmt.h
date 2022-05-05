@@ -41,14 +41,14 @@ enum km_key_type {
 };
 
 /** Key context. */
-typedef struct {
+struct km_key_context {
 	/** PSA Crypto key handle for the key in the secure domain. */
 	psa_key_id_t key_id;
 	/** Display name. */
 	char label[32];
 	/** Key status, indicate if a certificate is available. */
 	enum km_key_stat status;
-} km_key_context_t;
+};
 
 /** X.509 certificate context. */
 typedef struct {
@@ -82,13 +82,13 @@ psa_status_t km_get_pubkey(uint8_t *public_key,
 			   const enum km_key_idx key_idx);
 
 /**
- * @brief Gets a reference to the km_key_context_t array in memory. The data this
+ * @brief Gets a reference to the struct km_key_context array in memory. The data this
  *        pointer references is NULL-initialised by default, and needs to be
  *        initialised before it can be used.
  *
  * @return Returns a pointer to the key context array
  */
-km_key_context_t *km_get_context();
+struct km_key_context *km_get_context();
 
 /**
  * @brief Initialise the key context with the EC keys derived from the HUK at

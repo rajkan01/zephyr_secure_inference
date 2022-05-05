@@ -19,7 +19,7 @@ LOG_MODULE_DECLARE(app, CONFIG_LOG_DEFAULT_LEVEL);
  * @brief Initialise the supplied key context, populating it via calls to
  *        the HUK key derivation service on the secure side.
  *
- *        Takes the supplied km_key_context_t reference, and populates it
+ *        Takes the supplied struct km_key_context reference, and populates it
  *        with the public details for the corresponding key. Specifically,
  *        it will associate a PSA key ID the specified key, allowing access to
  *        the public key via the PSA Crypto API. This must be called once
@@ -29,7 +29,7 @@ LOG_MODULE_DECLARE(app, CONFIG_LOG_DEFAULT_LEVEL);
  * @param key_id   The key ID in the HUK secure service (see enum km_key_type).
  * @param label    Unique, descriptive string describing this key context.
  */
-void km_context_init(km_key_context_t *ctx,
+void km_context_init(struct km_key_context *ctx,
 		     enum km_key_type key_id,
 		     const unsigned char *label)
 {
@@ -83,7 +83,7 @@ psa_status_t km_get_pubkey(uint8_t *public_key, size_t public_key_len,
 			   const enum km_key_idx key_idx)
 {
 	psa_status_t status;
-	km_key_context_t *ctx = km_get_context();
+	struct km_key_context *ctx = km_get_context();
 
 	status = al_psa_status(
 		psa_huk_get_pubkey(&ctx[key_idx].key_id,
@@ -215,16 +215,16 @@ psa_status_t km_enc_pubkey_pem(const enum km_key_idx key_idx,
 	return status;
 }
 
-km_key_context_t *km_get_context()
+struct km_key_context *km_get_context()
 {
-	static km_key_context_t k_ctx[KEY_COUNT] = { 0 };
+	static struct km_key_context k_ctx[KEY_COUNT] = { 0 };
 
 	return k_ctx;
 }
 
 void km_keys_init(void)
 {
-	km_key_context_t *ctx = km_get_context();
+	struct km_key_context *ctx = km_get_context();
 
 	/* Populate the TLS client key context. */
 	km_context_init(&ctx[KEY_CLIENT_TLS],

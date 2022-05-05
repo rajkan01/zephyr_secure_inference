@@ -113,7 +113,7 @@ static int x509_csr_write_sign(enum km_key_idx key_idx,
 	unsigned char *p = sig + sig_size;
 	int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
 	size_t len = 0;
-	km_key_context_t *ctx = km_get_context();
+	struct km_key_context *ctx = km_get_context();
 	psa_status_t status;
 
 	/* Send the CSR payload to HUK hash sign tfm service which calculate hash
@@ -311,7 +311,7 @@ psa_status_t x509_csr_generate(const enum km_key_idx key_idx,
 			       size_t uuid_size)
 {
 	psa_status_t status;
-	km_key_context_t *ctx = km_get_context();
+	struct km_key_context *ctx = km_get_context();
 	mbedtls_x509write_csr req;
 
 	/* length of CSR subject name is calculated as
@@ -366,7 +366,7 @@ psa_status_t x509_csr_cbor(const enum km_key_idx key_idx,
 			   size_t uuid_size)
 {
 	char csr_subject_name[80] = { 0 };
-	km_key_context_t *ctx = km_get_context();
+	struct km_key_context *ctx = km_get_context();
 	int status = PSA_SUCCESS;
 
 	printf("\nGenerating X.509 CSR for '%s' key:\n", ctx[key_idx].label);

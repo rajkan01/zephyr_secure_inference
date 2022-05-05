@@ -34,7 +34,7 @@ void km_context_init(km_key_context_t *ctx,
 		     const unsigned char *label)
 {
 	psa_status_t status;
-	km_key_stat_t stat;
+	enum km_key_stat stat;
 
 	/* Set the key ID to match the secure service list. */
 	ctx->key_id = key_id;

@@ -37,7 +37,7 @@ psa_status_t psa_huk_get_pubkey(psa_key_id_t *key_id,
  * \return Returns error code as specified in \ref psa_status_t
  */
 psa_status_t psa_huk_ec_key_stat(psa_key_id_t *key_id,
-				km_key_stat_t *stat);
+				enum km_key_stat *stat);
 
 /**
  * \brief Get the UUID from HUK generate UUID service

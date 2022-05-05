@@ -27,11 +27,11 @@ enum km_key_idx {
 };
 
 /** Inidicates key provisioning status. */
-typedef enum {
+enum km_key_stat {
 	KEY_NONE = 0,
 	KEY_GEN,                /**< Key generated */
 	KEY_X_509_CERT_GEN,     /**< X.509 certificate generated */
-} km_key_stat_t;
+};
 
 /** ID in the HUK key derivation service for the specified key. */
 typedef enum {
@@ -47,7 +47,7 @@ typedef struct {
 	/** Display name. */
 	char label[32];
 	/** Key status, indicate if a certificate is available. */
-	km_key_stat_t status;
+	enum km_key_stat status;
 } km_key_context_t;
 
 /** X.509 certificate context. */

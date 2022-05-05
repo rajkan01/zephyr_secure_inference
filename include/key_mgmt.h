@@ -51,12 +51,12 @@ struct km_key_context {
 };
 
 /** X.509 certificate context. */
-typedef struct {
+struct km_x509_cert {
 	/** Size of the cert payload in bytes. 0 if NULL. */
 	size_t sz;
 	/** X.509 certificate payload. Max 1 KB. */
 	char cert[KM_CERT_MAX_SIZE];
-} km_x509_cert_t;
+};
 
 /**
  * @brief Get the HUK-derived UUID from the secure partition.

@@ -91,7 +91,7 @@ struct cfg_data {
 		 * is unique to this device, containing the device UUID and a unique
 		 * serial number assigned by the CA.
 		 */
-		km_x509_cert_t client_tls;
+		struct km_x509_cert client_tls;
 
 		/**
 		 * @brief COSE signing certificate (KEY_ID_C_SIGN).
@@ -99,7 +99,7 @@ struct cfg_data {
 		 * Contains the certificate associated with the signing key used by
 		 * this device to sign COSE SIGN1 payloads.
 		 */
-		km_x509_cert_t client_cose_sign1;
+		struct km_x509_cert client_cose_sign1;
 
 		/**
 		 * @brief COSE client encryption certificate (KEY_ID_C_ENCRYPT).
@@ -107,7 +107,7 @@ struct cfg_data {
 		 * Contains the certificate associated with the device encryption key
 		 * used by this device to encrypt COSE ENCRYPT0 payloads.
 		 */
-		km_x509_cert_t client_cose_encrypt0;
+		struct km_x509_cert client_cose_encrypt0;
 
 		/**
 		 * @brief Client bootstrap certificate for device auth to the CA when
@@ -121,7 +121,7 @@ struct cfg_data {
 		 * 
 		 * With LinaroCA this will be the contents of 'bootstrap_crt.txt'.
 		 */
-		km_x509_cert_t ca_bootstrap;
+		struct km_x509_cert ca_bootstrap;
 
 		/**
 		 * @brief Signing certificate for the device provisioning CA.
@@ -129,7 +129,7 @@ struct cfg_data {
 		 * The certificate provided by the CA to verify signatures on CA-issued
 		 * certificates.
 		 */
-		km_x509_cert_t ca_sign;
+		struct km_x509_cert ca_sign;
 
 		/**
 		 * @brief Server TLS certificate for the device provisioning CA,
@@ -138,7 +138,7 @@ struct cfg_data {
 		 * The certificate provided by the CA to verify signatures on CA-issued
 		 * certificates.
 		 */
-		km_x509_cert_t ca_host_tls;
+		struct km_x509_cert ca_host_tls;
 
 		/**
 		 * @brief COSE server encryption certificate.
@@ -149,7 +149,7 @@ struct cfg_data {
 		 * required to generate the shared secret used to encrypt COSE
 		 * ENCRYPT0 payloads.
 		 */
-		km_x509_cert_t server_cose_encrypt0;
+		struct km_x509_cert server_cose_encrypt0;
 
 		/**
 		 * @brief TLS certificate for the MQTT broker.
@@ -158,7 +158,7 @@ struct cfg_data {
 		 * usually the CA that generated the MQTT broker's server certificate
 		 * (digicert for Azure IoT Hub, etc.).
 		 */
-		km_x509_cert_t mqtt_tls;
+		struct km_x509_cert mqtt_tls;
 	} certs;
 
 	struct {

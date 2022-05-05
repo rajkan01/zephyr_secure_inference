@@ -25,7 +25,7 @@ cmd_keys_key_stat(const struct shell *shell, size_t argc, char **argv)
 {
 	char *row1[] = { "Key", "Key ID", "Status" };
 	char *k_sts[] = { "unknown", "Key generated", "X.509 certificate gen" };
-	km_key_context_t *ctx = km_get_context();
+	struct km_key_context *ctx = km_get_context();
 
 	shell_print(shell, "| %-20s| %-12s | %-22s |", row1[0], row1[1],
 		    row1[2]);
@@ -40,7 +40,7 @@ cmd_keys_key_stat(const struct shell *shell, size_t argc, char **argv)
 /* Validate the Key ID and get the key context index */
 static _Bool cmd_keys_get_key_idx(uint32_t key_id, uint8_t *key_idx)
 {
-	km_key_context_t *ctx = km_get_context();
+	struct km_key_context *ctx = km_get_context();
 
 	for (int i = 0; i < KEY_COUNT; i++) {
 		if (ctx[i].key_id == key_id) {
@@ -58,7 +58,7 @@ cmd_keys_pubkey(const struct shell *shell, size_t argc, char **argv)
 	size_t public_key_len = 0;
 	uint8_t key_idx_start = 0, key_idx_end = KEY_COUNT;
 	psa_status_t status;
-	km_key_context_t *ctx = km_get_context();
+	struct km_key_context *ctx = km_get_context();
 
 	if ((argc == 2) && (strcmp(argv[1], "help") == 0)) {
 		shell_print(shell, "Display public key(s) in PEM format\n");
@@ -203,7 +203,7 @@ cmd_keys_csr(const struct shell *shell, size_t argc, char **argv)
 static int
 cmd_keys_ca(const struct shell *shell, size_t argc, char **argv)
 {
-	km_key_context_t *ctx = km_get_context();
+	struct km_key_context *ctx = km_get_context();
 
 	shell_print(shell, "argc: %d", argc);
 	if (argc < 2 || strcmp(argv[1], "help") == 0) {

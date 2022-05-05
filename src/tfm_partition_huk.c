@@ -45,7 +45,7 @@ psa_status_t psa_huk_get_pubkey(psa_key_id_t *key_id,
 }
 
 psa_status_t psa_huk_ec_key_stat(psa_key_id_t *key_id,
-				km_key_stat_t *stat)
+				enum km_key_stat *stat)
 {
 	psa_status_t status;
 	psa_handle_t handle;
@@ -55,7 +55,7 @@ psa_status_t psa_huk_ec_key_stat(psa_key_id_t *key_id,
 	};
 
 	psa_outvec out_vec[] = {
-		{ .base = stat, .len = sizeof(km_key_stat_t) },
+		{ .base = stat, .len = sizeof(enum km_key_stat) },
 	};
 
 	handle = psa_connect(TFM_HUK_EC_KEY_STAT_SID,

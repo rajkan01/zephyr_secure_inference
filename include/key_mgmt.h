@@ -19,44 +19,44 @@
 #define KM_CERT_MAX_SIZE (1024)
 
 /** Define the index for the key in the key context array. */
-typedef enum {
+enum km_key_idx {
 	KEY_CLIENT_TLS = 0,             /**< TLS client key ID */
 	KEY_C_SIGN,                     /**< COSE SIGN key ID */
 	KEY_C_ENCRYPT,                  /**< COSE ENCRYPT key ID */
 	KEY_COUNT,                      /**< Number of keys present */
-} km_key_idx_t;
+};
 
 /** Inidicates key provisioning status. */
-typedef enum {
+enum km_key_stat {
 	KEY_NONE = 0,
 	KEY_GEN,                /**< Key generated */
 	KEY_X_509_CERT_GEN,     /**< X.509 certificate generated */
-} km_key_stat_t;
+};
 
 /** ID in the HUK key derivation service for the specified key. */
-typedef enum {
+enum km_key_type {
 	KEY_ID_CLIENT_TLS       = 0x5001,       /**< Client TLS key ID */
 	KEY_ID_C_SIGN           = 0x5002,       /**< COSE SIGN key ID */
 	KEY_ID_C_ENCRYPT        = 0x5003,       /**< COSE ENCRYPT key ID */
-} km_key_type_t;
+};
 
 /** Key context. */
-typedef struct {
+struct km_key_context {
 	/** PSA Crypto key handle for the key in the secure domain. */
 	psa_key_id_t key_id;
 	/** Display name. */
 	char label[32];
 	/** Key status, indicate if a certificate is available. */
-	km_key_stat_t status;
-} km_key_context_t;
+	enum km_key_stat status;
+};
 
 /** X.509 certificate context. */
-typedef struct {
+struct km_x509_cert {
 	/** Size of the cert payload in bytes. 0 if NULL. */
 	size_t sz;
 	/** X.509 certificate payload. Max 1 KB. */
 	char cert[KM_CERT_MAX_SIZE];
-} km_x509_cert_t;
+};
 
 /**
  * @brief Get the HUK-derived UUID from the secure partition.
@@ -79,16 +79,16 @@ psa_status_t km_get_uuid(unsigned char *uuid, size_t uuid_size);
  */
 psa_status_t km_get_pubkey(uint8_t *public_key,
 			   size_t public_key_len,
-			   const km_key_idx_t key_idx);
+			   const enum km_key_idx key_idx);
 
 /**
- * @brief Gets a reference to the km_key_context_t array in memory. The data this
+ * @brief Gets a reference to the struct km_key_context array in memory. The data this
  *        pointer references is NULL-initialised by default, and needs to be
  *        initialised before it can be used.
  *
  * @return Returns a pointer to the key context array
  */
-km_key_context_t *km_get_context();
+struct km_key_context *km_get_context();
 
 /**
  * @brief Initialise the key context with the EC keys derived from the HUK at
@@ -108,7 +108,7 @@ void km_keys_init(void);
  *
  * @return psa_status_t
  */
-psa_status_t km_enc_pubkey_pem(const km_key_idx_t key_idx,
+psa_status_t km_enc_pubkey_pem(const enum km_key_idx key_idx,
 			       uint8_t *public_key,
 			       size_t public_key_size,
 			       size_t *public_key_len);
@@ -123,7 +123,7 @@ psa_status_t km_enc_pubkey_pem(const km_key_idx_t key_idx,
  *
  * @return psa_status_t
  */
-psa_status_t km_enc_pubkey_der(const km_key_idx_t key_idx,
+psa_status_t km_enc_pubkey_der(const enum km_key_idx key_idx,
 			       unsigned char *public_key,
 			       size_t public_key_size,
 			       size_t *public_key_len);

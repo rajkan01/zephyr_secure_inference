@@ -103,7 +103,7 @@ static int x509_csr_write_mpibuf(unsigned char **p, unsigned char *start,
 	return((int) len);
 }
 
-static int x509_csr_write_sign(km_key_idx_t key_idx,
+static int x509_csr_write_sign(enum km_key_idx key_idx,
 			       uint8_t *csr_data,
 			       size_t csr_data_size,
 			       uint8_t *sig,
@@ -113,7 +113,7 @@ static int x509_csr_write_sign(km_key_idx_t key_idx,
 	unsigned char *p = sig + sig_size;
 	int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
 	size_t len = 0;
-	km_key_context_t *ctx = km_get_context();
+	struct km_key_context *ctx = km_get_context();
 	psa_status_t status;
 
 	/* Send the CSR payload to HUK hash sign tfm service which calculate hash
@@ -150,7 +150,7 @@ static int x509_csr_write_sign(km_key_idx_t key_idx,
 static int x509_csr_gen_der(mbedtls_x509write_csr *ctx,
 			    unsigned char *buf,
 			    size_t size,
-			    const km_key_idx_t key_idx)
+			    const enum km_key_idx key_idx)
 {
 	unsigned char *sig;
 	int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
@@ -274,7 +274,7 @@ static int x509_csr_gen_der(mbedtls_x509write_csr *ctx,
 int x509_csr_pem(mbedtls_x509write_csr *ctx,
 		 unsigned char *buf,
 		 size_t size,
-		 const km_key_idx_t key_idx)
+		 const enum km_key_idx key_idx)
 {
 	int ret = 0;
 	size_t olen = 0;
@@ -304,14 +304,14 @@ int x509_csr_pem(mbedtls_x509write_csr *ctx,
  * @brief Generates device certificate signing request (CSR) using Mbed TLS
  * X.509 and HUK CSR ROT service.
  */
-psa_status_t x509_csr_generate(const km_key_idx_t key_idx,
+psa_status_t x509_csr_generate(const enum km_key_idx key_idx,
 			       unsigned char *csr,
 			       size_t csr_len,
 			       unsigned char *uuid,
 			       size_t uuid_size)
 {
 	psa_status_t status;
-	km_key_context_t *ctx = km_get_context();
+	struct km_key_context *ctx = km_get_context();
 	mbedtls_x509write_csr req;
 
 	/* length of CSR subject name is calculated as
@@ -359,14 +359,14 @@ err:
 	return status;
 }
 
-psa_status_t x509_csr_cbor(const km_key_idx_t key_idx,
+psa_status_t x509_csr_cbor(const enum km_key_idx key_idx,
 			   unsigned char *csr_cbor,
 			   size_t *csr_cbor_len,
 			   unsigned char *uuid,
 			   size_t uuid_size)
 {
 	char csr_subject_name[80] = { 0 };
-	km_key_context_t *ctx = km_get_context();
+	struct km_key_context *ctx = km_get_context();
 	int status = PSA_SUCCESS;
 
 	printf("\nGenerating X.509 CSR for '%s' key:\n", ctx[key_idx].label);

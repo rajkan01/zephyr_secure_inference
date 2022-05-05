@@ -51,7 +51,7 @@ typedef enum {
  *
  * @return psa_status_t
  */
-psa_status_t x509_csr_generate(const km_key_idx_t key_idx,
+psa_status_t x509_csr_generate(const enum km_key_idx key_idx,
 			       unsigned char *csr,
 			       size_t csr_len,
 			       unsigned char *uuid,
@@ -68,7 +68,7 @@ psa_status_t x509_csr_generate(const km_key_idx_t key_idx,
  * @param uuid       UUID for the device ID of the CSR.
  * @param uuid_size  Size of UUID
  */
-psa_status_t x509_csr_cbor(const km_key_idx_t key_idx,
+psa_status_t x509_csr_cbor(const enum km_key_idx key_idx,
 			   unsigned char *csr_cbor,
 			   size_t *csr_cbor_len,
 			   unsigned char *uuid,

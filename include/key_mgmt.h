@@ -19,12 +19,12 @@
 #define KM_CERT_MAX_SIZE (1024)
 
 /** Define the index for the key in the key context array. */
-typedef enum {
+enum km_key_idx {
 	KEY_CLIENT_TLS = 0,             /**< TLS client key ID */
 	KEY_C_SIGN,                     /**< COSE SIGN key ID */
 	KEY_C_ENCRYPT,                  /**< COSE ENCRYPT key ID */
 	KEY_COUNT,                      /**< Number of keys present */
-} km_key_idx_t;
+};
 
 /** Inidicates key provisioning status. */
 typedef enum {
@@ -79,7 +79,7 @@ psa_status_t km_get_uuid(unsigned char *uuid, size_t uuid_size);
  */
 psa_status_t km_get_pubkey(uint8_t *public_key,
 			   size_t public_key_len,
-			   const km_key_idx_t key_idx);
+			   const enum km_key_idx key_idx);
 
 /**
  * @brief Gets a reference to the km_key_context_t array in memory. The data this
@@ -108,7 +108,7 @@ void km_keys_init(void);
  *
  * @return psa_status_t
  */
-psa_status_t km_enc_pubkey_pem(const km_key_idx_t key_idx,
+psa_status_t km_enc_pubkey_pem(const enum km_key_idx key_idx,
 			       uint8_t *public_key,
 			       size_t public_key_size,
 			       size_t *public_key_len);
@@ -123,7 +123,7 @@ psa_status_t km_enc_pubkey_pem(const km_key_idx_t key_idx,
  *
  * @return psa_status_t
  */
-psa_status_t km_enc_pubkey_der(const km_key_idx_t key_idx,
+psa_status_t km_enc_pubkey_der(const enum km_key_idx key_idx,
 			       unsigned char *public_key,
 			       size_t public_key_size,
 			       size_t *public_key_len);

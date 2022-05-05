@@ -80,7 +80,7 @@ psa_status_t km_get_uuid(unsigned char *uuid, size_t uuid_size)
 }
 
 psa_status_t km_get_pubkey(uint8_t *public_key, size_t public_key_len,
-			   const km_key_idx_t key_idx)
+			   const enum km_key_idx key_idx)
 {
 	psa_status_t status;
 	km_key_context_t *ctx = km_get_context();
@@ -97,7 +97,7 @@ psa_status_t km_get_pubkey(uint8_t *public_key, size_t public_key_len,
 	return status;
 }
 
-psa_status_t km_enc_pubkey_der(const km_key_idx_t key_idx,
+psa_status_t km_enc_pubkey_der(const enum km_key_idx key_idx,
 			       unsigned char *public_key,
 			       size_t public_key_size,
 			       size_t *public_key_len)
@@ -180,7 +180,7 @@ psa_status_t km_enc_pubkey_der(const km_key_idx_t key_idx,
  * @brief This function gets the public key in (Format + X + Y) from TFM HUK
  * export public key secure service and using MbedTLS to encode PEM format.
  */
-psa_status_t km_enc_pubkey_pem(const km_key_idx_t key_idx,
+psa_status_t km_enc_pubkey_pem(const enum km_key_idx key_idx,
 			       uint8_t *public_key,
 			       size_t public_key_size,
 			       size_t *public_key_len)

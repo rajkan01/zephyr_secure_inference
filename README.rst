@@ -204,8 +204,8 @@ Build with networking support and QEMU user mode for networking:
 
 .. code-block:: console
 
-   $ west build -p always -b mps2_an521_ns -- -DCONFIG_APP_NETWORKING=y \
-       -DOVERLAY_CONFIG=overlay-smsc911x.conf \
+   $ west build -p auto -b mps2_an521_ns -t run -- \
+       -DOVERLAY_CONFIG="overlay-smsc911x.conf overlay-network.conf" \
        -DCONFIG_NET_QEMU_USER=y \
        -DCONFIG_BOOTSTRAP_SERVER_HOST=\"hostname.domain.com\"
 

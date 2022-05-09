@@ -19,6 +19,8 @@
 #include "psa_manifest/tfm_huk_deriv_srv.h"
 #include "tfm_huk_deriv_srv_api.h"
 
+#pragma GCC optimize("-Og")
+
 #define KEY_LEN_BYTES 16
 /* This macro appends an optional HUK_DERIV_LABEL_EXTRA string to the
  * label used for key derivation, enabling key diversity during testing
@@ -306,6 +308,9 @@ static psa_status_t tfm_huk_deriv_ec_key(psa_msg_t *msg)
 	psa_read(msg->handle, 1, &key_id, msg->in_size[1]);
 	psa_read(msg->handle, 2, &key_usage_flag, msg->in_size[2]);
 
+	log_info_print("key id: 0x%x", key_id);
+	log_info_print("key usage: 0x%x", key_usage_flag);
+
 	status = tfm_huk_key_get_idx(key_id, &idx);
 	if (status != PSA_SUCCESS) {
 		return status;
@@ -359,6 +364,8 @@ static psa_status_t tfm_huk_deriv_ec_key(psa_msg_t *msg)
 	psa_key_handle_t tflm_cose_key_handle = 0;
 	/* Setup the key's attributes before the creation request. */
 	psa_set_key_id(&key_attributes, key_id);
+	key_usage_flag |= PSA_KEY_USAGE_EXPORT;
+	log_info_print("Attributes: 0x%x", key_usage_flag);
 	psa_set_key_usage_flags(&key_attributes, key_usage_flag);
 	psa_set_key_lifetime(&key_attributes, PSA_KEY_LIFETIME_PERSISTENT);
 	psa_set_key_algorithm(&key_attributes, alg);
@@ -368,7 +375,9 @@ static psa_status_t tfm_huk_deriv_ec_key(psa_msg_t *msg)
 				ec_priv_key_data,
 				sizeof(ec_priv_key_data),
 				&tflm_cose_key_handle);
-	if (status != PSA_SUCCESS) {
+	log_info_print("PSA: Import key: 0x%x", tflm_cose_key_handle);
+	if (status != PSA_SUCCESS)
+	{
 		log_err_print("failed with %d", status);
 		return status;
 	}
@@ -614,6 +623,28 @@ static psa_status_t tfm_huk_gen_uuid(psa_msg_t *msg)
 	return status;
 }
 
+/*static*/ psa_status_t tfm_huk_export_privkey(psa_msg_t *msg)
+{
+	psa_status_t status = PSA_SUCCESS;
+	psa_key_id_t key_id = 0;
+	uint8_t data_out[33] = { 0 };
+	size_t data_len;
+
+	psa_read(msg->handle, 0, &key_id, msg->in_size[0]);
+
+	log_info_print("Trying to read key: 0x%x", key_id);
+	status = psa_export_key(key_id, data_out, sizeof(data_out), &data_len);
+	if (status != PSA_SUCCESS) {
+		log_err_print("failed with %d", status);
+		goto err;
+	}
+	psa_write(msg->handle, 0, data_out, data_len);
+	psa_write(msg->handle, 1, &data_len, sizeof(data_len));
+err:
+
+	return status;
+}
+
 static void tfm_huk_deriv_signal_handle(psa_signal_t signal, signal_handler_t pfn)
 {
 	psa_status_t status;
@@ -667,6 +698,9 @@ psa_status_t tfm_huk_deriv_req_mgr_init(void)
 			tfm_huk_deriv_signal_handle(
 				TFM_HUK_HASH_SIGN_SIGNAL,
 				tfm_huk_hash_sign_csr);
+		} else if (signals & TFM_HUK_EXPORT_PRIVKEY_SIGNAL) {
+			tfm_huk_deriv_signal_handle(TFM_HUK_EXPORT_PRIVKEY_SIGNAL,
+						    tfm_huk_export_privkey);
 		} else {
 			psa_panic();
 		}

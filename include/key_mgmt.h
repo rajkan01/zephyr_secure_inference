@@ -15,6 +15,9 @@
 /** EC public keys are 65 bytes. */
 #define KM_PUBLIC_KEY_SIZE (65)
 
+/** EC private keys are 32 bytes. */
+#define KM_PRIVATE_KEY_SIZE 32
+
 /** Maximum X.509 certificate size in bytes. */
 #define KM_CERT_MAX_SIZE (1024)
 
@@ -46,6 +49,9 @@ struct km_key_context {
 	char label[32];
 	/** Key status, indicate if a certificate is available. */
 	enum km_key_stat status;
+	/** For local converted keys, the real private key is kept here, so that
+	 * we can use it locally. */
+	uint8_t local_private[KM_PRIVATE_KEY_SIZE];
 };
 
 /** X.509 certificate context. */

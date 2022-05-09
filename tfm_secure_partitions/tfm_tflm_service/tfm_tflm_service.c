@@ -331,7 +331,11 @@ void tfm_tflm_ec_keys_init()
 		tfm_tflm_gen_ec_key((const uint8_t *)hpke_info[0],
 				    strlen(hpke_info[0]),
 				    HUK_CLIENT_TLS,
-				    (PSA_KEY_USAGE_SIGN_HASH | PSA_KEY_USAGE_VERIFY_MESSAGE));
+				    (PSA_KEY_USAGE_SIGN_HASH | PSA_KEY_USAGE_VERIFY_MESSAGE
+#if 1
+				     | PSA_KEY_USAGE_EXPORT
+#endif
+				    ));
 		tfm_tflm_gen_ec_key((const uint8_t *)hpke_info[1],
 				    strlen(hpke_info[1]),
 				    HUK_COSE,

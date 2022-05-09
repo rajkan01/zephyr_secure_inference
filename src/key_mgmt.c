@@ -12,6 +12,10 @@
 #include "util_app_log.h"
 #include "x509_csr_gen.h"
 
+#ifdef CONFIG_TLS_PSA_KEY_WORKAROUND
+#  include <local_key.h>
+#endif
+
 /** Declare a reference to the application logging interface. */
 LOG_MODULE_DECLARE(app, CONFIG_LOG_DEFAULT_LEVEL);
 
@@ -235,4 +239,9 @@ void km_keys_init(void)
 	km_context_init(&ctx[KEY_COSE],
 			KEY_ID_COSE,
 			"Device COSE SIGN/Encrypt");
+
+#ifdef CONFIG_TLS_PSA_KEY_WORKAROUND
+	/* Setup the local key for the TLS context. */
+	lkey_convert(&ctx[KEY_CLIENT_TLS]);
+#endif
 }

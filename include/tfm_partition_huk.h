@@ -71,6 +71,24 @@ psa_status_t psa_huk_hash_sign(psa_key_id_t *key_id,
 			       size_t sig_size,
 			       size_t *sig_len);
 
+
+/**
+ * @brief Export a private key, when that makes sense.
+ *
+ *  Attempt to export the private key associated with the given #id.  Currently,
+ *  this is only allowed if we are referencing the #HUK_KEY_CLIENT_TLS key, and
+ *  only if CONFIG_TLS_PSA_WORKAROUND is enabled.
+ *
+ * @param[in]  id           key_id for the key to export
+ * @param[out] buffer       buffer to write the private key to
+ * @param[in]  buffer_size  number of bytes available for the private key
+ * @param[out] buffer_used  number of bytes actually written to the buffer
+ *
+ * @return psa_status_t     Indicates success/failure of the operation
+ */
+psa_status_t psa_huk_export_privkey(psa_key_id_t id, uint8_t *buffer, size_t buffer_size,
+				    size_t *buffer_used);
+
 #ifdef __cplusplus
 }
 #endif

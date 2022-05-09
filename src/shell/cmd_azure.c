@@ -20,6 +20,7 @@ cmd_azure_status(const struct shell *shell, size_t argc, char **argv)
 	return 0;
 }
 
+#ifdef CONFIG_APP_NETWORKING
 static int
 cmd_azure_start(const struct shell *shell, size_t argc, char **argv)
 {
@@ -28,11 +29,14 @@ cmd_azure_start(const struct shell *shell, size_t argc, char **argv)
 
 	return 0;
 }
+#endif
 
 SHELL_STATIC_SUBCMD_SET_CREATE(sub_cmd_azure,
 	/* Status */
 	SHELL_CMD(status, NULL, "Azure connection status", cmd_azure_status),
+#ifdef CONFIG_APP_NETWORKING
 	SHELL_CMD(start, NULL, "Start Azure client", cmd_azure_start),
+#endif
 	SHELL_SUBCMD_SET_END
 	);
 

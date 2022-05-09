@@ -31,9 +31,7 @@ set_property(TARGET zephyr_property_target
 
 project(tfm_secure_inference)
 
-target_sources(app PRIVATE
-  src/azure.c
-  src/caserver.c
+list(APPEND secure_app_files
   src/cose/cose_verify.c
   src/cose/mbedtls_ecdsa_verify_sign.c
   src/shell/cmd_azure.c
@@ -42,7 +40,6 @@ target_sources(app PRIVATE
   src/shell/cmd_keys.c
   src/shell/shell_common.c
   src/infer_mgmt.c
-  src/dhcpwait.c
   src/key_mgmt.c
   src/main.c
   src/provision.c
@@ -57,6 +54,20 @@ target_sources(app PRIVATE
   ext/NanoCBOR/src/decoder.c
   ext/NanoCBOR/src/encoder.c
 )
+
+if(CONFIG_APP_NETWORKING)
+  list(APPEND secure_app_files
+    src/azure.c
+    src/caserver.c
+    src/dhcpwait.c
+  )
+endif()
+
+target_sources(app PRIVATE ${secure_app_files})
+#target_sources(app PRIVATE
+#if (CONFIG_APP_NETWORKING)
+#  src/azure.c
+#endif()
 
 target_include_directories(app PRIVATE
   ${ZEPHYR_TRUSTED_FIRMWARE_M_MODULE_DIR}/interface/include

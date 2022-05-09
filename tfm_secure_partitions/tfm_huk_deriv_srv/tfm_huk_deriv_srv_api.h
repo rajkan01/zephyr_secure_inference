@@ -28,15 +28,13 @@
 /** Define the index for the key in the key context array. */
 typedef enum {
 	HUK_KEY_CLIENT_TLS = 0,                 /**< TLS client key ID */
-	HUK_KEY_C_SIGN,                         /**< COSE SIGN key ID */
-	HUK_KEY_C_ENCRYPT,                      /**< COSE ENCRYPT key ID */
+	HUK_KEY_COSE,                           /**< COSE SIGN/Encrypt key ID */
 	HUK_KEY_COUNT,                          /**< Number of keys present */
 } huk_key_idx_t;
 
 typedef enum {
-	HUK_CLIENT_TLS          = 0x5001,       // Client TLS key id
-	HUK_COSE_SIGN           = 0x5002,       // COSE SIGN key id
-	HUK_COSE_ENCRYPT        = 0x5003,       // COSE ENCRYPT key id
+	HUK_CLIENT_TLS  = 0x5001,               // Client TLS key id
+	HUK_COSE        = 0x5002,               // COSE SIGN key id
 } huk_key_type_t;
 
 /** Inidicates key provisioning status. */

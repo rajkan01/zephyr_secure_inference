@@ -21,8 +21,7 @@
 /** Define the index for the key in the key context array. */
 enum km_key_idx {
 	KEY_CLIENT_TLS = 0,             /**< TLS client key ID */
-	KEY_C_SIGN,                     /**< COSE SIGN key ID */
-	KEY_C_ENCRYPT,                  /**< COSE ENCRYPT key ID */
+	KEY_COSE,                       /**< COSE SIGN/Encrypt key ID */
 	KEY_COUNT,                      /**< Number of keys present */
 };
 
@@ -36,8 +35,7 @@ enum km_key_stat {
 /** ID in the HUK key derivation service for the specified key. */
 enum km_key_type {
 	KEY_ID_CLIENT_TLS       = 0x5001,       /**< Client TLS key ID */
-	KEY_ID_C_SIGN           = 0x5002,       /**< COSE SIGN key ID */
-	KEY_ID_C_ENCRYPT        = 0x5003,       /**< COSE ENCRYPT key ID */
+	KEY_ID_COSE             = 0x5002,       /**< COSE SIGN/Encrypt key ID */
 };
 
 /** Key context. */

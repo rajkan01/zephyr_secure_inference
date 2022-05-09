@@ -235,10 +235,8 @@ static psa_status_t tfm_huk_key_get_idx(psa_key_id_t key_id,
 	/* Map the Key id to key idx */
 	if (key_id == HUK_CLIENT_TLS) {
 		*idx = HUK_KEY_CLIENT_TLS;
-	} else if (key_id == HUK_COSE_SIGN) {
-		*idx = HUK_KEY_C_SIGN;
-	} else if (key_id == HUK_COSE_ENCRYPT) {
-		*idx = HUK_KEY_C_ENCRYPT;
+	} else if (key_id == HUK_COSE) {
+		*idx = HUK_KEY_COSE;
 	} else {
 		return PSA_ERROR_INVALID_ARGUMENT;
 	}
@@ -441,7 +439,7 @@ static psa_status_t tfm_huk_cose_encode_sign
 			return status;
 		}
 	} else if (enc_format == HUK_ENC_COSE_SIGN1) {
-		status = tfm_cose_encode_sign(HUK_COSE_SIGN,
+		status = tfm_cose_encode_sign(HUK_COSE,
 					      inf_value,
 					      inf_val_encoded_buf,
 					      msg->out_size[0],

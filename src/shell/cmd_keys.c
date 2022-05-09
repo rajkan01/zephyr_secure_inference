@@ -27,10 +27,10 @@ cmd_keys_key_stat(const struct shell *shell, size_t argc, char **argv)
 	char *k_sts[] = { "unknown", "Key generated", "X.509 certificate gen" };
 	struct km_key_context *ctx = km_get_context();
 
-	shell_print(shell, "| %-20s| %-12s | %-22s |", row1[0], row1[1],
+	shell_print(shell, "| %-24s| %-8s | %-14s |", row1[0], row1[1],
 		    row1[2]);
 	for (int i = 0; i < KEY_COUNT; i++) {
-		shell_print(shell, "| %-20s| 0x%-10x | %-22s |", ctx[i].label,
+		shell_print(shell, "| %-24s| 0x%-6x | %-14s |", ctx[i].label,
 			    ctx[i].key_id, k_sts[ctx[i].status]);
 	}
 

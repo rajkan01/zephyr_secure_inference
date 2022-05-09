@@ -231,13 +231,8 @@ void km_keys_init(void)
 			KEY_ID_CLIENT_TLS,
 			"Device Client TLS");
 
-	/* Populate the COSE SIGN key context. */
-	km_context_init(&ctx[KEY_C_SIGN],
-			KEY_ID_C_SIGN,
-			"Device COSE SIGN");
-
-	/* Populate the COSE ENCRYPT key context. */
-	km_context_init(&ctx[KEY_C_ENCRYPT],
-			KEY_ID_C_ENCRYPT,
-			"Device COSE ENCRYPT");
+	/* Populate the COSE SIGN/Encrypt key context. */
+	km_context_init(&ctx[KEY_COSE],
+			KEY_ID_COSE,
+			"Device COSE SIGN/Encrypt");
 }

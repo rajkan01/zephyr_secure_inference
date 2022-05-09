@@ -180,8 +180,7 @@ consistently identify a single SoC or embedded device.
 The following EC keys are currently generated:
 
 - Device Client TLS key (secp256r1)
-- Device COSE SIGN (secp256r1 with SHA-256 digest)
-- Device COSE ENCRYPT (secp256r1, ECDH ES w/concat KDF, AES key wrap, 256 bit keys)
+- Device COSE SIGN/ENCRYPT (secp256r1)
 
 The non-secure processing environment exposes a ``keys`` shell command that can
 be used to retrieve the public key component of the above private keys, as well

@@ -33,9 +33,11 @@ void main(void)
 		LOG_ERR("Error loading/generating app config data in PS.");
 	}
 
+#ifdef CONFIG_APP_NETWORKING
 	/* Initialize the system that waits for networking to come up.
 	 * */
 	init_dhcp_wait();
+#endif
 
 	/* Initialise references to derived keys (required once before use!). */
 	km_keys_init();

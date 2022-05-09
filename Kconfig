@@ -27,6 +27,12 @@ config SECURE_INFER_HUK_DERIV_LABEL_EXTRA
 	  is exposed here for convenience purposes so that the Zephyr build
 	  system can pass it through to TF-M.
 
+config APP_NETWORKING
+	bool "Enabling support for networking in the secure app"
+	select NETWORKING
+	help
+	  Enable this to add support for networking in the secure demo
+
 config AZURE_SHELL_CMD_SUPPORT
 	bool "Enable custom shell commands for Azure"
 	depends on SHELL

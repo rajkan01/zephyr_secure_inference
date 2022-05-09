@@ -200,6 +200,7 @@ cmd_keys_csr(const struct shell *shell, size_t argc, char **argv)
 	return 0;
 }
 
+#ifdef CONFIG_APP_NETWORKING
 static int
 cmd_keys_ca(const struct shell *shell, size_t argc, char **argv)
 {
@@ -273,6 +274,7 @@ cmd_keys_ca(const struct shell *shell, size_t argc, char **argv)
 
 	return 0;
 }
+#endif
 
 /* Subcommand array for "keys" (level 1). */
 SHELL_STATIC_SUBCMD_SET_CREATE(sub_cmd_keys,
@@ -282,8 +284,10 @@ SHELL_STATIC_SUBCMD_SET_CREATE(sub_cmd_keys,
 	SHELL_CMD(public, NULL, "List public key(s) and key IDs", cmd_keys_pubkey),
 	/* 'CSR' command handler. */
 	SHELL_CMD(csr, NULL, "Generate and display CSR on given key ID", cmd_keys_csr),
+#ifdef CONFIG_APP_NETWORKING
 	/* 'CA' command handler. */
 	SHELL_CMD(ca, NULL, "Request certificate from CA", cmd_keys_ca),
+#endif
 	/* Array terminator. */
 	SHELL_SUBCMD_SET_END
 	);

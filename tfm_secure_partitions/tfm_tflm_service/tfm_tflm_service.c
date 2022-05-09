@@ -321,13 +321,11 @@ void tfm_tflm_ec_keys_init()
 
 	if (!is_ec_keys_init_done) {
 		/** These are the hpke_info passed to key derivation for generating
-		 *  three unique keys - Device client TLS, Device COSE SIGN, Device
-		 *  COSE encryption.
+		 *  two unique keys - Device client TLS, Device COSE SIGN/Encrypt.
 		 */
-		const char *hpke_info[3] = {
+		const char *hpke_info[2] = {
 			"HUK_CLIENT_TLS",
-			"HUK_COSE_SIGN",
-			"HUK_COSE_ENCRYPT"
+			"HUK_COSE"
 		};
 
 		tfm_tflm_gen_ec_key((const uint8_t *)hpke_info[0],
@@ -336,12 +334,8 @@ void tfm_tflm_ec_keys_init()
 				    (PSA_KEY_USAGE_SIGN_HASH | PSA_KEY_USAGE_VERIFY_MESSAGE));
 		tfm_tflm_gen_ec_key((const uint8_t *)hpke_info[1],
 				    strlen(hpke_info[1]),
-				    HUK_COSE_SIGN,
+				    HUK_COSE,
 				    (PSA_KEY_USAGE_SIGN_HASH | PSA_KEY_USAGE_VERIFY_HASH));
-		tfm_tflm_gen_ec_key((const uint8_t *)hpke_info[2],
-				    strlen(hpke_info[2]),
-				    HUK_COSE_ENCRYPT,
-				    PSA_KEY_USAGE_SIGN_HASH | PSA_KEY_USAGE_ENCRYPT);
 		is_ec_keys_init_done = true;
 	}
 }

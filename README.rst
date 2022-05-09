@@ -194,12 +194,28 @@ This app is built as a Zephyr application, and can be built with the west
 command.  There are a few config options that need to be set in order for it to
 build successfully.  A sample configuration could be:
 
+Build without networking support:
+
 .. code-block:: console
 
-   $ west build -p always -b mps2_an521_ns . -- \
+   $ west build -p auto -b mps2_an521_ns -t run
+
+Build with networking support and QEMU user mode for networking:
+
+.. code-block:: console
+
+   $ west build -p always -b mps2_an521_ns -- -DCONFIG_APP_NETWORKING=y \
        -DOVERLAY_CONFIG=overlay-smsc911x.conf \
        -DCONFIG_NET_QEMU_USER=y \
        -DCONFIG_BOOTSTRAP_SERVER_HOST=\"hostname.domain.com\"
+
+.. note::
+   
+   ``DCONFIG_BOOTSTRAP_SERVER_HOST`` should point to the domain name where
+   the bootstrap server is located. This may be a proper domain, or the
+   output of the `hostname` command, depending on how the bootstrap server
+   was configured. See https://github.com/microbuilder/linaroca
+   for details.
 
 On Target
 =========

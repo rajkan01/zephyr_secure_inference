@@ -247,6 +247,9 @@ int caserver_cr(unsigned char *payload, size_t payload_len)
 {
 	int rc;
 	rc = get_caserver_addrinfo();
+	if (rc < 0) {
+		return rc;
+	}
 
 	int sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TLS_1_2);
 	if (sock < 0) {

@@ -17,7 +17,10 @@
 #include "../tfm_huk_deriv_srv/tfm_huk_deriv_srv_api.h"
 #include <string.h>
 // #include "Driver_I2C.h"
+#if defined(CONFIG_SOC_MPS2_AN521) || \
+	defined(CONFIG_SOC_MPS3_AN547)
 #include "platform_regs.h"
+#endif
 
 #include "main_functions.h"
 

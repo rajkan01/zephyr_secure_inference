@@ -14,7 +14,10 @@
 #include "tfm_plat_test.h"
 #include "target_cfg.h"
 #include "../tfm_huk_deriv_srv/tfm_huk_deriv_srv_api.h"
+#if defined(CONFIG_SOC_MPS2_AN521) || \
+	defined(CONFIG_SOC_MPS3_AN547)
 #include "platform_regs.h"
+#endif
 #include "tvmgen_default.h"
 #include "utvm_platform.h"
 

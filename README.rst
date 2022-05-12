@@ -6,127 +6,18 @@ TF-M Confidential AI Project
 Dependencies
 ************
 
-This sample is based off the following Zephyr commit:
-``ca842acdd7a3e9f84125a19ce89034a55c723d29``
+Run these commands to apply the tfm patch, allowing us to enable CPP support
+in the TF-M build system. This patch also modifies relevant target's flash
+layouts to increase flash allocation for the secure image, where required:
 
-TensorFlow Lite Micro also requires us to enable CPP support in TF-M, which
-can be done with the following patch on top of TF-M commit
-``b90420a2ffbf7d1329716508f1d3f9f880bc865b``
+.. code-block:: console
 
-.. code-block::
-
-   diff --git a/CMakeLists.txt b/CMakeLists.txt
-   index 1e119997..395330ad 100644
-   --- a/CMakeLists.txt
-   +++ b/CMakeLists.txt
-   @@ -65,7 +65,7 @@ endif()
-   include(${TFM_TOOLCHAIN_FILE})
-   set(CMAKE_PROJECT_INCLUDE_BEFORE ${CMAKE_SOURCE_DIR}/cmake/disable_compiler_detection.cmake)
-   
-   -project("Trusted Firmware M" VERSION ${TFM_VERSION} LANGUAGES C ASM)
-   +project("Trusted Firmware M" VERSION ${TFM_VERSION} LANGUAGES C CXX ASM)
-   tfm_toolchain_reload_compiler()
-   
-   # Synchronise the install path variables. If CMAKE_INSTALL_PREFIX is manually
-   diff --git a/cmake/disable_compiler_detection.cmake b/cmake/disable_compiler_detection.cmake
-   index ebafca06..215221a2 100644
-   --- a/cmake/disable_compiler_detection.cmake
-   +++ b/cmake/disable_compiler_detection.cmake
-   @@ -7,3 +7,4 @@
-   
-   #Stop cmake running compiler tests.
-   set (CMAKE_C_COMPILER_FORCED true)
-   +set (CMAKE_CXX_COMPILER_FORCED true)
-   diff --git a/platform/ext/common/gcc/tfm_common_s.ld b/platform/ext/common/gcc/tfm_common_s.ld
-   index d3aada37..8257e2d3 100644
-   --- a/platform/ext/common/gcc/tfm_common_s.ld
-   +++ b/platform/ext/common/gcc/tfm_common_s.ld
-   @@ -183,7 +183,7 @@ SECTIONS
-      Image$$ER_CODE_SRAM$$Limit = ADDR(.ER_CODE_SRAM) + SIZEOF(.ER_CODE_SRAM);
-   #endif
-   
-   -#if TFM_LVL != 1
-   +/* #if TFM_LVL != 1 */
-      .ARM.extab :
-      {
-            *(.ARM.extab* .gnu.linkonce.armextab.*)
-   @@ -196,7 +196,7 @@ SECTIONS
-      } > FLASH
-      __exidx_end = .;
-   
-   -#endif /* TFM_LVL != 1 */
-   +/* #endif */
-   
-      .ER_TFM_CODE : ALIGN(4)
-      {
-   diff --git a/platform/ext/target/stm/common/scripts/postbuild.sh b/platform/ext/target/stm/common/scripts/postbuild.sh
-   index 9f7a3734..5fca2f05 100644
-   --- a/platform/ext/target/stm/common/scripts/postbuild.sh
-   +++ b/platform/ext/target/stm/common/scripts/postbuild.sh
-   @@ -16,7 +16,11 @@
-   #  ******************************************************************************
-   # arg1 is optional, it fixes compiler full path if present
-   # Absolute path to this script
-   +if [[ "$OSTYPE" == "darwin"* ]]; then
-   +SCRIPT=$(greadlink -f $0)
-   +else
-   SCRIPT=$(readlink -f $0)
-   +fi
-   # Absolute path this script
-   projectdir=`dirname $SCRIPT`
-   source $projectdir/preprocess.sh
-   diff --git a/toolchain_GNUARM.cmake b/toolchain_GNUARM.cmake
-   index 9cb741c0..ca1e596d 100644
-   --- a/toolchain_GNUARM.cmake
-   +++ b/toolchain_GNUARM.cmake
-   @@ -14,11 +14,16 @@ endif()
-   set(CMAKE_SYSTEM_NAME Generic)
-   
-   find_program(CMAKE_C_COMPILER ${CROSS_COMPILE}-gcc)
-   +find_program(CMAKE_CXX_COMPILER ${CROSS_COMPILE}-g++)
-   
-   if(CMAKE_C_COMPILER STREQUAL "CMAKE_C_COMPILER-NOTFOUND")
-      message(FATAL_ERROR "Could not find compiler: '${CROSS_COMPILE}-gcc'")
-   endif()
-   
-   +if(CMAKE_CXX_COMPILER STREQUAL "CMAKE_CXX_COMPILER-NOTFOUND")
-   +    message(FATAL_ERROR "Could not find compiler: '${CROSS_COMPILE}-g++'")
-   +endif()
-   +
-   set(CMAKE_ASM_COMPILER ${CMAKE_C_COMPILER})
-   
-   set(LINKER_VENEER_OUTPUT_FLAG -Wl,--cmse-implib,--out-implib=)
-   @@ -47,9 +52,13 @@ macro(tfm_toolchain_reset_compiler_flags)
-            -funsigned-char
-            -mthumb
-            -nostdlib
-   -        -std=c99
-   +        $<$<COMPILE_LANGUAGE:C>:-std=c99>
-            $<$<OR:$<BOOL:${TFM_DEBUG_SYMBOLS}>,$<BOOL:${TFM_CODE_COVERAGE}>>:-g>
-      )
-   +
-   +    add_compile_options(
-   +        $<$<COMPILE_LANGUAGE:CXX>:-std=c++11>
-   +    )
-   endmacro()
-   
-   macro(tfm_toolchain_reset_linker_flags)
-   @@ -123,6 +132,7 @@ macro(tfm_toolchain_reload_compiler)
-      endif()
-   
-      unset(CMAKE_C_FLAGS_INIT)
-   +    unset(CMAKE_CXX_FLAGS_INIT)
-      unset(CMAKE_ASM_FLAGS_INIT)
-   
-      if (DEFINED TFM_SYSTEM_PROCESSOR)
-   @@ -138,6 +148,7 @@ macro(tfm_toolchain_reload_compiler)
-      endif()
-   
-      set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS_INIT})
-   +    set(CMAKE_CXX_FLAGS ${CMAKE_C_FLAGS_INIT})
-      set(CMAKE_ASM_FLAGS ${CMAKE_ASM_FLAGS_INIT})
-   
-      set(BL2_COMPILER_CP_FLAG -mfloat-abi=soft)
+   $ cd path/to/zephyrproject/zephyr
+   $ source zephyr-env.sh
+   $ git checkout eee56d8840c6bb511f71fef3b0916cdc5fe91a5a
+   $ west update
+   $ cd ../modules/tee/tf-m/trusted-firmware-m
+   $ git apply <sample-path>/patch/tfm.patch
 
 Overview
 ********
@@ -209,7 +100,7 @@ Build with networking support and QEMU user mode for networking:
        -DCONFIG_BOOTSTRAP_SERVER_HOST=\"hostname.domain.com\"
 
 .. note::
-   
+
    ``DCONFIG_BOOTSTRAP_SERVER_HOST`` should point to the domain name where
    the bootstrap server is located. This may be a proper domain, or the
    output of the `hostname` command, depending on how the bootstrap server
@@ -244,12 +135,11 @@ Sample Output
    Creating an empty ITS flash layout.
    Creating an empty PS flash layout.
    [HUK DERIV SERV] tfm_huk_deriv_ec_key()::382 Successfully derived the key for HUK_CLIENT_TLS1
-   [HUK DERIV SERV] tfm_huk_deriv_ec_key()::382 Successfully derived the key for HUK_COSE_SIGN1
-   [HUK DERIV SERV] tfm_huk_deriv_ec_key()::382 Successfully derived the key for HUK_COSE_ENCRYPT1
+   [HUK DERIV SERV] tfm_huk_deriv_ec_key()::382 Successfully derived the key for HUK_COSE
    [UTVM SERVICE] tfm_utvm_service_req_mngr_init()::215 UTVM initalisation completed
    [TFLM SERVICE] tfm_tflm_service_req_mngr_init()::398 initalisation completed
-   
-   
+
+
    uart:~$ *** Booting Zephyr OS build zephyr-v3.0.0-2694-g7cedc5d85e09  ***
    [    2.131000] <inf> app: app_cfg: Creating default config file with UID 0x55CFDA7A
    [    2.133000] <err> app: Invalid argument
@@ -281,7 +171,7 @@ command can be used to query the bootstrap server.
    [    9.658000] <inf> app: Status OK
    [    9.659000] <inf> app: Result: 3
    [    9.659000] <inf> app: cert: 460 bytes
-   
+
             0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
    00000000 30 82 01 C8 30 82 01 6F A0 03 02 01 02 02 08 16 0...0..o........
    00000010 EB F5 18 21 87 AE 38 30 0A 06 08 2A 86 48 CE 3D ...!..80...*.H.=
@@ -313,7 +203,7 @@ key values.
 This project defines an optional ``HUK_DERIV_LABEL_EXTRA`` value in the secure
 parition that can be used to provide an additional label component for key
 derivation, enabling key diversity when testing on emulated platforms.
-    
+
 A KConfig wrapper for this variable is also added via the
 ``DCONFIG_SECURE_INFER_HUK_DERIV_LABEL_EXTRA`` config flag to facilitate passing
 the label from Zephyr's build system up to the TF-M build system.

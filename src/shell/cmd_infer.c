@@ -275,7 +275,7 @@ SHELL_STATIC_SUBCMD_SET_CREATE(sub_cmd_model,
 /* Subcommand array for "infer" (level 1). */
 SHELL_STATIC_SUBCMD_SET_CREATE(sub_cmd_infer,
 	/* 'model' command handler. */
-	SHELL_CMD_ARG(model, NULL, "$ infer model", cmd_infer_list_models, 1, 0),
+	SHELL_CMD_ARG(model, NULL, "List inference models", cmd_infer_list_models, 1, 0),
 	/* 'get' command handler. */
 	SHELL_CMD(get, &sub_cmd_model, "Run inference on given input(s)", cmd_infer_get),
 	/* Array terminator. */

@@ -331,5 +331,8 @@ int caserver_cr(unsigned char *payload, size_t payload_len)
 	rc = http_client_req(sock, &req, 5 * MSEC_PER_SEC, "CSR Request");
 	LOG_INF("Request result: %d", rc);
 
+	rc = zsock_close(sock);
+	LOG_INF("Close: %d", rc);
+
 	return rc < 0 ? rc : 0;
 }

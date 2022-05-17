@@ -27,6 +27,28 @@ LOG_MODULE_DECLARE(app, CONFIG_LOG_DEFAULT_LEVEL);
  * side.
  */
 
+/* Template for an ASN.1 encoded EC private key.  See RFC5915. */
+static const uint8_t key_template[] = {
+	/* SEQUENCE (length) */
+	0x30,
+	3 + 2 + 32 + 12,
+	/* INTEGER 1 (version) */
+	0x02, 0x01, 0x01,
+	/* OCTET STRING (32 bytes) */
+	0x04, 0x20,
+	/* Private key, 32 bytes. */
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	/* OID: prime256v1. */
+	0xa0, 0x0a,
+	0x06, 0x08, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x03,
+	0x01, 0x07,
+};
+#define PRIVATE_KEY_OFFSET 7
+#define PRIVATE_KEY_SIZE 32
+
 int lkey_convert(struct km_key_context *ctx)
 {
 	psa_status_t res;
@@ -34,13 +56,21 @@ int lkey_convert(struct km_key_context *ctx)
 
 	LOG_INF("Starting to convert key");
 
-	/* Let's see if we can just export it. */
-	res = psa_huk_export_privkey(ctx->key_id, ctx->local_private, sizeof(ctx->local_private),
-				     &buf_len);
+	if (sizeof(key_template) != sizeof(ctx->local_private)) {
+		return -EINVAL;
+	}
+	memcpy(ctx->local_private, key_template, sizeof(key_template));
+
+	res = psa_huk_export_privkey(ctx->key_id, ctx->local_private + PRIVATE_KEY_OFFSET,
+				     PRIVATE_KEY_SIZE, &buf_len);
 	if (res != PSA_SUCCESS) {
 		LOG_ERR("Unable to export: %d", res);
 		return -EINVAL;
 	}
-	LOG_INF("Export: %d, len %d", res, buf_len);
+	if (buf_len != PRIVATE_KEY_SIZE) {
+		return -EINVAL;
+	}
+	ctx->local_private_len = sizeof(key_template);
+	LOG_ERR("Export: %d, len %d", res, buf_len);
 	return 0;
 }

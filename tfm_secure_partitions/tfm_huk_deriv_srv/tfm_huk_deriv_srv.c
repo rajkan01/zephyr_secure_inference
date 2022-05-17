@@ -362,10 +362,18 @@ static psa_status_t tfm_huk_deriv_ec_key(psa_msg_t *msg)
 		PSA_KEY_TYPE_ECC_KEY_PAIR(PSA_ECC_FAMILY_SECP_R1);
 	psa_algorithm_t alg = PSA_ALG_ECDSA(PSA_ALG_SHA_256);
 	psa_key_handle_t tflm_cose_key_handle = 0;
+
 	/* Setup the key's attributes before the creation request. */
 	psa_set_key_id(&key_attributes, key_id);
-	key_usage_flag |= PSA_KEY_USAGE_EXPORT;
-	log_info_print("Attributes: 0x%x", key_usage_flag);
+
+	/* Until the keys can be used while remaining on the secure side, allow
+	 * exporting, but only of the TLS key.  This has to be decided here,
+	 * rather that by request, as a modified request could allow keys that
+	 * shouldn't be exported to be set that way.
+	 */
+	if (key_id == HUK_CLIENT_TLS) {
+		key_usage_flag |= PSA_KEY_USAGE_EXPORT;
+	}
 	psa_set_key_usage_flags(&key_attributes, key_usage_flag);
 	psa_set_key_lifetime(&key_attributes, PSA_KEY_LIFETIME_PERSISTENT);
 	psa_set_key_algorithm(&key_attributes, alg);

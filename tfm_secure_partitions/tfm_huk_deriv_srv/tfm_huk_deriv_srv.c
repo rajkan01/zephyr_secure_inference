@@ -631,7 +631,7 @@ static psa_status_t tfm_huk_gen_uuid(psa_msg_t *msg)
 	return status;
 }
 
-/*static*/ psa_status_t tfm_huk_export_privkey(psa_msg_t *msg)
+static psa_status_t tfm_huk_export_privkey(psa_msg_t *msg)
 {
 	psa_status_t status = PSA_SUCCESS;
 	psa_key_id_t key_id = 0;

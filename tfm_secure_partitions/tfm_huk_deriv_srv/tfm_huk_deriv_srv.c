@@ -19,8 +19,6 @@
 #include "psa_manifest/tfm_huk_deriv_srv.h"
 #include "tfm_huk_deriv_srv_api.h"
 
-#pragma GCC optimize("-Og")
-
 #define KEY_LEN_BYTES 16
 /* This macro appends an optional HUK_DERIV_LABEL_EXTRA string to the
  * label used for key derivation, enabling key diversity during testing

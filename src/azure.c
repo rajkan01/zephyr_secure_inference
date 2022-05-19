@@ -188,7 +188,6 @@ static int tls_init(void)
 		return err;
 	}
 
-#if 1
 	err = tls_credential_add(APP_CA_DEV_CERT_TAG, TLS_CREDENTIAL_SERVER_CERTIFICATE,
 				 mqtt_provision.cert_der, mqtt_provision.cert_der_len);
 	if (err < 0) {
@@ -205,7 +204,6 @@ static int tls_init(void)
 		LOG_ERR("Failed to register device private key: %d", err);
 		return err;
 	}
-#endif
 
 	return err;
 }

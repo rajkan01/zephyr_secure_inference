@@ -7,13 +7,16 @@
 #ifndef KEY_MGMT_H
 #define KEY_MGMT_H
 
-#include "psa/crypto_types.h"
+#include "psa/crypto.h"
 
 #define EC_PUBLIC_PEM_BEGIN          "-----BEGIN PUBLIC KEY-----\n"
 #define EC_PUBLIC_PEM_END             "-----END PUBLIC KEY-----\n"
 
 /** EC public keys are 65 bytes. */
 #define KM_PUBLIC_KEY_SIZE (65)
+
+/** EC private keys are 32 bytes, but encoded in ASN.1 */
+#define KM_PRIVATE_KEY_SIZE (2 + 3 + 2 + 32 + 12)
 
 /** Maximum X.509 certificate size in bytes. */
 #define KM_CERT_MAX_SIZE (1024)
@@ -46,6 +49,11 @@ struct km_key_context {
 	char label[32];
 	/** Key status, indicate if a certificate is available. */
 	enum km_key_stat status;
+	/** For local converted keys, the real private key is kept here, so that
+	 * we can use it locally. */
+	uint8_t local_private[KM_PRIVATE_KEY_SIZE];
+	/** Used bytes of this local private key. */
+	size_t local_private_len;
 };
 
 /** X.509 certificate context. */

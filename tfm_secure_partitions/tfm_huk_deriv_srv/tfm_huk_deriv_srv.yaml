@@ -70,6 +70,13 @@
         "version": 1,
         "version_policy": "STRICT"
     },
+    {
+      "name": "TFM_HUK_EXPORT_PRIVKEY",
+      "sid": "0xFFFFF007",
+      "non_secure_clients": true,
+      "version": 1,
+      "version_policy": "STRICT"
+    }
   ],
 
   "dependencies": [

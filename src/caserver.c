@@ -247,6 +247,9 @@ int caserver_cr(unsigned char *payload, size_t payload_len)
 {
 	int rc;
 	rc = get_caserver_addrinfo();
+	if (rc < 0) {
+		return rc;
+	}
 
 	int sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TLS_1_2);
 	if (sock < 0) {
@@ -327,6 +330,9 @@ int caserver_cr(unsigned char *payload, size_t payload_len)
 
 	rc = http_client_req(sock, &req, 5 * MSEC_PER_SEC, "CSR Request");
 	LOG_INF("Request result: %d", rc);
+
+	rc = zsock_close(sock);
+	LOG_INF("Close: %d", rc);
 
 	return rc < 0 ? rc : 0;
 }

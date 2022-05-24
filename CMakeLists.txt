@@ -41,6 +41,7 @@ list(APPEND secure_app_files
   src/shell/shell_common.c
   src/infer_mgmt.c
   src/key_mgmt.c
+  src/local_key.c
   src/main.c
   src/provision.c
   src/test_certs.c

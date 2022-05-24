@@ -67,9 +67,13 @@ static K_SEM_DEFINE(mqtt_start, 0, 1);
 
 /* Application TLS configuration. */
 #define APP_CA_CERT_TAG 1
+#define APP_CA_DEV_CERT_TAG 2
+#define APP_CA_DEV_KEY_TAG 3
 
 static sec_tag_t m_sec_tags[] = {
 	APP_CA_CERT_TAG,
+	APP_CA_DEV_CERT_TAG,
+	APP_CA_DEV_KEY_TAG,
 };
 
 static uint8_t *device_topic;
@@ -175,6 +179,7 @@ static int azure_load_provision(void)
 static int tls_init(void)
 {
 	int err;
+	struct km_key_context *ctx;
 
 	err = tls_credential_add(APP_CA_CERT_TAG, TLS_CREDENTIAL_CA_CERTIFICATE, ca_certificate,
 				 ca_certificate_len);
@@ -183,21 +188,22 @@ static int tls_init(void)
 		return err;
 	}
 
-#if 0
-	err = tls_credential_add(APP_CA_CERT_TAG, TLS_CREDENTIAL_SERVER_CERTIFICATE, device_crt,
-				 device_crt_len);
+	err = tls_credential_add(APP_CA_DEV_CERT_TAG, TLS_CREDENTIAL_SERVER_CERTIFICATE,
+				 mqtt_provision.cert_der, mqtt_provision.cert_der_len);
 	if (err < 0) {
 		LOG_ERR("Failed to register device public certificate: %d", err);
 		return err;
 	}
 
-	err = tls_credential_add(APP_CA_CERT_TAG, TLS_CREDENTIAL_PRIVATE_KEY, device_key,
-				 device_key_len);
+	ctx = km_get_context();
+
+	err = tls_credential_add(APP_CA_DEV_KEY_TAG, TLS_CREDENTIAL_PRIVATE_KEY,
+				 ctx[KEY_CLIENT_TLS].local_private,
+				 ctx[KEY_CLIENT_TLS].local_private_len);
 	if (err < 0) {
 		LOG_ERR("Failed to register device private key: %d", err);
 		return err;
 	}
-#endif
 
 	return err;
 }

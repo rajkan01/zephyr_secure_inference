@@ -37,7 +37,7 @@ psa_status_t psa_huk_get_pubkey(psa_key_id_t *key_id,
  * \return Returns error code as specified in \ref psa_status_t
  */
 psa_status_t psa_huk_ec_key_stat(psa_key_id_t *key_id,
-				enum km_key_stat *stat);
+				 enum km_key_stat *stat);
 
 /**
  * \brief Get the UUID from HUK generate UUID service
@@ -71,7 +71,6 @@ psa_status_t psa_huk_hash_sign(psa_key_id_t *key_id,
 			       size_t sig_size,
 			       size_t *sig_len);
 
-
 /**
  * @brief Export a private key, when that makes sense.
  *
@@ -88,6 +87,20 @@ psa_status_t psa_huk_hash_sign(psa_key_id_t *key_id,
  */
 psa_status_t psa_huk_export_privkey(psa_key_id_t id, uint8_t *buffer, size_t buffer_size,
 				    size_t *buffer_used);
+
+/**
+ * \brief Create Application Attestation Token (AAT) with claim data of TFLM and UTVM
+ * version plus it's model version.
+ *
+ * \param[out]  encoded_buf       Buffer to which encoded data is written into.
+ * \param[in]   encoded_buf_size  Size of encoded_buf in bytes.
+ * \param[out]  encoded_buf_len   Encoded and signed payload len in bytes.
+ *
+ * \return Returns error code as specified in \ref psa_status_t
+ */
+psa_status_t psa_huk_aat(uint8_t *encoded_buf,
+			 size_t encoded_buf_size,
+			 size_t *encoded_buf_len);
 
 #ifdef __cplusplus
 }

@@ -19,6 +19,7 @@
       "tfm_partition_ipc": true,
       "version_major": 0,
       "version_minor": 1,
+      "pid": 0x4c690100,
       "linker_pattern": {
         "library_list": [
            "*tfm_*partition_huk_deriv.*"
@@ -33,6 +34,7 @@
       "tfm_partition_ipc": true,
       "version_major": 0,
       "version_minor": 1,
+      "pid": 0x4c690200,
       "linker_pattern": {
         "library_list": [
            "*tfm_*partition_tflm.*"
@@ -47,6 +49,7 @@
       "tfm_partition_ipc": true,
       "version_major": 0,
       "version_minor": 1,
+      "pid": 0x4c690300,
       "linker_pattern": {
         "library_list": [
            "*tfm_*partition_utvm.*"

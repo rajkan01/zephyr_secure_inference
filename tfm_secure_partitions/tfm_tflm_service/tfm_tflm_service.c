@@ -5,6 +5,7 @@
  */
 
 #include <stdint.h>
+#include <string.h>
 
 #include "psa/service.h"
 #include "psa_manifest/tfm_tflm_service.h"
@@ -15,7 +16,7 @@
 
 #include "constants.h"
 #include "../tfm_huk_deriv_srv/tfm_huk_deriv_srv_api.h"
-#include <string.h>
+#include "tfm_tflm_service_api.h"
 // #include "Driver_I2C.h"
 #if defined(CONFIG_SOC_MPS2_AN521) || \
 	defined(CONFIG_SOC_MPS3_AN547)
@@ -28,7 +29,9 @@
 
 typedef psa_status_t (*signal_handler_t)(psa_msg_t *);
 
-/* The model index is key to finding the tflm model from the tflm_models array
+
+
+/* The model index is key to finding the tflm model from the tflm_model array
  * and this gets validated in the tflm secure service to select the model to
  * run the inference engine.
  */
@@ -37,13 +40,27 @@ typedef enum {
 	TFLM_MODEL_COUNT,                       /**< Number of models present */
 } tflm_model_idx_t;
 
-/* List of supported tflm models */
-const char *tflm_models[TFLM_MODEL_COUNT] = { "TFLM_MODEL_SINE" };
+typedef struct {
+	char tflm_model[TFLM_MODEL_BUFF_SIZE];                  /* List of supported tflm models */
+	char tflm_model_version[TFLM_VERSION_BUFF_SIZE];        /* md5sum tflite model calculated value */
+} tflm_model_version_t;
 
 typedef struct {
 	huk_enc_format_t enc_format;
 	char model[32];
 } tflm_config_t;
+
+/* Example exported GitHub commit ID is used as a TFLM version because of tflite-micro source
+ * (where examples exported) did not have any version attributes.
+ */
+static const char tflm_version[TFLM_VERSION_BUFF_SIZE] =
+	"c2018a7bf84364cc743491a52b41248497569e03";
+
+/* Sine model version is created using
+ * `md5sum /path/to/tflite-micro/tensorflow/lite/micro/examples/hello_world/hello_world.tflite`
+ */
+static const tflm_model_version_t tflm_model_version[TFLM_MODEL_COUNT] =
+{ { "TFLM_MODEL_SINE", "27036dd122bc82da54fc0f2d7d99497b" } };
 
 // /* I2C driver name for LSM303 peripheral */
 // extern ARM_DRIVER_I2C LSM303_DRIVER;
@@ -213,7 +230,7 @@ psa_status_t tfm_tflm_infer_run(psa_msg_t *msg)
 	psa_read(msg->handle, 1, &cfg, sizeof(tflm_config_t));
 
 	for (int i = 0; i < TFLM_MODEL_COUNT; i++) {
-		if (strcmp(tflm_models[i], cfg.model) == 0) {
+		if (strcmp(tflm_model_version[i].tflm_model, cfg.model) == 0) {
 			is_model_supported = true;
 			break;
 		}
@@ -263,17 +280,67 @@ err:
 	return status;
 }
 
+psa_status_t tfm_tflm_model_version(psa_msg_t *msg)
+{
+	psa_status_t status = PSA_SUCCESS;
+	char model[42] = { 0 };
+	_Bool is_model_supported = false;
+	int ctx_index = 0;
+
+	/* Check size of invec/outvec parameter */
+	if (msg->in_size[0] > sizeof(model) ||
+	    msg->out_size[0] != TFLM_VERSION_BUFF_SIZE) {
+		status = PSA_ERROR_PROGRAMMER_ERROR;
+		goto err;
+	}
+
+	psa_read(msg->handle, 0, model, msg->in_size[0]);
+	for (int i = 0; i < TFLM_MODEL_COUNT; i++) {
+		if (strcmp(tflm_model_version[i].tflm_model, model) == 0) {
+			is_model_supported = true;
+			ctx_index = i;
+			break;
+		}
+	}
+
+	if (!is_model_supported) {
+		log_err_print("%s model is not supported", model);
+		status = PSA_ERROR_NOT_SUPPORTED;
+		goto err;
+	}
+
+	psa_write(msg->handle,
+		  0,
+		  tflm_model_version[ctx_index].tflm_model_version,
+		  strlen(tflm_model_version[ctx_index].tflm_model_version));
+err:
+	return status;
+}
+
+psa_status_t tfm_tflm_version_info(psa_msg_t *msg)
+{
+	psa_status_t status = PSA_SUCCESS;
+
+	/* Check size of invec/outvec parameter */
+	if (msg->out_size[0] != TFLM_VERSION_BUFF_SIZE) {
+		status = PSA_ERROR_PROGRAMMER_ERROR;
+		goto err;
+	}
+
+	psa_write(msg->handle,
+		  0,
+		  tflm_version,
+		  strlen(tflm_version));
+err:
+	return status;
+}
+
 void tfm_tflm_signal_handle(psa_signal_t signal, signal_handler_t pfn)
 {
 	psa_status_t status;
 	psa_msg_t msg;
 
-	/* Retrieve the message corresponding to the TFLM hello service signal */
-	status = psa_get(TFM_TFLM_SERVICE_HELLO_SIGNAL, &msg);
-	if (status != PSA_SUCCESS) {
-		return;
-	}
-
+	status = psa_get(signal, &msg);
 	/* Decode the message */
 	switch (msg.type) {
 	/* Any setup or teardown on IPC connect or disconnect goes here. If
@@ -408,6 +475,14 @@ void tfm_tflm_service_req_mngr_init(void)
 			tfm_tflm_signal_handle(
 				TFM_TFLM_SERVICE_HELLO_SIGNAL,
 				tfm_tflm_infer_run);
+		} else if (signals & TFM_TFLM_MODEL_VERSION_INFO_SERVICE_SIGNAL) {
+			tfm_tflm_signal_handle(
+				TFM_TFLM_MODEL_VERSION_INFO_SERVICE_SIGNAL,
+				tfm_tflm_model_version);
+		} else if (signals & TFM_TFLM_VERSION_INFO_SERVICE_SIGNAL) {
+			tfm_tflm_signal_handle(
+				TFM_TFLM_VERSION_INFO_SERVICE_SIGNAL,
+				tfm_tflm_version_info);
 		} else {
 			psa_panic();
 		}

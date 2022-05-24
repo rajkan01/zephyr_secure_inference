@@ -18,6 +18,7 @@
 #include "psa/service.h"
 #include "psa_manifest/tfm_huk_deriv_srv.h"
 #include "tfm_huk_deriv_srv_api.h"
+#include "aat.h"
 
 #define KEY_LEN_BYTES 16
 /* This macro appends an optional HUK_DERIV_LABEL_EXTRA string to the
@@ -382,8 +383,7 @@ static psa_status_t tfm_huk_deriv_ec_key(psa_msg_t *msg)
 				sizeof(ec_priv_key_data),
 				&tflm_cose_key_handle);
 	log_info_print("PSA: Import key: 0x%x", tflm_cose_key_handle);
-	if (status != PSA_SUCCESS)
-	{
+	if (status != PSA_SUCCESS) {
 		log_err_print("failed with %d", status);
 		return status;
 	}
@@ -647,7 +647,33 @@ static psa_status_t tfm_huk_export_privkey(psa_msg_t *msg)
 	psa_write(msg->handle, 0, data_out, data_len);
 	psa_write(msg->handle, 1, &data_len, sizeof(data_len));
 err:
+	return status;
+}
 
+static psa_status_t tfm_huk_aat(psa_msg_t *msg)
+{
+	psa_status_t status = PSA_SUCCESS;
+	uint8_t encoded_buf[msg->out_size[0]];
+	size_t encoded_buf_len = 0;
+
+	status =  tfm_cose_create_aat(HUK_COSE,
+				      encoded_buf,
+				      msg->out_size[0],
+				      &encoded_buf_len);
+	if (status != PSA_SUCCESS) {
+		log_err_print("AAT creation failed with %d", status);
+		goto err;
+	}
+
+	psa_write(msg->handle,
+		  0,
+		  encoded_buf,
+		  encoded_buf_len);
+	psa_write(msg->handle,
+		  1,
+		  &encoded_buf_len,
+		  sizeof(encoded_buf_len));
+err:
 	return status;
 }
 
@@ -707,6 +733,10 @@ psa_status_t tfm_huk_deriv_req_mgr_init(void)
 		} else if (signals & TFM_HUK_EXPORT_PRIVKEY_SIGNAL) {
 			tfm_huk_deriv_signal_handle(TFM_HUK_EXPORT_PRIVKEY_SIGNAL,
 						    tfm_huk_export_privkey);
+		} else if (signals & TFM_HUK_AAT_SIGNAL) {
+			tfm_huk_deriv_signal_handle(
+				TFM_HUK_AAT_SIGNAL,
+				tfm_huk_aat);
 		} else {
 			psa_panic();
 		}

@@ -216,3 +216,62 @@ It can be defined at compile time with west via:
 
    $ west build -p -b mps2_an521_ns -t run -- \
      -DCONFIG_SECURE_INFER_HUK_DERIV_LABEL_EXTRA=\"123456789012345\"
+
+Compilation fails with ``ca_crt.txt: No such file or directory``
+===============================================================
+
+If you are building with networking support, some files from the LITE
+Bootstrap Server (https://github.com/microbuilder/linaroca) are required to
+be copied into your sample application so that it can generate X.509
+certificates, and communicate with the MQTT Broker that the bootstrap server
+describes.
+
+Make sure you've run the following scripts in the bootstrap server:
+
+- ``setup-ca.sh``
+- ``setup-bootstrap.sh``
+
+And then copy the following files:
+
+.. code-block::
+
+   <bootstrap>/certs/bootstrap_crt.txt -> src/bootstrap_crt.txt
+   <bootstrap>/certs/bootstrap_key.txt -> src/bootstrap_key.txt
+   <bootstrap>/certs/ca_crt.txt        -> src/ca_crt.txt
+
+Before running this sample, be sure that you also execute the
+``run-server.sh`` script to start the LITE bootstrap server.
+
+If everything is configured correctly you can run the ``keys ca 5001`` shell
+command to get an X.509 certificate for the client TLS key:
+
+.. code-block::
+
+   uart:~$ keys ca 5001
+   argc: 2
+   [00:00:25.904,000] <inf> app: uuid: d74696ad-cb3b-4275-b74a-c346ffe71ea9
+
+   Generating X.509 CSR for 'Device Client TLS' key:
+   Subject: O=Linaro,CN=d74696ad-cb3b-4275-b74a-c346ffe71ea9,OU=Device Client TLS
+   [HUK DERIV SERV] Verified ASN.1 tag and length of the payload
+   [HUK DERIV SERV] Key id: 0x5001
+   cert starts at 0x2e2 into buffer
+   [00:00:26.787,000] <inf> app: Got DNS for linaroca
+   [00:00:27.346,000] <inf> app: All data received 591 bytes
+   [00:00:27.346,000] <inf> app: Response to req
+   [00:00:27.347,000] <inf> app: Status OK
+   [00:00:27.348,000] <inf> app: Result: 3
+   [00:00:27.349,000] <inf> app: cert: 461 bytes
+   ...
+   [00:00:27.403,000] <inf> app: Request result: 390
+   [00:00:27.408,000] <inf> app: Close: 0
+
+And you should see the following log message for the bootstrap server:
+
+.. code-block::
+
+   $ ./run-server.sh 
+   Using config file: /Users/xyz/linaroca/.linaroca.toml
+   Starting mTLS TCP server on MBP2021.lan:8443
+   Starting CA server on https://MBP2021.lan:1443
+   2022/05/23 12:47:07 Received CSR: CN=d74696ad-cb3b-4275-b74a-c346ffe71ea9,OU=Device Client TLS,O=Linaro

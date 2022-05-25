@@ -25,6 +25,12 @@
 			SERV_NAME, __FILENAME__,  __func__, __LINE__, ## ARGS);	\
 	} while (0)
 
+#define log_dbg_print(FMT, ARGS ...)						\
+	do { LOG_DBGFMT("[%s] <err> %s:%s():%d " FMT "\n",			\
+			SERV_NAME, __FILENAME__,  __func__, __LINE__, ## ARGS);	\
+	} while (0)
+
+
 /** Define the index for the key in the key context array. */
 typedef enum {
 	HUK_KEY_CLIENT_TLS = 0,                 /**< TLS client key ID */

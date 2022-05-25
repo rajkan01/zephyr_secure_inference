@@ -459,7 +459,7 @@ void tfm_tflm_service_req_mngr_init(void)
 	/* Tensorflow lite-micro initialisation */
 	setup();
 
-	log_info_print("initalisation completed");
+	log_info_print("TFLM initalisation completed");
 
 	/* Continually wait for one or more of the partition's RoT Service or
 	 * interrupt signals to be asserted and then handle the asserted signal(s).

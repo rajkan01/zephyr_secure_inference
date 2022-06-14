@@ -275,3 +275,57 @@ And you should see the following log message for the bootstrap server:
    Starting mTLS TCP server on MBP2021.lan:8443
    Starting CA server on https://MBP2021.lan:1443
    2022/05/23 12:47:07 Received CSR: CN=d74696ad-cb3b-4275-b74a-c346ffe71ea9,OU=Device Client TLS,O=Linaro
+
+FAQ
+***
+
+How to disable TrustZone?
+=========================
+
+To disable TrustZone in the `B-U585I-IOT02A <https://www.st.com/en/evaluation-tools/b-u585i-iot02a.html>`_
+board, i.e. set TZEN bit from 1 to 0 in the User Configuration register, it's
+necessary to change AT THE SAME TIME the TZEN and the RDP bits.
+
+Hence, TZEN needs to get set from 1 to 0 and RDP, AT THE SAME TIME, needs to get
+set from DC to AA (step 3 below).
+
+This is docummented in the `AN5347, in section 9, "TrustZone deactivation" <https://www.st.com/resource/en/application_note/dm00625692-stm32l5-series-trustzone-features-stmicroelectronics.pdf>`_.
+
+However it happens that the RDP bit is probably not set to DC yet, so first you
+need to set it to DC (step 2).
+
+Finally you need to set the "Write Protection 1 & 2" bytes properly, otherwise
+some memory regions won't be erasable and mass erase will fail (step 4).
+
+Thus, the following command sequence will fully deactivate TZ:
+
+Step 1:
+
+Ensure U23 BOOT0 switch is set to 1 (switch is on the left, assuming you read
+"BOOT0" silkscreen label from left to right). You need to press "Reset" (B2 RST
+switch) after changing the switch to make the change effective.
+
+Step 2:
+
+.. code-block:: console
+
+   $ ./STM32_Programmer_CLI -c port=/dev/ttyACM0 -ob rdp=0xDC
+
+Step 3:
+
+.. code-block:: console
+
+   $ ./STM32_Programmer_CLI -c port=/dev/ttyACM0 -tzenreg
+
+Step 4:
+
+.. code-block:: console
+
+   $ ./STM32_Programmer_CLI -c port=/dev/ttyACM0 -ob wrp1a_pstrt=0x7f
+   $ ./STM32_Programmer_CLI -c port=/dev/ttyACM0 -ob wrp1a_pend=0x0
+   $ ./STM32_Programmer_CLI -c port=/dev/ttyACM0 -ob wrp1b_pstrt=0x7f
+   $ ./STM32_Programmer_CLI -c port=/dev/ttyACM0 -ob wrp1b_pend=0x0
+   $ ./STM32_Programmer_CLI -c port=/dev/ttyACM0 -ob wrp2a_pstrt=0x7f
+   $ ./STM32_Programmer_CLI -c port=/dev/ttyACM0 -ob wrp2a_pend=0x0
+   $ ./STM32_Programmer_CLI -c port=/dev/ttyACM0 -ob wrp2b_pstrt=0x7f
+   $ ./STM32_Programmer_CLI -c port=/dev/ttyACM0 -ob wrp2b_pend=0x0

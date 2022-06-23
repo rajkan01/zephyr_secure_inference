@@ -3,6 +3,9 @@
 TF-M Confidential AI Project
 ############################
 
+.. image:: https://github.com/Linaro/zephyr_secure_inference/blob/main/docs/arch-overview.flat.png?raw=true
+  :alt: Confidential AI Architecture Overview
+
 Dependencies
 ************
 

@@ -209,24 +209,34 @@ err_release_op:
 	return status;
 }
 
-static huk_key_context_t *tfm_huk_get_context()
+static huk_key_context_t *tfm_huk_get_context(huk_key_idx_t idx)
 {
 	static huk_key_context_t huk_ctx[HUK_KEY_COUNT] = { 0 };
 
-	return huk_ctx;
+	if (idx > HUK_KEY_COUNT) {
+		log_err_print("Invalid argument %d", PSA_ERROR_INVALID_ARGUMENT);
+		return NULL;
+	}
+
+	return &huk_ctx[idx];
 }
 
 static psa_status_t tfm_huk_key_context_init(huk_key_idx_t idx,
 					     psa_key_id_t key_id,
-					     huk_key_stat_t stat)
+					     huk_key_stat_t stat,
+					     psa_key_handle_t key_handle)
 {
 	if (idx > HUK_KEY_COUNT) {
 		return PSA_ERROR_INVALID_ARGUMENT;
 	}
 
-	huk_key_context_t *ctx = tfm_huk_get_context();
-	ctx[idx].key_id = key_id;
-	ctx[idx].status = stat;
+	huk_key_context_t *ctx = tfm_huk_get_context(idx);
+	if (ctx == NULL) {
+		return PSA_ERROR_INVALID_ARGUMENT;
+	}
+	ctx->key_id = key_id;
+	ctx->status = stat;
+	ctx->key_handle = key_handle;
 	return PSA_SUCCESS;
 }
 
@@ -250,8 +260,31 @@ static psa_status_t tfm_huk_key_get_status(huk_key_idx_t idx, huk_key_stat_t *st
 		return PSA_ERROR_INVALID_ARGUMENT;
 	}
 
-	huk_key_context_t *ctx = tfm_huk_get_context();
-	*stat = ctx[idx].status;
+	huk_key_context_t *ctx = tfm_huk_get_context(idx);
+
+	if (ctx == NULL) {
+		return PSA_ERROR_INVALID_ARGUMENT;
+	}
+	*stat = ctx->status;
+	return PSA_SUCCESS;
+}
+
+static psa_status_t tfm_huk_key_handle_get(psa_key_id_t key_id, psa_key_handle_t *handle)
+{
+	huk_key_idx_t idx;
+	psa_status_t status;
+
+	status = tfm_huk_key_get_idx(key_id, &idx);
+	if (status != PSA_SUCCESS) {
+		return status;
+	}
+
+	huk_key_context_t *ctx = tfm_huk_get_context(idx);
+
+	if (ctx == NULL) {
+		return PSA_ERROR_INVALID_ARGUMENT;
+	}
+	*handle = ctx->key_handle;
 	return PSA_SUCCESS;
 }
 
@@ -324,8 +357,6 @@ static psa_status_t tfm_huk_deriv_ec_key(psa_msg_t *msg)
 		return PSA_SUCCESS;
 	}
 
-	tfm_huk_key_context_init(idx, key_id, HUK_KEY_GEN);
-
 	/* Add LABEL_HI to rx_label to create label_hi. */
 	sprintf((char *)label_hi, "%s%s", rx_label, LABEL_HI);
 
@@ -362,9 +393,6 @@ static psa_status_t tfm_huk_deriv_ec_key(psa_msg_t *msg)
 	psa_algorithm_t alg = PSA_ALG_ECDSA(PSA_ALG_SHA_256);
 	psa_key_handle_t tflm_cose_key_handle = 0;
 
-	/* Setup the key's attributes before the creation request. */
-	psa_set_key_id(&key_attributes, key_id);
-
 	/* Until the keys can be used while remaining on the secure side, allow
 	 * exporting, but only of the TLS key.  This has to be decided here,
 	 * rather that by request, as a modified request could allow keys that
@@ -373,8 +401,10 @@ static psa_status_t tfm_huk_deriv_ec_key(psa_msg_t *msg)
 	if (key_id == HUK_CLIENT_TLS) {
 		key_usage_flag |= PSA_KEY_USAGE_EXPORT;
 	}
+
+	/* Setup the key's attributes before the creation request. */
 	psa_set_key_usage_flags(&key_attributes, key_usage_flag);
-	psa_set_key_lifetime(&key_attributes, PSA_KEY_LIFETIME_PERSISTENT);
+	psa_set_key_lifetime(&key_attributes, PSA_KEY_LIFETIME_VOLATILE);
 	psa_set_key_algorithm(&key_attributes, alg);
 	psa_set_key_type(&key_attributes, key_type);
 
@@ -382,14 +412,19 @@ static psa_status_t tfm_huk_deriv_ec_key(psa_msg_t *msg)
 				ec_priv_key_data,
 				sizeof(ec_priv_key_data),
 				&tflm_cose_key_handle);
-	log_dbg_print("PSA: Import key: 0x%x", tflm_cose_key_handle);
 	if (status != PSA_SUCCESS) {
 		log_err_print("failed with %d", status);
 		return status;
 	}
-	status = psa_close_key(tflm_cose_key_handle);
+
+	log_dbg_print("PSA: Import key: 0x%x", tflm_cose_key_handle);
+	status = tfm_huk_key_context_init(idx,
+					  key_id,
+					  HUK_KEY_GEN,
+					  tflm_cose_key_handle);
 	if (status != PSA_SUCCESS) {
 		log_err_print("failed with %d", status);
+		return status;
 	}
 
 	log_info_print("Successfully derived the key for %s", rx_label);
@@ -407,7 +442,7 @@ static psa_status_t tfm_huk_export_pubkey(psa_msg_t *msg)
 	size_t data_len;
 
 	psa_read(msg->handle, 0, &key_id, msg->in_size[0]);
-	status = psa_open_key(key_id, &key_handle);
+	status = tfm_huk_key_handle_get(key_id, &key_handle);
 	if (status != PSA_SUCCESS) {
 		log_err_print("failed with %d", status);
 		goto err;
@@ -422,11 +457,6 @@ static psa_status_t tfm_huk_export_pubkey(psa_msg_t *msg)
 		goto err;
 	}
 
-	status = psa_close_key(key_handle);
-	if (status != PSA_SUCCESS) {
-		log_err_print("failed with %d", status);
-		goto err;
-	}
 	psa_write(msg->handle, 0, data_out, data_len);
 err:
 	return status;
@@ -440,6 +470,7 @@ static psa_status_t tfm_huk_cose_encode_sign
 	uint8_t inf_val_encoded_buf[msg->out_size[0]];
 	size_t inf_val_encoded_buf_len = 0;
 	float inf_value = 0;
+	psa_key_handle_t key_handle;
 
 	psa_read(msg->handle, 1, &enc_format, msg->in_size[1]);
 	psa_read(msg->handle, 0, &inf_value, msg->in_size[0]);
@@ -454,7 +485,13 @@ static psa_status_t tfm_huk_cose_encode_sign
 			return status;
 		}
 	} else if (enc_format == HUK_ENC_COSE_SIGN1) {
-		status = tfm_cose_encode_sign(HUK_COSE,
+		status = tfm_huk_key_handle_get(HUK_COSE, &key_handle);
+		if (status != PSA_SUCCESS) {
+			log_err_print("failed with %d", status);
+			return status;
+		}
+
+		status = tfm_cose_encode_sign(key_handle,
 					      inf_value,
 					      inf_val_encoded_buf,
 					      msg->out_size[0],
@@ -502,6 +539,11 @@ static psa_status_t tfm_huk_hash_sign_csr(psa_msg_t *msg)
 
 	psa_read(msg->handle, 0, &key_id, msg->in_size[0]);
 	psa_read(msg->handle, 1, csr_data, msg->in_size[1]);
+	status = tfm_huk_key_handle_get(key_id, &key_handle);
+	if (status != PSA_SUCCESS) {
+		log_err_print("failed with %d", status);
+		return status;
+	}
 
 	/* Verify CSR ASN.1 tag and length of the payload in bytes to
 	 * avoid fake payload getting signed by this service
@@ -516,11 +558,6 @@ static psa_status_t tfm_huk_hash_sign_csr(psa_msg_t *msg)
 		log_info_print("Verified ASN.1 tag and length of the payload");
 	}
 
-	status = psa_open_key(key_id, &key_handle);
-	if (status != PSA_SUCCESS) {
-		log_err_print("failed with %d", status);
-		goto err;
-	}
 	log_info_print("Key id: 0x%x", key_id);
 	if (!PSA_ALG_IS_ECDSA(psa_alg_id)) {
 		status = PSA_ERROR_NOT_SUPPORTED;
@@ -576,11 +613,6 @@ static psa_status_t tfm_huk_hash_sign_csr(psa_msg_t *msg)
 	}
 #endif
 
-	status = psa_close_key(key_handle);
-	if (status != PSA_SUCCESS) {
-		log_err_print("failed with %d", status);
-		goto err;
-	}
 	psa_write(msg->handle,
 		  0,
 		  sig,
@@ -635,11 +667,17 @@ static psa_status_t tfm_huk_export_privkey(psa_msg_t *msg)
 	psa_key_id_t key_id = 0;
 	uint8_t data_out[33] = { 0 };
 	size_t data_len;
+	psa_key_handle_t key_handle;
 
 	psa_read(msg->handle, 0, &key_id, msg->in_size[0]);
+	status = tfm_huk_key_handle_get(key_id, &key_handle);
+	if (status != PSA_SUCCESS) {
+		log_err_print("failed with %d", status);
+		return status;
+	}
 
 	log_dbg_print("Trying to read key: 0x%x", key_id);
-	status = psa_export_key(key_id, data_out, sizeof(data_out), &data_len);
+	status = psa_export_key(key_handle, data_out, sizeof(data_out), &data_len);
 	if (status != PSA_SUCCESS) {
 		log_err_print("failed with %d", status);
 		goto err;

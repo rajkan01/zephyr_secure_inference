@@ -60,7 +60,17 @@ typedef enum {
 
 /** Key context. */
 typedef struct {
-	/** PSA Crypto key handle for the key in the secure domain. */
+	/** Key context key_handle is used for storing the key handle of the
+	 *  imported private key to the crypto secure domain which is created
+	 *  at run time of the psa_import_key function call. The key handle is
+	 *  unique on every import and requires any further access to the imported public/private
+	 *  key from the secure domain.
+	 */
+	psa_key_handle_t key_handle;
+	/** The key handle is dynamically generated at the psa_import_key call.
+	 *  key id is a predefined value which is internal and interfaces to secure
+	 *  inference application.PSA Crypto key id use for internal.
+	 */
 	psa_key_id_t key_id;
 	/** Key status, indicate if a certificate is available. */
 	huk_key_stat_t status;

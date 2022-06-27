@@ -25,6 +25,13 @@ set_property(TARGET zephyr_property_target
   -DTFM_EXTRA_PARTITION_PATHS="${CMAKE_CURRENT_LIST_DIR}/tfm_secure_partitions/tfm_huk_deriv_srv\\\;${CMAKE_CURRENT_LIST_DIR}/tfm_secure_partitions/tfm_tflm_service\\\;${CMAKE_CURRENT_LIST_DIR}/tfm_secure_partitions/tfm_utvm_service"
   )
 
+if(${CONFIG_NV_PS_COUNTERS_SUPPORT})
+    set_property(TARGET zephyr_property_target
+        APPEND PROPERTY TFM_CMAKE_OPTIONS
+        -DNV_PS_COUNTERS_SUPPORT=ON -DNV_COUNTER_TRACKER_THRESHOLD_LIMIT=${CONFIG_NV_COUNTER_TRACKER_THRESHOLD_LIMIT}
+        )
+endif()
+
 # set_property(TARGET zephyr_property_target
 #   APPEND_STRING PROPERTY TFM_PARTITION_PATHS
 #   ${PARTITION_PATHS}

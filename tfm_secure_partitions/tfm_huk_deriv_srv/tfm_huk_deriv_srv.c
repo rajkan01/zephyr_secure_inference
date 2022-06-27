@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 #include "tfm_huk_deriv_srv.h"
+#include "nv_ps_counters.h"
 
 /* To verify CSR ASN.1 tag and length of the payload */
 static psa_status_t tfm_huk_csr_verify(unsigned char *csr_data,
@@ -203,7 +204,7 @@ static psa_status_t tfm_huk_key_get_idx(psa_key_id_t key_id,
 					huk_key_idx_t *idx)
 {
 	/* Map the Key id to key idx */
-    if (key_id == HUK_COSE) {
+	if (key_id == HUK_COSE) {
 		*idx = HUK_KEY_COSE;
 	} else {
 		return PSA_ERROR_INVALID_ARGUMENT;
@@ -446,6 +447,10 @@ static psa_status_t tfm_huk_cose_encode_sign
 			return status;
 		}
 
+#ifdef NV_PS_COUNTERS_SUPPORT
+		tfm_inc_nv_ps_counter_tracker(NV_PS_COUNTER_TRACKER);
+#endif
+
 		status = tfm_cose_encode_sign(key_handle,
 					      inf_value,
 					      inf_val_encoded_buf,
@@ -455,6 +460,44 @@ static psa_status_t tfm_huk_cose_encode_sign
 			log_err_print("failed with %d", status);
 			return status;
 		}
+
+#ifdef NV_PS_COUNTERS_SUPPORT
+		static _Bool overflow_happen = false;
+		uint32_t nv_ps_counter = 0;
+		tfm_get_nv_ps_counter_tracker(NV_PS_COUNTER_TRACKER, &nv_ps_counter);
+		if (nv_ps_counter == NV_PS_COUNTER_ROLLOVER_MAX) {
+			tfm_inc_nv_ps_counter_tracker(NV_PS_COUNTER_ROLLOVER_TRACKER);
+			status = psa_write_nv_ps_counter(NV_PS_COUNTER_ROLLOVER_TRACKER);
+			if (status != PSA_SUCCESS) {
+				log_err_print("Failed to overwrite nv_ps_counter_rollover_uid! (%d)\n", status);
+				return;
+			}
+			/* Reset the NV tracker counter */
+			status = tfm_set_nv_ps_counter_tracker(NV_PS_COUNTER_TRACKER, 0);
+			if (status != PSA_SUCCESS) {
+				log_err_print("Failed to overwrite nv_ps_counter_rollover_uid! (%d)\n", status);
+				return;
+			}
+			overflow_happen = true;
+		}
+
+		if (((nv_ps_counter % NV_COUNTER_TRACKER_THRESHOLD_LIMIT) == 0) ||
+		    overflow_happen) {
+			status = psa_write_nv_ps_counter(NV_PS_COUNTER_TRACKER);
+			if (status != PSA_SUCCESS) {
+				log_err_print("Failed to overwrite nv_ps_counter_uid! (%d)\n",
+					      status);
+				return status;
+			}
+
+			if (overflow_happen) {
+				log_info_print("NV counter overflow %d",
+					       nv_ps_counter);
+				overflow_happen = false;
+			}
+		}
+#endif
+
 	} else if (enc_format == HUK_ENC_COSE_ENCRYPT0) {
 		log_err_print(" COSE ENCRYPT0 encode format is not supported");
 		return PSA_ERROR_NOT_SUPPORTED;
@@ -677,6 +720,11 @@ psa_status_t tfm_huk_deriv_req_mgr_init(void)
 
 	/* EC keys init */
 	tfm_huk_ec_keys_init();
+
+#ifdef NV_PS_COUNTERS_SUPPORT
+	/* Initialize all NV tracker counters */
+	psa_nv_ps_counter_tracker_init();
+#endif
 
 	while (1) {
 		signals = psa_wait(PSA_WAIT_ANY, PSA_BLOCK);

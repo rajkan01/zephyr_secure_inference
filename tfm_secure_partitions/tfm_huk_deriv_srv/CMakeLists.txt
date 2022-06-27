@@ -22,12 +22,22 @@ target_include_directories(tfm_partitions
         ${CMAKE_BINARY_DIR}/tfm_secure_partitions/tfm_huk_deriv_srv
 )
 
+if(NV_PS_COUNTERS_SUPPORT)
+    list(APPEND tfm_huk_service_files
+      nv_ps_counters.c
+    )
+endif()
+
+list(APPEND tfm_huk_service_files
+    tfm_huk_deriv_srv.c
+    tfm_huk_deriv_srv_api.c
+    cbor_cose.c
+    aat.c
+)
+
 target_sources(tfm_app_rot_partition_huk_deriv
     PRIVATE
-        tfm_huk_deriv_srv.c
-        tfm_huk_deriv_srv_api.c
-        cbor_cose.c
-        aat.c
+        ${tfm_huk_service_files}
 )
 
 # The generated sources

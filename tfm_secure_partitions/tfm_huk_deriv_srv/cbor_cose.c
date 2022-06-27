@@ -14,6 +14,7 @@
 #include "tfm_huk_deriv_srv_api.h"
 #include "tfm_tflm_service_api.h"
 #include "tfm_utvm_service_api.h"
+#include "nv_ps_counters.h"
 
 /* The algorithm used in COSE */
 #define T_COSE_ALGORITHM              T_COSE_ALGORITHM_ES256
@@ -200,10 +201,37 @@ psa_status_t tfm_cose_encode_sign(psa_key_handle_t key_handle,
 				   EAT_CBOR_LINARO_LABEL_INFERENCE_VALUE,
 				   (void *)&inf_val,
 				   sizeof(inf_val));
-
 	if (status != PSA_SUCCESS) {
 		return status;
 	}
+
+#ifdef NV_PS_COUNTERS_SUPPORT
+	uint32_t nv_ps_counter = 0;
+	status = tfm_get_nv_ps_counter_tracker(NV_PS_COUNTER_ROLLOVER_TRACKER, &nv_ps_counter);
+	if (status != PSA_SUCCESS) {
+		return status;
+	}
+	status = tfm_cose_add_data(&encode_ctx,
+				   EAT_CBOR_LINARO_NV_COUNTER_ROLL_OVER,
+				   (void *)&nv_ps_counter,
+				   sizeof(nv_ps_counter));
+	if (status != PSA_SUCCESS) {
+		return status;
+	}
+
+	nv_ps_counter = 0;
+	status = tfm_get_nv_ps_counter_tracker(NV_PS_COUNTER_TRACKER, &nv_ps_counter);
+	if (status != PSA_SUCCESS) {
+		return status;
+	}
+	status = tfm_cose_add_data(&encode_ctx,
+				   EAT_CBOR_LINARO_NV_COUNTER_VALUE,
+				   (void *)&nv_ps_counter,
+				   sizeof(nv_ps_counter));
+	if (status != PSA_SUCCESS) {
+		return status;
+	}
+#endif  /* NV_PS_COUNTERS_SUPPORT */
 
 	/* Finish up creating the token. This is where the actual signature
 	 * is generated. This finishes up the CBOR encoding too.

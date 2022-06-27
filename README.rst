@@ -6,22 +6,6 @@ TF-M Confidential AI Project
 .. image:: https://github.com/Linaro/zephyr_secure_inference/blob/main/docs/arch-overview.flat.png?raw=true
   :alt: Confidential AI Architecture Overview
 
-Dependencies
-************
-
-Run these commands to apply the tfm patch, allowing us to enable CPP support
-in the TF-M build system. This patch also modifies relevant target's flash
-layouts to increase flash allocation for the secure image, where required:
-
-.. code-block:: console
-
-   $ cd path/to/zephyrproject/zephyr
-   $ source zephyr-env.sh
-   $ git checkout eee56d8840c6bb511f71fef3b0916cdc5fe91a5a
-   $ west update
-   $ cd ../modules/tee/tf-m/trusted-firmware-m
-   $ git apply <sample-path>/patch/tfm.patch
-
 Overview
 ********
 
@@ -79,6 +63,29 @@ The following EC keys are currently generated:
 The non-secure processing environment exposes a ``keys`` shell command that can
 be used to retrieve the public key component of the above private keys, as well
 as generate a certificate signing request (CSR) for a specific key.
+
+Required Setup
+**************
+
+This sample assumes you have already cloned zephyr locally. You will need to
+use a specific commit of zephyr to be sure that certain assumptions in this
+sample are met:
+
+- ``eee56d8840c6bb511f71fef3b0916cdc5fe91a5a``
+
+Run these commands to checkout the expected commit hash, and apply a required
+patch to TF-M, allowing us to enable CPP support in the TF-M build system. This
+patch also modifies relevant target's flash layout(s) to increase flash
+allocation for the secure image(s), where required:
+
+.. code-block:: console
+
+   $ cd path/to/zephyrproject/zephyr
+   $ source zephyr-env.sh
+   $ git checkout eee56d8840c6bb511f71fef3b0916cdc5fe91a5a
+   $ west update
+   $ cd ../modules/tee/tf-m/trusted-firmware-m
+   $ git apply <sample-path>/patch/tfm.patch
 
 Building and Running
 ********************
@@ -279,13 +286,14 @@ And you should see the following log message for the bootstrap server:
    Starting CA server on https://MBP2021.lan:1443
    2022/05/23 12:47:07 Received CSR: CN=d74696ad-cb3b-4275-b74a-c346ffe71ea9,OU=Device Client TLS,O=Linaro
 
-FAQ
-***
+How to disable TrustZone on the ``B-U585I-IOT02A``?
+===================================================
 
-How to disable TrustZone?
-=========================
+If you have flashed a sample to the B-U585I-IOT02A board that enables TrustZone,
+you will need to disable it before you can flash and run a new non-TrustZone
+sample on the board.
 
-To disable TrustZone in the `B-U585I-IOT02A <https://www.st.com/en/evaluation-tools/b-u585i-iot02a.html>`_
+To disable TrustZone on the `B-U585I-IOT02A <https://www.st.com/en/evaluation-tools/b-u585i-iot02a.html>`_
 board, i.e. set TZEN bit from 1 to 0 in the User Configuration register, it's
 necessary to change AT THE SAME TIME the TZEN and the RDP bits.
 
@@ -300,7 +308,7 @@ need to set it to DC (step 2).
 Finally you need to set the "Write Protection 1 & 2" bytes properly, otherwise
 some memory regions won't be erasable and mass erase will fail (step 4).
 
-Thus, the following command sequence will fully deactivate TZ:
+The following command sequence will fully deactivate TZ:
 
 Step 1:
 

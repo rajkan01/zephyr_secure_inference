@@ -60,7 +60,6 @@
   ],
 
   "dependencies": [
-    "TFM_HUK_DERIV_EC_KEY",
     "TFM_HUK_EXPORT_PUBKEY",
     "TFM_HUK_COSE_CBOR_ENC_SIGN",
     "TFM_CRYPTO"

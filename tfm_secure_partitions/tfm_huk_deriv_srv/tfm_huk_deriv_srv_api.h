@@ -30,25 +30,10 @@
 			SERV_NAME, __FILENAME__,  __func__, __LINE__, ## ARGS);	\
 	} while (0)
 
-
-/** Define the index for the key in the key context array. */
-typedef enum {
-	HUK_KEY_CLIENT_TLS = 0,                 /**< TLS client key ID */
-	HUK_KEY_COSE,                           /**< COSE SIGN/Encrypt key ID */
-	HUK_KEY_COUNT,                          /**< Number of keys present */
-} huk_key_idx_t;
-
 typedef enum {
 	HUK_CLIENT_TLS  = 0x5001,               // Client TLS key id
 	HUK_COSE        = 0x5002,               // COSE SIGN key id
 } huk_key_type_t;
-
-/** Inidicates key provisioning status. */
-typedef enum {
-	HUK_NONE = 0,
-	HUK_KEY_GEN,            /**< Key generated */
-	HUK_X_509_CERT_GEN,     /**< X.509 certificate generated */
-} huk_key_stat_t;
 
 /** Supported encoding format for the inference output. */
 typedef enum {
@@ -58,40 +43,6 @@ typedef enum {
 	HUK_ENC_NONE,
 } huk_enc_format_t;
 
-/** Key context. */
-typedef struct {
-	/** Key context key_handle is used for storing the key handle of the
-	 *  imported private key to the crypto secure domain which is created
-	 *  at run time of the psa_import_key function call. The key handle is
-	 *  unique on every import and requires any further access to the imported public/private
-	 *  key from the secure domain.
-	 */
-	psa_key_handle_t key_handle;
-	/** The key handle is dynamically generated at the psa_import_key call.
-	 *  key id is a predefined value which is internal and interfaces to secure
-	 *  inference application.PSA Crypto key id use for internal.
-	 */
-	psa_key_id_t key_id;
-	/** Key status, indicate if a certificate is available. */
-	huk_key_stat_t status;
-} huk_key_context_t;
-
-/**
- * \brief Generate EC Key
- *
- * Generates an EC Key
- *
- * \param[in] ec_key_id         EC key id for persistent key.
- * \param[in] hpke_info         Unique hpke_info passed to the key derivation.
- * \param[in] hpke_info_size    Unique hpke_info size in bytes.
- * \param[in] key_usage_flag    Pointer to key usage flag.
- *
- * \return A status indicating the success/failure of the operation
- */
-psa_status_t psa_huk_deriv_ec_key(psa_key_id_t *ec_key_id,
-				  const uint8_t *hpke_info,
-				  size_t hpke_info_size,
-				  psa_key_usage_t *key_usage_flag);
 /**
  * \brief COSE CBOR encode and sign
  *

@@ -3,49 +3,7 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-
-#include <psa/crypto.h>
-#include <stdbool.h>
-#include <stdint.h>
-#include <string.h>
-#include "tfm_secure_api.h"
-#include "tfm_api.h"
-
-#include "cbor_cose_api.h"
-#include "tfm_sp_log.h"
-#include "tfm_crypto_defs.h"
-#include "psa/crypto.h"
-#include "psa/service.h"
-#include "psa_manifest/tfm_huk_deriv_srv.h"
-#include "tfm_huk_deriv_srv_api.h"
-#include "aat.h"
-
-#define KEY_LEN_BYTES 16
-/* This macro appends an optional HUK_DERIV_LABEL_EXTRA string to the
- * label used for key derivation, enabling key diversity during testing
- * on emulated platforms with a fixed HUK value.
- * It can be set at compile time via '-DHUK_DERIV_LABEL_EXTRA=value'.
- */
-#define LABEL_CONCAT(A) #A HUK_DERIV_LABEL_EXTRA
-#define LABEL_HI    LABEL_CONCAT(_EC_PRIV_KEY_HI)
-#define LABEL_LO    LABEL_CONCAT(_EC_PRIV_KEY_LO)
-#define LABEL_UUID  LABEL_CONCAT(UUID)
-
-#define SERV_NAME "HUK DERIV SERV"
-
-typedef psa_status_t (*signal_handler_t)(psa_msg_t *);
-
-const char hex_digits[] = { '0', '1', '2', '3', '4', '5', '6', '7',
-			    '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
-
-#define UUID_STR_LEN ((KEY_LEN_BYTES * 2) + 4 + 1)
-#define UUID_7TH_BYTE_MASK  0x0f        /* 0b0000_1111*/
-#define UUID_7TH_BYTE_SET   0x40        /* 0b0100_0000 */
-#define UUID_9TH_BYTE_MASK  0x3f        /* 0b0011_1111*/
-#define UUID_9TH_BYTE_SET   0x80        /* 0b1000_0000*/
-#define TFM_HUK_ASN1_CONSTRUCTED      0x20
-#define TFM_HUK_ASN1_SEQUENCE         0x10
-#define TFM_HUK_ASN1_DATA_LENGTH_0_255 1
+#include "tfm_huk_deriv_srv.h"
 
 /* To verify CSR ASN.1 tag and length of the payload */
 static psa_status_t tfm_huk_csr_verify(unsigned char *csr_data,
@@ -315,33 +273,20 @@ static psa_status_t tfm_huk_ec_key_status(psa_msg_t *msg)
 	return status;
 }
 
-static psa_status_t tfm_huk_deriv_ec_key(psa_msg_t *msg)
+/**
+ * Generate EC Key
+ */
+static psa_status_t tfm_huk_deriv_ec_key(const uint8_t *rx_label,
+					 const psa_key_id_t key_id,
+					 psa_key_usage_t key_usage_flag)
 {
 	psa_status_t status = PSA_SUCCESS;
 	uint8_t ec_priv_key_data[KEY_LEN_BYTES * 2] = { 0 };
 	size_t ec_priv_key_data_len = 0;
-	psa_key_usage_t key_usage_flag;
 	huk_key_idx_t idx;
 	huk_key_stat_t stat;
-
-
-	// Check size of invec parameters
-	if (msg->in_size[0] == 0 ||
-	    msg->in_size[1] != sizeof(psa_key_id_t)) {
-		return PSA_ERROR_PROGRAMMER_ERROR;
-	}
-
 	uint8_t label_hi[40] = { 0 };
 	uint8_t label_lo[40] = { 0 };
-	uint8_t rx_label[32] = { 0 };
-	psa_key_id_t key_id;
-
-	psa_read(msg->handle, 0, &rx_label, msg->in_size[0]);
-	psa_read(msg->handle, 1, &key_id, msg->in_size[1]);
-	psa_read(msg->handle, 2, &key_usage_flag, msg->in_size[2]);
-
-	log_dbg_print("key id: 0x%x", key_id);
-	log_dbg_print("key usage: 0x%x", key_usage_flag);
 
 	status = tfm_huk_key_get_idx(key_id, &idx);
 	if (status != PSA_SUCCESS) {
@@ -432,6 +377,38 @@ static psa_status_t tfm_huk_deriv_ec_key(psa_msg_t *msg)
 	return status;
 }
 
+void tfm_huk_ec_keys_init()
+{
+	psa_status_t status = PSA_SUCCESS;
+	/** These are the hpke_info passed to key derivation for generating
+	 *  two unique keys - Device client TLS, Device COSE SIGN/Encrypt.
+	 */
+	const char *hpke_info[2] = {
+		"HUK_CLIENT_TLS",
+		"HUK_COSE"
+	};
+
+	status = tfm_huk_deriv_ec_key((const uint8_t *)hpke_info[0],
+				      HUK_CLIENT_TLS,
+				      (PSA_KEY_USAGE_SIGN_HASH | PSA_KEY_USAGE_VERIFY_MESSAGE));
+
+	if (status != PSA_SUCCESS) {
+		log_err_print("failed with %d", status);
+		goto err;
+
+	}
+
+	status = tfm_huk_deriv_ec_key((const uint8_t *)hpke_info[1],
+				      HUK_COSE,
+				      (PSA_KEY_USAGE_SIGN_HASH | PSA_KEY_USAGE_VERIFY_HASH));
+	if (status != PSA_SUCCESS) {
+		log_err_print("failed with %d", status);
+		goto err;
+	}
+	return;
+err:
+	psa_panic();
+}
 
 static psa_status_t tfm_huk_export_pubkey(psa_msg_t *msg)
 {
@@ -741,13 +718,12 @@ psa_status_t tfm_huk_deriv_req_mgr_init(void)
 {
 	psa_signal_t signals = 0;
 
+	/* EC keys init */
+	tfm_huk_ec_keys_init();
+
 	while (1) {
 		signals = psa_wait(PSA_WAIT_ANY, PSA_BLOCK);
-		if (signals & TFM_HUK_DERIV_EC_KEY_SIGNAL) {
-			tfm_huk_deriv_signal_handle(
-				TFM_HUK_DERIV_EC_KEY_SIGNAL,
-				tfm_huk_deriv_ec_key);
-		} else if (signals & TFM_HUK_EXPORT_PUBKEY_SIGNAL) {
+		if (signals & TFM_HUK_EXPORT_PUBKEY_SIGNAL) {
 			tfm_huk_deriv_signal_handle(
 				TFM_HUK_EXPORT_PUBKEY_SIGNAL,
 				tfm_huk_export_pubkey);

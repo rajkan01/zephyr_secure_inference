@@ -17,17 +17,8 @@
   # Service definitions for IPC mode.
   "services" : [
     {
-      "name": "TFM_HUK_DERIV_EC_KEY",
-      "sid": "0x4c690101", # Bits [31:12] denote the vendor (change this),
-                          # bits [11:0] are arbitrary at the discretion of the
-                          # vendor.
-      "non_secure_clients": false,
-      "version": 1,
-      "version_policy": "STRICT"
-    },
-    {
       "name": "TFM_HUK_EC_KEY_STAT",
-      "sid": "0x4c690102", # Bits [31:12] denote the vendor (change this),
+      "sid": "0x4c690101", # Bits [31:12] denote the vendor (change this),
                           # bits [11:0] are arbitrary at the discretion of the
                           # vendor.
       "non_secure_clients": true,
@@ -36,7 +27,7 @@
     },
     {
       "name": "TFM_HUK_EXPORT_PUBKEY",
-      "sid": "0x4c690103", # Bits [31:12] denote the vendor (change this),
+      "sid": "0x4c690102", # Bits [31:12] denote the vendor (change this),
                           # bits [11:0] are arbitrary at the discretion of the
                           # vendor.
       "non_secure_clients": true,
@@ -45,7 +36,7 @@
     },
     {
       "name": "TFM_HUK_COSE_CBOR_ENC_SIGN",
-      "sid": "0x4c690104", # Bits [31:12] denote the vendor (change this),
+      "sid": "0x4c690103", # Bits [31:12] denote the vendor (change this),
                           # bits [11:0] are arbitrary at the discretion of the
                           # vendor.
       "non_secure_clients": false,
@@ -54,7 +45,7 @@
     },
     {
       "name": "TFM_HUK_GEN_UUID",
-       "sid": "0x4c690105", # Bits [31:12] denote the vendor (change this),
+       "sid": "0x4c690104", # Bits [31:12] denote the vendor (change this),
                            # bits [11:0] are arbitrary at the discretion of the
                            # vendor.
         "non_secure_clients": true,
@@ -63,7 +54,7 @@
     },
     {
       "name": "TFM_HUK_HASH_SIGN",
-       "sid": "0x4c690106", # Bits [31:12] denote the vendor (change this),
+       "sid": "0x4c690105", # Bits [31:12] denote the vendor (change this),
                            # bits [11:0] are arbitrary at the discretion of the
                            # vendor.
         "non_secure_clients": true,
@@ -72,7 +63,7 @@
     },
     {
       "name": "TFM_HUK_EXPORT_PRIVKEY",
-      "sid": "0x4c690107",
+      "sid": "0x4c690106",
       "non_secure_clients": true,
       "version": 1,
       "version_policy": "STRICT"

@@ -6,9 +6,10 @@
 
 cmake_minimum_required(VERSION 3.13.1)
 
-if((BOARD MATCHES "mps2_an521") OR (BOARD MATCHES "mps3_an547"))
-  list(APPEND QEMU_EXTRA_FLAGS -device lsm303dlhc_mag,id=lsm303,address=0x1E)
-endif()
+# Disable QEMU emulation of the LSM303DLHC magn for now since it requires a specific QEMU build
+# if((BOARD MATCHES "mps2_an521") OR (BOARD MATCHES "mps3_an547"))
+#   list(APPEND QEMU_EXTRA_FLAGS -device lsm303dlhc_mag,id=lsm303,address=0x1E)
+# endif()
 
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 

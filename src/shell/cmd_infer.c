@@ -262,6 +262,31 @@ cmd_infer_get(const struct shell *shell, size_t argc, char **argv)
 	return 0;
 }
 
+static int
+cmd_infer_aat(const struct shell *shell, size_t argc, char **argv)
+{
+	psa_status_t status;
+	static uint8_t encoded_buf[INFER_ENC_MAX_VALUE_SZ];
+	size_t encoded_buf_size = INFER_ENC_MAX_VALUE_SZ;
+	size_t encoded_buf_len;
+
+	status = psa_huk_aat(encoded_buf,
+			     encoded_buf_size,
+			     &encoded_buf_len);
+
+	if (status != 0) {
+		return shell_com_rc_code(shell,
+					 "AAT creation failed with ",
+					 status);
+	} else {
+		shell_print(shell,
+			    "AAT token:");
+		shell_hexdump(shell, encoded_buf, encoded_buf_len);
+	}
+
+	return 0;
+}
+
 /* Subcommand array for "model" (level 2). */
 SHELL_STATIC_SUBCMD_SET_CREATE(sub_cmd_model,
 	/* 'tflm_sine' command handler. */
@@ -278,7 +303,9 @@ SHELL_STATIC_SUBCMD_SET_CREATE(sub_cmd_infer,
 	SHELL_CMD_ARG(model, NULL, "List inference models", cmd_infer_list_models, 1, 0),
 	/* 'get' command handler. */
 	SHELL_CMD(get, &sub_cmd_model, "Run inference on given input(s)", cmd_infer_get),
-	/* Array terminator. */
+        /* 'token' command handler. */
+	SHELL_CMD_ARG(token, NULL, "Create Application Attestation Token(AAT)", cmd_infer_aat, 1, 0),
+        /* Array terminator. */
 	SHELL_SUBCMD_SET_END
 	);
 

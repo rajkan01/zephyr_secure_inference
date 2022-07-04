@@ -13,10 +13,20 @@ from cose.keys.keyops import VerifyOp
 import argparse
 import cbor2
 import struct
+from enum import Enum
+from pprint import pprint
 
 supported_action_type = ["COSE_SIGN1_VERIFY", "COSE_DECRYPT_VERIFY"]
+supported_payload_type = ["INFERENCE", "AAT"]
 
 EAT_CBOR_LINARO_RANGE_BASE = -80000
+EAT_CBOR_LINARO_LABEL_INFERENCE_VALUE         =  (EAT_CBOR_LINARO_RANGE_BASE - 0)
+
+class EatCborLinaroAatClaim(Enum):
+    TFLM_VERSION            =  (EAT_CBOR_LINARO_RANGE_BASE - 1)
+    TFLM_SINE_MODEL_VERSION =  (EAT_CBOR_LINARO_RANGE_BASE - 2)
+    MTVM_VERSION            =  (EAT_CBOR_LINARO_RANGE_BASE - 3)
+    MTVM_SINE_MODEL_VERSION =  (EAT_CBOR_LINARO_RANGE_BASE - 4)
 
 # Sample Public key used to verify the sign of cose_encoded_payload
 temp_ecdsaPublic = "\
@@ -46,16 +56,22 @@ cose_encoded_payload = "\
 0x25,0xc1,0xd2,0x75,0xd6"
 
 
-def split_list(a_list):
-    half = len(a_list) // 2
-    temp_list = a_list[1:]
-    return temp_list[:half], temp_list[half:]
+def split_public_key_x_y(pub_key):
+    # The public key is in the format of (Format + X + Y) refer to
+    # https://www.rfc-editor.org/rfc/rfc5480#section-2.2, this utility to skip the first format
+    # byte and return X 32 bytes and Y 32 bytes.
+    half = len(pub_key) // 2
+    temp = pub_key[1:]
+    return temp[:half], temp[half:]
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-a", "--action", type=str, help="Supported action types COSE_SIGN1_VERIFY, COSE_DECRYPT_VERIFY"
+        "-a", "--action",
+        type=str,
+        default="COSE_SIGN1_VERIFY",
+        help="Supported action types COSE_SIGN1_VERIFY, COSE_DECRYPT_VERIFY"
     )
     parser.add_argument(
         "-p", "--payload",
@@ -69,6 +85,12 @@ def parse_args():
         default=temp_ecdsaPublic,
         help="Public key to verify the signed payload",
     )
+    parser.add_argument(
+        "-t", "--type",
+        type=str,
+        default="INFERENCE",
+        help="Supported COSE payload types INFERENCE, AAT",
+    )
 
     return parser.parse_args()
 
@@ -77,16 +99,25 @@ def cbor_decode_infer_payload(cbor_enc_payload):
     # Get the inference value from the passed cbor encoded
     # payload in the Map major type.
     decode = cbor2.loads(cbor_enc_payload)
-    x = struct.unpack("f", decode[EAT_CBOR_LINARO_RANGE_BASE])
-    return x
+    pprint(cbor2.loads(cbor_enc_payload))
+    infer_value = struct.unpack("f", decode[EAT_CBOR_LINARO_LABEL_INFERENCE_VALUE])
+    print("Inference value from the payload::", infer_value)
 
+def cbor_decode_aat_payload(cbor_enc_payload):
+    # Get the TFLM and MicroTVM version and its model version from the passed CBOR encoded
+    # payload in the Map major type.
+    decode = cbor2.loads(cbor_enc_payload)
+    print("Expected no of claim ", len(EatCborLinaroAatClaim))
+    for claim_label in EatCborLinaroAatClaim:
+         print("[{}] claim {:<24} {}".format(claim_label.value, claim_label.name, decode
+         [claim_label.value].decode('utf-8')))
 
-def cose_verify_sign1(payload, pk):
-    # Verify the signature on the passed cose encode payload and
-    # retrieve the inference value.
+def cose_verify_sign1(payload, pk, payload_type):
+    # Verify the signature on the passed COSE encode payload and
+    # retrieve the payload value.
     cose_payload = [int(item, 16) for item in payload.split(",")]
     public_key = [int(item, 16) for item in pk.split(",")]
-    x, y = split_list(public_key)
+    x, y = split_public_key_x_y(public_key)
     cose_key = {
         KpKty: KtyEC2,
         EC2KpCurve: P256,
@@ -106,19 +137,25 @@ def cose_verify_sign1(payload, pk):
         print("Successfully verified the signature")
 
     print("Payload::", bytearray(decoded.payload).hex())
-    infer_value = cbor_decode_infer_payload(decoded.payload)
-    print("Inference value from the payload::", infer_value)
-
+    if payload_type == "INFERENCE":
+        cbor_decode_infer_payload(decoded.payload)
+    elif payload_type == "AAT":
+        cbor_decode_aat_payload(decoded.payload)
 
 def main():
     args = parse_args()
+    if args.type not in supported_payload_type:
+        print(args.type, "payload type is not supported" )
+        print("Supported payload type :", supported_payload_type)
+        exit()
+
     if args.action in supported_action_type:
         if args.action == "COSE_SIGN1_VERIFY":
-            cose_verify_sign1(args.payload, args.publickey)
+            cose_verify_sign1(args.payload, args.publickey, args.type)
         elif args.action == "COSE_DECRYPT_VERIFY":
             print("Decrypt is not supported")
     else:
-        print(args.action, "is not supported" )
+        print(args.action, "action is not supported" )
         print("Supported action type :", supported_action_type)
 
 

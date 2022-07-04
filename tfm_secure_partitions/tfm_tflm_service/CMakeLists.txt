@@ -27,6 +27,7 @@ target_include_directories(tfm_partitions
 target_sources(tfm_app_rot_partition_tflm_service
     PRIVATE
         tfm_tflm_service.c
+        tfm_tflm_service_api.c
 )
 
 # The generated sources

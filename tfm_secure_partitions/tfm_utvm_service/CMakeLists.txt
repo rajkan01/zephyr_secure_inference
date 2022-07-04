@@ -27,6 +27,7 @@ target_sources(tfm_app_rot_partition_utvm_service
     PRIVATE
         tfm_utvm_service.c
         tfm_utvm_platform/utvm_platform.c
+        tfm_utvm_service_api.c
 )
 
 # The generated sources

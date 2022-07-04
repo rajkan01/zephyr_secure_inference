@@ -14,6 +14,7 @@
 #include "tfm_plat_test.h"
 #include "target_cfg.h"
 #include "../tfm_huk_deriv_srv/tfm_huk_deriv_srv_api.h"
+#include "tfm_utvm_service_api.h"
 #if defined(CONFIG_SOC_MPS2_AN521) || \
 	defined(CONFIG_SOC_MPS3_AN547)
 #include "platform_regs.h"
@@ -34,13 +35,22 @@ typedef enum {
 	UTVM_MODEL_COUNT,                       /**< Number of models present */
 } utvm_model_idx_t;
 
-/* List of supported utvm models */
-const char *utvm_models[UTVM_MODEL_COUNT] = { "UTVM_MODEL_SINE" };
+typedef struct {
+	char utvm_model[UTVM_MODEL_BUFF_SIZE];                  /* List of supported utvm models */
+	char utvm_model_version[UTVM_VERSION_BUFF_SIZE];        /* md5sum tflite model calculated value */
+} utvm_model_version_t;
 
 typedef struct {
 	huk_enc_format_t enc_format;
 	char model[32];
 } utvm_config_t;
+
+/* Get the MicroTVM version using `tvmc --version` command */
+static const char utvm_version[UTVM_VERSION_BUFF_SIZE] = "0.9.dev0";
+
+/* Sine model version is created using `md5sum /path/to/sine_model.tflite` */
+static const utvm_model_version_t utvm_model_version[UTVM_MODEL_COUNT] =
+{ { "UTVM_MODEL_SINE", "b8085238f6e790f25de393e203136776" } };
 
 /**
  * \brief Run inference using UTVM
@@ -65,7 +75,7 @@ psa_status_t tfm_utvm_infer_run(psa_msg_t *msg)
 	psa_read(msg->handle, 1, &cfg, sizeof(utvm_config_t));
 
 	for (int i = 0; i < UTVM_MODEL_COUNT; i++) {
-		if (strcmp(utvm_models[i], cfg.model) == 0) {
+		if (strcmp(utvm_model_version[i].utvm_model, cfg.model) == 0) {
 			is_model_supported = true;
 			break;
 		}
@@ -116,17 +126,68 @@ err:
 	return status;
 }
 
+psa_status_t tfm_utvm_model_version(psa_msg_t *msg)
+{
+	psa_status_t status = PSA_SUCCESS;
+	char model[42] = { 0 };
+	_Bool is_model_supported = false;
+	int ctx_index = 0;
+
+	/* Check size of invec/outvec parameter */
+	if (msg->in_size[0] > sizeof(model) ||
+	    msg->out_size[0] != UTVM_VERSION_BUFF_SIZE) {
+		status = PSA_ERROR_PROGRAMMER_ERROR;
+		goto err;
+	}
+
+	psa_read(msg->handle, 0, model, msg->in_size[0]);
+	for (int i = 0; i < UTVM_MODEL_COUNT; i++) {
+		if (strcmp(utvm_model_version[i].utvm_model, model) == 0) {
+			is_model_supported = true;
+			ctx_index = i;
+			break;
+		}
+	}
+
+	if (!is_model_supported) {
+		log_err_print("%s model is not supported", model);
+		status = PSA_ERROR_NOT_SUPPORTED;
+		goto err;
+	}
+
+	psa_write(msg->handle,
+		  0,
+		  utvm_model_version[ctx_index].utvm_model_version,
+		  strlen(utvm_model_version[ctx_index].utvm_model_version));
+
+err:
+	return status;
+}
+
+psa_status_t tfm_utvm_version_info(psa_msg_t *msg)
+{
+	psa_status_t status = PSA_SUCCESS;
+
+	/* Check size of invec/outvec parameter */
+	if (msg->out_size[0] != UTVM_VERSION_BUFF_SIZE) {
+		status = PSA_ERROR_PROGRAMMER_ERROR;
+		goto err;
+	}
+
+	psa_write(msg->handle,
+		  0,
+		  utvm_version,
+		  strlen(utvm_version));
+err:
+	return status;
+}
+
 void tfm_utvm_signal_handle(psa_signal_t signal, signal_handler_t pfn)
 {
 	psa_status_t status;
 	psa_msg_t msg;
 
-	/* Retrieve the message corresponding to the UTVM service signal */
-	status = psa_get(TFM_UTVM_SINE_MODEL_SERVICE_SIGNAL, &msg);
-	if (status != PSA_SUCCESS) {
-		return;
-	}
-
+	status = psa_get(signal, &msg);
 	/* Decode the message */
 	switch (msg.type) {
 	/* Any setup or teardown on IPC connect or disconnect goes here. If
@@ -221,6 +282,14 @@ void tfm_utvm_service_req_mngr_init(void)
 			tfm_utvm_signal_handle(
 				TFM_UTVM_SINE_MODEL_SERVICE_SIGNAL,
 				tfm_utvm_infer_run);
+		} else if (signals & TFM_UTVM_MODEL_VERSION_INFO_SERVICE_SIGNAL) {
+			tfm_utvm_signal_handle(
+				TFM_UTVM_MODEL_VERSION_INFO_SERVICE_SIGNAL,
+				tfm_utvm_model_version);
+		} else if (signals & TFM_UTVM_VERSION_INFO_SERVICE_SIGNAL) {
+			tfm_utvm_signal_handle(
+				TFM_UTVM_VERSION_INFO_SERVICE_SIGNAL,
+				tfm_utvm_version_info);
 		} else {
 			psa_panic();
 		}

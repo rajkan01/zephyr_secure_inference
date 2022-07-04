@@ -12,6 +12,8 @@
 #include "psa/service.h"
 #include "psa/crypto.h"
 #include "tfm_huk_deriv_srv_api.h"
+#include "tfm_tflm_service_api.h"
+#include "tfm_utvm_service_api.h"
 
 /* The algorithm used in COSE */
 #define T_COSE_ALGORITHM              T_COSE_ALGORITHM_ES256
@@ -41,10 +43,10 @@ t_cose_err_to_psa_err(enum t_cose_err_t err)
 	}
 }
 
-static psa_status_t tfm_cose_encode_start(psa_key_handle_t key_handle,
-					  struct tfm_cose_encode_ctx *me,
-					  int32_t cose_alg_id,
-					  const struct q_useful_buf *out_buf)
+psa_status_t tfm_cose_encode_start(psa_key_handle_t key_handle,
+				   struct tfm_cose_encode_ctx *me,
+				   int32_t cose_alg_id,
+				   const struct q_useful_buf *out_buf)
 {
 	enum t_cose_err_t cose_ret;
 	psa_status_t return_value = PSA_SUCCESS;
@@ -114,7 +116,7 @@ psa_status_t tfm_cbor_encode(float inf_val,
 	return PSA_SUCCESS;
 }
 
-static psa_status_t
+psa_status_t
 tfm_cose_encode_finish(struct tfm_cose_encode_ctx *me,
 		       struct q_useful_buf_c *completed_token)
 {
@@ -152,18 +154,18 @@ Done:
 	return return_value;
 }
 
-static psa_status_t
-tfm_cose_add_data(struct tfm_cose_encode_ctx *token_ctx,
-		  float inf_val)
+psa_status_t
+tfm_cose_add_data(struct tfm_cose_encode_ctx *token_ctx, int64_t label,
+		  void *data, size_t data_len)
 {
-	struct q_useful_buf_c inf_val_buf;
+	struct q_useful_buf_c data_buf;
 
-	inf_val_buf.ptr = &inf_val;
-	inf_val_buf.len = sizeof(inf_val);
+	data_buf.ptr = data;
+	data_buf.len = data_len;
 
 	QCBOREncode_AddBytesToMapN(&(token_ctx->cbor_enc_ctx),
-				   EAT_CBOR_LINARO_LABEL_INFERENCE_VALUE,
-				   inf_val_buf);
+				   label,
+				   data_buf);
 
 	return PSA_SUCCESS;
 }
@@ -194,7 +196,10 @@ psa_status_t tfm_cose_encode_sign(psa_key_handle_t key_handle,
 		return status;
 	}
 
-	status = tfm_cose_add_data(&encode_ctx, inf_val);
+	status = tfm_cose_add_data(&encode_ctx,
+				   EAT_CBOR_LINARO_LABEL_INFERENCE_VALUE,
+				   (void *)&inf_val,
+				   sizeof(inf_val));
 
 	if (status != PSA_SUCCESS) {
 		return status;

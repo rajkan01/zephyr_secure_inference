@@ -347,17 +347,18 @@ int caserver_close(struct caserver *ctx)
 	return zsock_close(ctx->sock);
 }
 
-static int rest_call(struct caserver *ctx, unsigned char *payload, size_t payload_len)
+static int rest_call(struct caserver *ctx, unsigned char *payload, size_t payload_len,
+		     const char *url, http_response_cb_t cb)
 {
 	int rc;
 	struct http_request req;
 	memset(&req, 0, sizeof(req));
 
 	req.method = HTTP_POST;
-	req.url = "/api/v1/cr";
+	req.url = url;
 	req.host = HOST;
 	req.protocol = "HTTP/1.1";
-	req.response = caresponse_cb;
+	req.response = cb;
 	req.payload = payload;
 	req.payload_len = payload_len;
 	req.recv_buf = recv_buf;
@@ -377,5 +378,5 @@ int caserver_csr(struct caserver *ctx, struct csr_req *req, uint8_t key_idx)
 		return rc;
 	}
 
-	return rest_call(ctx, req->cbor, req->cbor_len);
+	return rest_call(ctx, req->cbor, req->cbor_len, "/api/v1/cr", caresponse_cb);
 }

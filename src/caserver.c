@@ -12,7 +12,9 @@
 
 #include <caserver.h>
 #include "test_certs.h"
+#include <util_app_log.h>
 #include <util_sformat.h>
+#include <x509_csr_gen.h>
 
 #include <provision.h>
 
@@ -100,6 +102,29 @@ static int walk_cbor(struct nanocbor_value *item)
 	return 0;
 }
 #endif /* DEBUG_WALK_CBOR */
+
+/* Build a CSR request for the given key.
+ *
+ * Returns 0 for success, or negative errno on error. */
+static int build_csr_req(struct csr_req *req, uint8_t key_idx)
+{
+	int status = al_psa_status(km_get_uuid(req->uuid, sizeof(req->uuid)), __func__);
+	if (status != PSA_SUCCESS) {
+		return -EINVAL;
+	}
+
+	req->cbor_len = sizeof(req->cbor);
+	status = x509_csr_cbor(key_idx,
+			       req->cbor,
+			       &req->cbor_len,
+			       req->uuid,
+			       sizeof(req->uuid));
+	if (status != PSA_SUCCESS) {
+		return -EINVAL;
+	}
+
+	return 0;
+}
 
 static int decode_ca_response(struct provision_data *prov, const uint8_t *buf, size_t len)
 {
@@ -343,4 +368,14 @@ int caserver_cr(struct caserver *ctx, unsigned char *payload, size_t payload_len
 	LOG_INF("Request result: %d", rc);
 
 	return rc < 0 ? rc : 0;
+}
+
+int caserver_csr(struct caserver *ctx, struct csr_req *req, uint8_t key_idx)
+{
+	int rc = build_csr_req(req, key_idx);
+	if (rc != 0) {
+		return rc;
+	}
+
+	return caserver_cr(ctx, req->cbor, req->cbor_len);
 }

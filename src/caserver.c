@@ -126,7 +126,7 @@ static int build_csr_req(struct csr_req *req, uint8_t key_idx)
 	return 0;
 }
 
-static int decode_ca_response(struct provision_data *prov, const uint8_t *buf, size_t len)
+static int decode_csr_response(struct provision_data *prov, const uint8_t *buf, size_t len)
 {
 	struct nanocbor_value decode;
 	struct nanocbor_value map;
@@ -211,7 +211,7 @@ static int decode_ca_response(struct provision_data *prov, const uint8_t *buf, s
 	return res;
 }
 
-static void caresponse_cb(struct http_response *rsp, enum http_final_call final_data,
+static void csr_cb(struct http_response *rsp, enum http_final_call final_data,
 			  void *user_data)
 {
 	struct provision_data prov;
@@ -226,7 +226,7 @@ static void caresponse_cb(struct http_response *rsp, enum http_final_call final_
 	LOG_INF("Response to req");
 	LOG_INF("Status %s", rsp->http_status);
 
-	res = decode_ca_response(&prov, rsp->body_frag_start, rsp->content_length);
+	res = decode_csr_response(&prov, rsp->body_frag_start, rsp->content_length);
 	LOG_INF("Result: %d", res);
 	LOG_INF("cert: %d bytes", prov.cert_der_len);
 
@@ -378,5 +378,5 @@ int caserver_csr(struct caserver *ctx, struct csr_req *req, uint8_t key_idx)
 		return rc;
 	}
 
-	return rest_call(ctx, req->cbor, req->cbor_len, "/api/v1/cr", caresponse_cb);
+	return rest_call(ctx, req->cbor, req->cbor_len, "/api/v1/cr", csr_cb);
 }

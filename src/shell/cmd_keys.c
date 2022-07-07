@@ -267,7 +267,24 @@ cmd_keys_ca(const struct shell *shell, size_t argc, char **argv)
 	// TODO: not sizeof, but size needs to be passed out.
 	// sf_hex_tabulate_16(&fmt, csr_cbor, cbor_len);
 
-	status = caserver_cr(csr_cbor, cbor_len);
+	struct caserver cactx;
+
+	status = caserver_open(&cactx);
+	if (status != 0) {
+		return shell_com_rc_code(shell,
+					 "Failed to talk to CAserver",
+					 status);
+	}
+
+	status = caserver_cr(&cactx, csr_cbor, cbor_len);
+
+	/* Regardless of error return from the request, close the
+	 * connection. */
+	int status2 = caserver_close(&cactx);
+	if (status2 != 0) {
+		shell_print(shell, "Error: Error closing caserver connection: %d", status2);
+	}
+
 	if (status != 0) {
 		return shell_com_rc_code(shell,
 					 "Failed to talk to CAserver",

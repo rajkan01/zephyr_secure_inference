@@ -10,6 +10,7 @@
 #include <net/http_client.h>
 #include <nanocbor/nanocbor.h>
 
+#include <caserver.h>
 #include "test_certs.h"
 #include <util_sformat.h>
 
@@ -240,10 +241,7 @@ static int get_caserver_addrinfo(void)
 	return rc;
 }
 
-/* Query the CA server, sending it the following request as posted
- * data.
- */
-int caserver_cr(unsigned char *payload, size_t payload_len)
+int caserver_open(struct caserver *ctx)
 {
 	int rc;
 	rc = get_caserver_addrinfo();
@@ -314,6 +312,19 @@ int caserver_cr(unsigned char *payload, size_t payload_len)
 		return rc;
 	}
 
+	ctx->sock = sock;
+
+	return 0;
+}
+
+int caserver_close(struct caserver *ctx)
+{
+	return zsock_close(ctx->sock);
+}
+
+int caserver_cr(struct caserver *ctx, unsigned char *payload, size_t payload_len)
+{
+	int rc;
 	struct http_request req;
 	memset(&req, 0, sizeof(req));
 
@@ -328,11 +339,8 @@ int caserver_cr(unsigned char *payload, size_t payload_len)
 	req.recv_buf_len = sizeof(recv_buf);
 	req.header_fields = cbor_header;
 
-	rc = http_client_req(sock, &req, 5 * MSEC_PER_SEC, "CSR Request");
+	rc = http_client_req(ctx->sock, &req, 5 * MSEC_PER_SEC, "CSR Request");
 	LOG_INF("Request result: %d", rc);
-
-	rc = zsock_close(sock);
-	LOG_INF("Close: %d", rc);
 
 	return rc < 0 ? rc : 0;
 }

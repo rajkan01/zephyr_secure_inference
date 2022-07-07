@@ -347,7 +347,7 @@ int caserver_close(struct caserver *ctx)
 	return zsock_close(ctx->sock);
 }
 
-int caserver_cr(struct caserver *ctx, unsigned char *payload, size_t payload_len)
+static int rest_call(struct caserver *ctx, unsigned char *payload, size_t payload_len)
 {
 	int rc;
 	struct http_request req;
@@ -377,5 +377,5 @@ int caserver_csr(struct caserver *ctx, struct csr_req *req, uint8_t key_idx)
 		return rc;
 	}
 
-	return caserver_cr(ctx, req->cbor, req->cbor_len);
+	return rest_call(ctx, req->cbor, req->cbor_len);
 }

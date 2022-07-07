@@ -28,9 +28,6 @@ int caserver_open(struct caserver *ctx);
  */
 int caserver_close(struct caserver *ctx);
 
-/* Legacy request.  Request comes from outside. */
-int caserver_cr(struct caserver *ctx, unsigned char *req, size_t req_len);
-
 /**
  * @brief The context needed for the CSR request.
  *

@@ -236,7 +236,7 @@ static int decode_service_response(struct provision_data *prov, const uint8_t *b
 		return res;
 	}
 
-	/* This first key must be 1 for status. */
+	/* The first key must be 1, for the hubname. */
 	res = nanocbor_get_uint32(&map, &value);
 	if (res < 0) {
 		return res;
@@ -246,34 +246,19 @@ static int decode_service_response(struct provision_data *prov, const uint8_t *b
 		return -EINVAL;
 	}
 
-	res = nanocbor_get_uint32(&map, &value);
-	if (res < 0) {
-		return res;
-	}
-
-	/* The second key must be 2, for the hubname. */
-	res = nanocbor_get_uint32(&map, &value);
-	if (res < 0) {
-		return res;
-	}
-
-	if (value != 2) {
-		return -EINVAL;
-	}
-
 	res = nanocbor_get_tstr(&map, (const uint8_t **)&prov->hubname, &prov->hubname_len);
 	if (res < 0) {
 		return res;
 	}
 	prov->present |= PROVISION_HUBNAME;
 
-	/* The last key must be 3, for the port. */
+	/* The next key must be 2, for the port. */
 	res = nanocbor_get_uint32(&map, &value);
 	if (res < 0) {
 		return res;
 	}
 
-	if (value != 3) {
+	if (value != 2) {
 		return -EINVAL;
 	}
 
@@ -461,5 +446,5 @@ int caserver_csr(struct caserver *ctx, struct csr_req *req, uint8_t key_idx)
 
 int caserver_service(struct caserver *ctx)
 {
-	return rest_call(ctx, NULL, 0, HTTP_GET, "/api/v1/service", service_cb);
+	return rest_call(ctx, NULL, 0, HTTP_GET, "/api/v1/ccs", service_cb);
 }

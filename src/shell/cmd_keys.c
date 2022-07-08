@@ -114,10 +114,17 @@ cmd_keys_csr(const struct shell *shell, size_t argc, char **argv)
 	uint8_t key_idx = 0;
 	char *csr_supported_format[] = { "PEM", "JSON", "PEM_JSON", "Unknown" };
 	x509_csr_fmt_t csr_fmt = CSR_NONE;
-	_Bool is_valid_csr_format = false;
+	_Bool is_valid_csr_format = false,
+	      is_print_help = false;
 	psa_status_t status;
 
-	if ((argc == 1) || (strcmp(argv[1], "help") == 0)) {
+	if ((argc == 2) && (strcmp(argv[1], "help") == 0)) {
+		is_print_help = true;
+	}
+	if ((argc == 1) || (argc != 3) || is_print_help) {
+		if (!is_print_help) {
+			shell_print(shell, "Error: missing argument(s)");
+		}
 		shell_print(shell, "Generate a CSR for the given key id and format\n");
 		shell_print(shell, "  $ %s %s <Format> <Key ID>\n",
 			    argv[-1], argv[0]);
@@ -125,11 +132,6 @@ cmd_keys_csr(const struct shell *shell, size_t argc, char **argv)
 		shell_print(shell, "  <Key ID>   Run 'status' for key ID list\n");
 		shell_print(shell, "Example: $ %s %s PEM 5001", argv[-1], argv[0]);
 		return 0;
-	}
-
-	/* Missing argument. */
-	if (argc == 2) {
-		return shell_com_missing_arg(shell, "Key ID");
 	}
 
 	/* Too many arguments. */

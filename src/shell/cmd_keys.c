@@ -247,10 +247,19 @@ cmd_keys_ca(const struct shell *shell, size_t argc, char **argv)
 	/* Request is static to prevent stack overflow. */
 	static struct csr_req req;
 	status = caserver_csr(&cactx, &req, key_idx);
-
 	if (status != 0) {
+		// TODO: Need to close on error.
 		return shell_com_rc_code(shell,
 					 "Unable to process CSR",
+					 status);
+	}
+
+	/* Request service information. */
+	status = caserver_service(&cactx);
+	if (status != 0) {
+		// TODO: Need to close on error.
+		return shell_com_rc_code(shell,
+					 "Unable to request service information",
 					 status);
 	}
 

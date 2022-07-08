@@ -47,4 +47,11 @@ struct csr_req {
  */
 int caserver_csr(struct caserver *ctx, struct csr_req *req, uint8_t key_idx);
 
+/**
+ * @brief Request service configuration
+ *
+ * @return 0 for success, or negative errno
+ */
+int caserver_service(struct caserver *ctx);
+
 #endif /* not __CASERVER_H__ */

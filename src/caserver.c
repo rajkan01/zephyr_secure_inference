@@ -132,7 +132,6 @@ static int decode_csr_response(struct provision_data *prov, const uint8_t *buf, 
 	struct nanocbor_value map;
 	int res;
 	uint32_t value;
-	uint32_t port;
 
 #ifdef DEBUG_WALK_CBOR
 	nanocbor_decoder_init(&decode, buf, len);
@@ -146,12 +145,12 @@ static int decode_csr_response(struct provision_data *prov, const uint8_t *buf, 
 		return res;
 	}
 
+	/* This first key must be 1 for status. */
 	res = nanocbor_get_uint32(&map, &value);
 	if (res < 0) {
 		return res;
 	}
 
-	/* This first key must be 1 for status. */
 	if (value != 1) {
 		return -EINVAL;
 	}
@@ -161,12 +160,12 @@ static int decode_csr_response(struct provision_data *prov, const uint8_t *buf, 
 		return res;
 	}
 
+	/* The second key must be 2 for the certificate. */
 	res = nanocbor_get_uint32(&map, &value);
 	if (res < 0) {
 		return res;
 	}
 
-	/* The second key must be 2 for the certificate. */
 	if (value != 2) {
 		return -EINVAL;
 	}
@@ -175,37 +174,7 @@ static int decode_csr_response(struct provision_data *prov, const uint8_t *buf, 
 	if (res < 0) {
 		return res;
 	}
-
-	res = nanocbor_get_uint32(&map, &value);
-	if (res < 0) {
-		return res;
-	}
-
-	/* The third key myst be 3, for the hubname. */
-	if (value != 3) {
-		return -EINVAL;
-	}
-
-	res = nanocbor_get_tstr(&map, (const uint8_t **)&prov->hubname, &prov->hubname_len);
-	if (res < 0) {
-		return res;
-	}
-
-	res = nanocbor_get_uint32(&map, &value);
-	if (res < 0) {
-		return res;
-	}
-
-	/* The last key must be 4, for the port. */
-	if (value != 4) {
-		return -EINVAL;
-	}
-
-	res = nanocbor_get_uint32(&map, &port);
-	if (res < 0) {
-		return res;
-	}
-	prov->hubport = port;
+	prov->present |= PROVISION_CERT;
 
 	nanocbor_leave_container(&decode, &map);
 	return res;
@@ -226,6 +195,7 @@ static void csr_cb(struct http_response *rsp, enum http_final_call final_data,
 	LOG_INF("Response to req");
 	LOG_INF("Status %s", rsp->http_status);
 
+	memset(&prov, 0, sizeof(prov));
 	res = decode_csr_response(&prov, rsp->body_frag_start, rsp->content_length);
 	LOG_INF("Result: %d", res);
 	LOG_INF("cert: %d bytes", prov.cert_der_len);
@@ -244,6 +214,113 @@ static void csr_cb(struct http_response *rsp, enum http_final_call final_data,
 		.addr = 0,
 	};
 	sf_hex_tabulate_16(&fmt, prov.cert_der, prov.cert_der_len);
+}
+
+static int decode_service_response(struct provision_data *prov, const uint8_t *buf, size_t len)
+{
+	struct nanocbor_value decode;
+	struct nanocbor_value map;
+	int res;
+	uint32_t value;
+	uint32_t port;
+
+#ifdef DEBUG_WALK_CBOR
+	nanocbor_decoder_init(&decode, buf, len);
+	walk_cbor(&decode);
+#endif
+
+	nanocbor_decoder_init(&decode, buf, len);
+
+	res = nanocbor_enter_map(&decode, &map);
+	if (res < 0) {
+		return res;
+	}
+
+	/* This first key must be 1 for status. */
+	res = nanocbor_get_uint32(&map, &value);
+	if (res < 0) {
+		return res;
+	}
+
+	if (value != 1) {
+		return -EINVAL;
+	}
+
+	res = nanocbor_get_uint32(&map, &value);
+	if (res < 0) {
+		return res;
+	}
+
+	/* The second key must be 2, for the hubname. */
+	res = nanocbor_get_uint32(&map, &value);
+	if (res < 0) {
+		return res;
+	}
+
+	if (value != 2) {
+		return -EINVAL;
+	}
+
+	res = nanocbor_get_tstr(&map, (const uint8_t **)&prov->hubname, &prov->hubname_len);
+	if (res < 0) {
+		return res;
+	}
+	prov->present |= PROVISION_HUBNAME;
+
+	/* The last key must be 3, for the port. */
+	res = nanocbor_get_uint32(&map, &value);
+	if (res < 0) {
+		return res;
+	}
+
+	if (value != 3) {
+		return -EINVAL;
+	}
+
+	res = nanocbor_get_uint32(&map, &port);
+	if (res < 0) {
+		return res;
+	}
+	prov->hubport = port;
+	prov->present |= PROVISION_HUBPORT;
+
+	return 0;
+}
+
+static void service_cb(struct http_response *rsp, enum http_final_call final_data,
+		       void *user_data)
+{
+	struct provision_data prov;
+	int res;
+
+	if (final_data == HTTP_DATA_MORE) {
+		LOG_INF("Partial data %zd bytes", rsp->data_len);
+		return;
+	} else if (final_data == HTTP_DATA_FINAL) {
+		LOG_INF("Service data received %zd bytes", rsp->data_len);
+	} else {
+		return;
+	}
+
+	/* Show response */
+	struct sf_hex_tbl_fmt fmt = {
+		.ascii = 1,
+		.addr_label = 1,
+		.addr = 0,
+	};
+
+	LOG_INF("Content len: %d", (int)rsp->content_length);
+	sf_hex_tabulate_16(&fmt, rsp->body_frag_start, rsp->content_length);
+
+	memset(&prov, 0, sizeof(prov));
+	res = decode_service_response(&prov, rsp->body_frag_start, rsp->content_length);
+	if (res >= 0) {
+		/* Store the information we retrieved into the
+		 * persistent storage. */
+		res = provision_store(&prov);
+	} else {
+		LOG_ERR("Unable to decode service provisioning data");
+	}
 }
 
 static int get_caserver_addrinfo(void)
@@ -348,13 +425,14 @@ int caserver_close(struct caserver *ctx)
 }
 
 static int rest_call(struct caserver *ctx, unsigned char *payload, size_t payload_len,
+		     enum http_method method,
 		     const char *url, http_response_cb_t cb)
 {
 	int rc;
 	struct http_request req;
 	memset(&req, 0, sizeof(req));
 
-	req.method = HTTP_POST;
+	req.method = method;
 	req.url = url;
 	req.host = HOST;
 	req.protocol = "HTTP/1.1";
@@ -378,5 +456,10 @@ int caserver_csr(struct caserver *ctx, struct csr_req *req, uint8_t key_idx)
 		return rc;
 	}
 
-	return rest_call(ctx, req->cbor, req->cbor_len, "/api/v1/cr", csr_cb);
+	return rest_call(ctx, req->cbor, req->cbor_len, HTTP_POST, "/api/v1/cr", csr_cb);
+}
+
+int caserver_service(struct caserver *ctx)
+{
+	return rest_call(ctx, NULL, 0, HTTP_GET, "/api/v1/service", service_cb);
 }

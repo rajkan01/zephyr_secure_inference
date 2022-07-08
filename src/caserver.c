@@ -269,6 +269,7 @@ static int decode_service_response(struct provision_data *prov, const uint8_t *b
 	prov->hubport = port;
 	prov->present |= PROVISION_HUBPORT;
 
+	nanocbor_leave_container(&decode, &map);
 	return 0;
 }
 

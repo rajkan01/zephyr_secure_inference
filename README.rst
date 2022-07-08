@@ -71,7 +71,7 @@ This sample assumes you have already cloned zephyr locally. You will need to
 use a specific commit of zephyr to be sure that certain assumptions in this
 sample are met:
 
-- ``eee56d8840c6bb511f71fef3b0916cdc5fe91a5a``
+- ``6f108d7f76bb7f21c8b8c62a9cee1aabdf86659f``
 
 Run these commands to checkout the expected commit hash, and apply a required
 patch to TF-M, allowing us to enable CPP support in the TF-M build system. This
@@ -82,7 +82,7 @@ allocation for the secure image(s), where required:
 
    $ cd path/to/zephyrproject/zephyr
    $ source zephyr-env.sh
-   $ git checkout eee56d8840c6bb511f71fef3b0916cdc5fe91a5a
+   $ git checkout 6f108d7f76bb7f21c8b8c62a9cee1aabdf86659f
    $ west update
    $ cd ../modules/tee/tf-m/trusted-firmware-m
    $ git apply <sample-path>/patch/tfm.patch

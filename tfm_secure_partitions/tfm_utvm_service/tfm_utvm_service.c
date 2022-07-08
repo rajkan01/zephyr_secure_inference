@@ -208,68 +208,12 @@ void tfm_utvm_signal_handle(psa_signal_t signal, signal_handler_t pfn)
 }
 
 /**
- * \brief Generate EC key.
- */
-static void  tfm_utvm_gen_ec_key(const uint8_t  *hpke_info,
-				 size_t hpke_info_len,
-				 psa_key_id_t ec_key_id,
-				 psa_key_usage_t key_usage_flag)
-{
-	psa_status_t status;
-
-	status = psa_huk_deriv_ec_key(&ec_key_id,
-				      hpke_info,
-				      hpke_info_len,
-				      &key_usage_flag);
-
-	if (status != PSA_SUCCESS) {
-		log_err_print("failed with status %d", status);
-		goto err;
-	}
-
-	return status;
-err:
-	psa_panic();
-}
-
-/**
- * \brief EC keys init function generates three unique EC keys using HUK
- * derivation secure service.
- */
-void tfm_utvm_ec_keys_init()
-{
-	static _Bool is_ec_keys_init_done = false;
-
-	if (!is_ec_keys_init_done) {
-		/** These are the hpke_info passed to key derivation for generating
-		 *  three unique keys - Device client TLS, Device COSE SIGN/Encrypt.
-		 */
-		const char *hpke_info[2] = {
-			"HUK_CLIENT_TLS",
-			"HUK_COSE"
-		};
-
-		tfm_utvm_gen_ec_key((const uint8_t *)hpke_info[0],
-				    strlen(hpke_info[0]),
-				    HUK_CLIENT_TLS,
-				    (PSA_KEY_USAGE_SIGN_HASH | PSA_KEY_USAGE_VERIFY_MESSAGE));
-		tfm_utvm_gen_ec_key((const uint8_t *)hpke_info[1],
-				    strlen(hpke_info[1]),
-				    HUK_COSE,
-				    (PSA_KEY_USAGE_SIGN_HASH | PSA_KEY_USAGE_VERIFY_HASH));
-		is_ec_keys_init_done = true;
-	}
-}
-
-/**
  * \brief The UTVM service partition's entry function.
  */
 void tfm_utvm_service_req_mngr_init(void)
 {
 	psa_signal_t signals;
 
-	/* Ec keys init */
-	tfm_utvm_ec_keys_init();
 	log_info_print("UTVM initalisation completed");
 
 	/* Continually wait for one or more of the partition's RoT Service or

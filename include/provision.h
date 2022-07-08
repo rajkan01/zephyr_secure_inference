@@ -33,14 +33,31 @@ extern "C" {
  */
 #define APP_PS_HUBPORT (APP_PS_BASE + 0x0003)
 
+/** Enum describing which fields are populated.
+ */
+enum provision_present {
+	PROVISION_CERT = 1 << 0,
+	PROVISION_HUBNAME = 1 << 1,
+	PROVISION_HUBPORT = 1 << 2,
+};
+
+/** Bits for all provision data. */
+#define ALL_PROVISION_DATA (PROVISION_CERT | PROVISION_HUBNAME | PROVISION_HUBPORT)
+
 /**
  * @brief Provisioning data.
  * 
  * Represents the device provisioned data.  The pointers point to data outside
  * of this struct, which for cbor fetched data points to the original buffer,
  * and for data retrieved from persistent storage, allocated from a buffer.
+ *
+ * Not all of the data may be present, and `present` indicates
+ * which fields are populated.
  */
 struct provision_data {
+	/** Bits that indicate which fields are populated in the
+	 * struct. */
+	enum provision_present present;
         /** The device certificate, as signed by the CA.  Encoded in DER format. */
         const uint8_t *cert_der;
         /** The length of the certificate, in bytes. */

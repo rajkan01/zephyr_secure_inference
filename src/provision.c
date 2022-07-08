@@ -20,7 +20,8 @@ static K_CONDVAR_DEFINE(prov_cond);
  * reading the provisioned data on startup.  To implement this, we need to query
  * the items on first attemp, and read them from PS if possible.
  */
-static bool prov_done;
+
+static enum provision_present prov_present;
 
 int provision_store(const struct provision_data *prov)
 {
@@ -29,30 +30,43 @@ int provision_store(const struct provision_data *prov)
 
 	k_mutex_lock(&prov_lock, K_FOREVER);
 
-	pres = psa_ps_set(APP_PS_DEVICE_CERT, prov->cert_der_len, prov->cert_der,
-			  PSA_STORAGE_FLAG_NONE);
-	if (pres < 0) {
-		/* TODO: Better error code here? */
-		rc = -EINVAL;
-		goto unlock_out;
+	if ((prov->present & PROVISION_CERT) != 0) {
+		pres = psa_ps_set(APP_PS_DEVICE_CERT, prov->cert_der_len, prov->cert_der,
+				  PSA_STORAGE_FLAG_NONE);
+		if (pres < 0) {
+			/* TODO: Better error code here? */
+			rc = -EINVAL;
+			goto unlock_out;
+		}
+
+		prov_present |= PROVISION_CERT;
 	}
 
-	pres = psa_ps_set(APP_PS_HUBNAME, prov->hubname_len, prov->hubname, PSA_STORAGE_FLAG_NONE);
-	if (pres < 0) {
-		/* TODO: Better error code here? */
-		rc = -EINVAL;
-		goto unlock_out;
+	if ((prov->present & PROVISION_HUBNAME) != 0) {
+		pres = psa_ps_set(APP_PS_HUBNAME, prov->hubname_len, prov->hubname,
+				  PSA_STORAGE_FLAG_NONE);
+		if (pres < 0) {
+			/* TODO: Better error code here? */
+			rc = -EINVAL;
+			goto unlock_out;
+		}
+
+		prov_present |= PROVISION_HUBNAME;
 	}
 
-	pres = psa_ps_set(APP_PS_HUBPORT, sizeof(uint16_t), &prov->hubport, PSA_STORAGE_FLAG_NONE);
-	if (pres < 0) {
-		/* TODO: Better error code here? */
-		rc = -EINVAL;
-		goto unlock_out;
+	if ((prov->present & PROVISION_HUBPORT) != 0) {
+		pres = psa_ps_set(APP_PS_HUBPORT, sizeof(uint16_t), &prov->hubport,
+				  PSA_STORAGE_FLAG_NONE);
+		if (pres < 0) {
+			/* TODO: Better error code here? */
+			rc = -EINVAL;
+			goto unlock_out;
+		}
+
+		prov_present |= PROVISION_HUBPORT;
 	}
 
 	/* After writing everything out, we are considered provisioned, so we can tell everyone. */
-	prov_done = true;
 	k_condvar_broadcast(&prov_cond);
 
 unlock_out:
@@ -63,7 +77,7 @@ unlock_out:
 int provision_wait(void)
 {
 	k_mutex_lock(&prov_lock, K_FOREVER);
-	while (!prov_done) {
+	while (prov_present != ALL_PROVISION_DATA) {
 		k_condvar_wait(&prov_cond, &prov_lock, K_FOREVER);
 	}
 	k_mutex_unlock(&prov_lock);
@@ -98,8 +112,9 @@ int provision_get(struct provision_data *prov, char *buf, size_t buf_len)
 	psa_status_t pres;
 
 	k_mutex_lock(&prov_lock, K_FOREVER);
-	if (!prov_done) {
+	if (prov_present != ALL_PROVISION_DATA) {
 		rc = -ENOENT;
+		goto out;
 	}
 
 	/* Retrieve the device certificate. */

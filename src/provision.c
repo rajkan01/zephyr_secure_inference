@@ -8,6 +8,7 @@
 #include <provision.h>
 #include <psa/protected_storage.h>
 
+// #include <logging/log.h>
 // LOG_MODULE_DECLARE(app, CONFIG_LOG_DEFAULT_LEVEL);
 
 /* Mutex/condition to coordinate device provisioning. */

@@ -87,10 +87,14 @@ psa_status_t km_get_pubkey(uint8_t *public_key, size_t public_key_len,
 			   const enum km_key_idx key_idx)
 {
 	psa_status_t status;
-	struct km_key_context *ctx = km_get_context();
+	struct km_key_context *ctx = km_get_context(key_idx);
+
+	if (ctx == NULL) {
+		return PSA_ERROR_INVALID_ARGUMENT;
+	}
 
 	status = al_psa_status(
-		psa_huk_get_pubkey(&ctx[key_idx].key_id,
+		psa_huk_get_pubkey(&ctx->key_id,
 				   public_key,
 				   public_key_len),
 		__func__);
@@ -219,24 +223,32 @@ psa_status_t km_enc_pubkey_pem(const enum km_key_idx key_idx,
 	return status;
 }
 
-struct km_key_context *km_get_context()
+struct km_key_context *km_get_context(enum km_key_idx key_idx)
 {
 	static struct km_key_context k_ctx[KEY_COUNT] = { 0 };
 
-	return k_ctx;
+	if (key_idx < 0 || key_idx >= KEY_COUNT) {
+		return NULL;
+	}
+
+	return &k_ctx[key_idx];
 }
 
 void km_keys_init(void)
 {
-	struct km_key_context *ctx = km_get_context();
+	struct km_key_context *ctx = km_get_context(KEY_CLIENT_TLS);
+	assert(ctx != NULL);
 
 	/* Populate the TLS client key context. */
-	km_context_init(&ctx[KEY_CLIENT_TLS],
+	km_context_init(ctx,
 			KEY_ID_CLIENT_TLS,
 			"Device Client TLS");
 
+	ctx = km_get_context(KEY_COSE);
+	assert(ctx != NULL);
+
 	/* Populate the COSE SIGN/Encrypt key context. */
-	km_context_init(&ctx[KEY_COSE],
+	km_context_init(ctx,
 			KEY_ID_COSE,
 			"Device COSE SIGN/Encrypt");
 

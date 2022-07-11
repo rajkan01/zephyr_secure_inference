@@ -113,13 +113,17 @@ static int x509_csr_write_sign(enum km_key_idx key_idx,
 	unsigned char *p = sig + sig_size;
 	int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
 	size_t len = 0;
-	struct km_key_context *ctx = km_get_context();
+	struct km_key_context *ctx = km_get_context(key_idx);
 	psa_status_t status;
+
+	if (ctx == NULL) {
+		return MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
+	}
 
 	/* Send the CSR payload to HUK hash sign tfm service which calculate hash
 	 * and sign, return filled sig buffer with hash signature
 	 */
-	status =  psa_huk_hash_sign(&ctx[key_idx].key_id,
+	status =  psa_huk_hash_sign(&ctx->key_id,
 				    csr_data,
 				    csr_data_size,
 				    sig,
@@ -311,19 +315,23 @@ psa_status_t x509_csr_generate(const enum km_key_idx key_idx,
 			       size_t uuid_size)
 {
 	psa_status_t status;
-	struct km_key_context *ctx = km_get_context();
+	struct km_key_context *ctx = km_get_context(key_idx);
 	mbedtls_x509write_csr req;
+
+	if (ctx == NULL) {
+		return PSA_ERROR_INVALID_ARGUMENT;
+	}
 
 	/* length of CSR subject name is calculated as
 	 * strlen(O=Linaro,CN=) + UUID length + OU lenth + null character
 	 */
 	char csr_subject_name[80] = { 0 };
 
-	printf("\nGenerating X.509 CSR for '%s' key:\n", ctx[key_idx].label);
+	printf("\nGenerating X.509 CSR for '%s' key:\n", ctx->label);
 
 	/* CSR subject name: O=Linaro,CN= <UUID>,OU=<Key label> */
 	sprintf(csr_subject_name, "%s%s%s%s%s", X509_CSR_SUB_ORG,
-		",CN=", uuid, ",OU=", ctx[key_idx].label);
+		",CN=", uuid, ",OU=", ctx->label);
 
 	printf("Subject: %s\n", csr_subject_name);
 
@@ -366,14 +374,18 @@ psa_status_t x509_csr_cbor(const enum km_key_idx key_idx,
 			   size_t uuid_size)
 {
 	char csr_subject_name[80] = { 0 };
-	struct km_key_context *ctx = km_get_context();
+	struct km_key_context *ctx = km_get_context(key_idx);
 	int status = PSA_SUCCESS;
 
-	printf("\nGenerating X.509 CSR for '%s' key:\n", ctx[key_idx].label);
+	if (ctx == NULL) {
+		return PSA_ERROR_INVALID_ARGUMENT;
+	}
+
+	printf("\nGenerating X.509 CSR for '%s' key:\n", ctx->label);
 
 	// TODO: reject buffer overflow.
 	sprintf(csr_subject_name, "%s%s%s%s%s", X509_CSR_SUB_ORG,
-		",CN=", uuid, ",OU=", ctx[key_idx].label);
+		",CN=", uuid, ",OU=", ctx->label);
 
 	printf("Subject: %s\n", csr_subject_name);
 

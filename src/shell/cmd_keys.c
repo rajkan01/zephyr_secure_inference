@@ -25,13 +25,16 @@ cmd_keys_key_stat(const struct shell *shell, size_t argc, char **argv)
 {
 	char *row1[] = { "Key", "Key ID", "Status" };
 	char *k_sts[] = { "unknown", "Key generated", "X.509 certificate gen" };
-	struct km_key_context *ctx = km_get_context();
 
 	shell_print(shell, "| %-24s| %-8s | %-14s |", row1[0], row1[1],
 		    row1[2]);
 	for (int i = 0; i < KEY_COUNT; i++) {
-		shell_print(shell, "| %-24s| 0x%-6x | %-14s |", ctx[i].label,
-			    ctx[i].key_id, k_sts[ctx[i].status]);
+		struct km_key_context *ctx = km_get_context(i);
+		if (ctx == NULL) {
+			return -EINVAL;
+		}
+		shell_print(shell, "| %-24s| 0x%-6x | %-14s |", ctx->label,
+			    ctx->key_id, k_sts[ctx->status]);
 	}
 
 	return 0;
@@ -40,10 +43,13 @@ cmd_keys_key_stat(const struct shell *shell, size_t argc, char **argv)
 /* Validate the Key ID and get the key context index */
 static _Bool cmd_keys_get_key_idx(uint32_t key_id, uint8_t *key_idx)
 {
-	struct km_key_context *ctx = km_get_context();
-
 	for (int i = 0; i < KEY_COUNT; i++) {
-		if (ctx[i].key_id == key_id) {
+		struct km_key_context *ctx = km_get_context(i);
+		if (ctx == NULL) {
+			return false;
+		}
+
+		if (ctx->key_id == key_id) {
 			*key_idx = i;
 			return true;
 		}
@@ -58,7 +64,6 @@ cmd_keys_pubkey(const struct shell *shell, size_t argc, char **argv)
 	size_t public_key_len = 0;
 	uint8_t key_idx_start = 0, key_idx_end = KEY_COUNT;
 	psa_status_t status;
-	struct km_key_context *ctx = km_get_context();
 
 	if ((argc == 2) && (strcmp(argv[1], "help") == 0)) {
 		shell_print(shell, "Display public key(s) in PEM format\n");
@@ -99,8 +104,13 @@ cmd_keys_pubkey(const struct shell *shell, size_t argc, char **argv)
 						 status);
 		}
 
-		shell_print(shell, "Key ID: 0x%x", ctx[key_idx_start].key_id);
-		shell_print(shell, "%s Public key:", ctx[key_idx_start].label);
+		struct km_key_context *ctx = km_get_context(key_idx_start);
+		if (ctx == NULL) {
+			return -EINVAL;
+		}
+
+		shell_print(shell, "Key ID: 0x%x", ctx->key_id);
+		shell_print(shell, "%s Public key:", ctx->label);
 		shell_print(shell, "%s", public_key);
 		key_idx_start++;
 	}
@@ -206,8 +216,6 @@ cmd_keys_csr(const struct shell *shell, size_t argc, char **argv)
 static int
 cmd_keys_ca(const struct shell *shell, size_t argc, char **argv)
 {
-	struct km_key_context *ctx = km_get_context();
-
 	shell_print(shell, "argc: %d", argc);
 	if (argc < 2 || strcmp(argv[1], "help") == 0) {
 		shell_print(shell, "Request certificate from CA for the given key\n");
@@ -226,7 +234,12 @@ cmd_keys_ca(const struct shell *shell, size_t argc, char **argv)
 	uint8_t key_idx;
 	bool is_valid_key_id = false;
 	for (key_idx = 0; key_idx < KEY_COUNT; key_idx++) {
-		if (ctx[key_idx].key_id == key_id) {
+		struct km_key_context *ctx = km_get_context(key_idx);
+		if (ctx == NULL) {
+			return -EINVAL;
+		}
+
+		if (ctx->key_id == key_id) {
 			is_valid_key_id = true;
 			break;
 		}

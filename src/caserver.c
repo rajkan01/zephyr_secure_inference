@@ -10,8 +10,11 @@
 #include <net/http_client.h>
 #include <nanocbor/nanocbor.h>
 
+#include <caserver.h>
 #include "test_certs.h"
+#include <util_app_log.h>
 #include <util_sformat.h>
+#include <x509_csr_gen.h>
 
 #include <provision.h>
 
@@ -100,7 +103,120 @@ static int walk_cbor(struct nanocbor_value *item)
 }
 #endif /* DEBUG_WALK_CBOR */
 
-static int decode_ca_response(struct provision_data *prov, const uint8_t *buf, size_t len)
+/* Build a CSR request for the given key.
+ *
+ * Returns 0 for success, or negative errno on error. */
+static int build_csr_req(struct csr_req *req, uint8_t key_idx)
+{
+	int status = al_psa_status(km_get_uuid(req->uuid, sizeof(req->uuid)), __func__);
+	if (status != PSA_SUCCESS) {
+		return -EINVAL;
+	}
+
+	req->cbor_len = sizeof(req->cbor);
+	status = x509_csr_cbor(key_idx,
+			       req->cbor,
+			       &req->cbor_len,
+			       req->uuid,
+			       sizeof(req->uuid));
+	if (status != PSA_SUCCESS) {
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
+static int decode_csr_response(struct provision_data *prov, const uint8_t *buf, size_t len)
+{
+	struct nanocbor_value decode;
+	struct nanocbor_value map;
+	int res;
+	uint32_t value;
+
+#ifdef DEBUG_WALK_CBOR
+	nanocbor_decoder_init(&decode, buf, len);
+	walk_cbor(&decode);
+#endif
+
+	nanocbor_decoder_init(&decode, buf, len);
+
+	res = nanocbor_enter_map(&decode, &map);
+	if (res < 0) {
+		return res;
+	}
+
+	/* This first key must be 1 for status. */
+	res = nanocbor_get_uint32(&map, &value);
+	if (res < 0) {
+		return res;
+	}
+
+	if (value != 1) {
+		return -EINVAL;
+	}
+
+	res = nanocbor_get_uint32(&map, &value);
+	if (res < 0) {
+		return res;
+	}
+
+	/* The second key must be 2 for the certificate. */
+	res = nanocbor_get_uint32(&map, &value);
+	if (res < 0) {
+		return res;
+	}
+
+	if (value != 2) {
+		return -EINVAL;
+	}
+
+	res = nanocbor_get_bstr(&map, &prov->cert_der, &prov->cert_der_len);
+	if (res < 0) {
+		return res;
+	}
+	prov->present |= PROVISION_CERT;
+
+	nanocbor_leave_container(&decode, &map);
+	return res;
+}
+
+static void csr_cb(struct http_response *rsp, enum http_final_call final_data,
+			  void *user_data)
+{
+	struct provision_data prov;
+	int res;
+
+	if (final_data == HTTP_DATA_MORE) {
+		LOG_INF("Partial data %zd bytes", rsp->data_len);
+	} else if (final_data == HTTP_DATA_FINAL) {
+		LOG_INF("All data received %zd bytes", rsp->data_len);
+	}
+
+	LOG_INF("Response to req");
+	LOG_INF("Status %s", rsp->http_status);
+
+	memset(&prov, 0, sizeof(prov));
+	res = decode_csr_response(&prov, rsp->body_frag_start, rsp->content_length);
+	LOG_INF("Result: %d", res);
+	LOG_INF("cert: %d bytes", prov.cert_der_len);
+
+	if (res >= 0) {
+		/* Provided the provisioning worked, store the information in persistent storage. */
+		res = provision_store(&prov);
+	}
+
+	/* TODO: How should we handle errors here.  Presumably, we won't store
+	 * the provision data, and may retry later. */
+
+	struct sf_hex_tbl_fmt fmt = {
+		.ascii = 1,
+		.addr_label = 1,
+		.addr = 0,
+	};
+	sf_hex_tabulate_16(&fmt, prov.cert_der, prov.cert_der_len);
+}
+
+static int decode_service_response(struct provision_data *prov, const uint8_t *buf, size_t len)
 {
 	struct nanocbor_value decode;
 	struct nanocbor_value map;
@@ -120,43 +236,13 @@ static int decode_ca_response(struct provision_data *prov, const uint8_t *buf, s
 		return res;
 	}
 
+	/* The first key must be 1, for the hubname. */
 	res = nanocbor_get_uint32(&map, &value);
 	if (res < 0) {
 		return res;
 	}
 
-	/* This first key must be 1 for status. */
 	if (value != 1) {
-		return -EINVAL;
-	}
-
-	res = nanocbor_get_uint32(&map, &value);
-	if (res < 0) {
-		return res;
-	}
-
-	res = nanocbor_get_uint32(&map, &value);
-	if (res < 0) {
-		return res;
-	}
-
-	/* The second key must be 2 for the certificate. */
-	if (value != 2) {
-		return -EINVAL;
-	}
-
-	res = nanocbor_get_bstr(&map, &prov->cert_der, &prov->cert_der_len);
-	if (res < 0) {
-		return res;
-	}
-
-	res = nanocbor_get_uint32(&map, &value);
-	if (res < 0) {
-		return res;
-	}
-
-	/* The third key myst be 3, for the hubname. */
-	if (value != 3) {
 		return -EINVAL;
 	}
 
@@ -164,14 +250,15 @@ static int decode_ca_response(struct provision_data *prov, const uint8_t *buf, s
 	if (res < 0) {
 		return res;
 	}
+	prov->present |= PROVISION_HUBNAME;
 
+	/* The next key must be 2, for the port. */
 	res = nanocbor_get_uint32(&map, &value);
 	if (res < 0) {
 		return res;
 	}
 
-	/* The last key must be 4, for the port. */
-	if (value != 4) {
+	if (value != 2) {
 		return -EINVAL;
 	}
 
@@ -180,44 +267,46 @@ static int decode_ca_response(struct provision_data *prov, const uint8_t *buf, s
 		return res;
 	}
 	prov->hubport = port;
+	prov->present |= PROVISION_HUBPORT;
 
 	nanocbor_leave_container(&decode, &map);
-	return res;
+	return 0;
 }
 
-static void caresponse_cb(struct http_response *rsp, enum http_final_call final_data,
-			  void *user_data)
+static void service_cb(struct http_response *rsp, enum http_final_call final_data,
+		       void *user_data)
 {
 	struct provision_data prov;
 	int res;
 
 	if (final_data == HTTP_DATA_MORE) {
 		LOG_INF("Partial data %zd bytes", rsp->data_len);
+		return;
 	} else if (final_data == HTTP_DATA_FINAL) {
-		LOG_INF("All data received %zd bytes", rsp->data_len);
+		LOG_INF("Service data received %zd bytes", rsp->data_len);
+	} else {
+		return;
 	}
 
-	LOG_INF("Response to req");
-	LOG_INF("Status %s", rsp->http_status);
-
-	res = decode_ca_response(&prov, rsp->body_frag_start, rsp->content_length);
-	LOG_INF("Result: %d", res);
-	LOG_INF("cert: %d bytes", prov.cert_der_len);
-
-	if (res >= 0) {
-		/* Provided the provisioning worked, store the information in persistent storage. */
-		res = provision_store(&prov);
-	}
-
-	/* TODO: How should we handle errors here.  Presumably, we won't store
-	 * the provision data, and may retry later. */
-
+	/* Show response */
 	struct sf_hex_tbl_fmt fmt = {
 		.ascii = 1,
 		.addr_label = 1,
 		.addr = 0,
 	};
-	sf_hex_tabulate_16(&fmt, prov.cert_der, prov.cert_der_len);
+
+	LOG_INF("Content len: %d", (int)rsp->content_length);
+	sf_hex_tabulate_16(&fmt, rsp->body_frag_start, rsp->content_length);
+
+	memset(&prov, 0, sizeof(prov));
+	res = decode_service_response(&prov, rsp->body_frag_start, rsp->content_length);
+	if (res >= 0) {
+		/* Store the information we retrieved into the
+		 * persistent storage. */
+		res = provision_store(&prov);
+	} else {
+		LOG_ERR("Unable to decode service provisioning data");
+	}
 }
 
 static int get_caserver_addrinfo(void)
@@ -240,10 +329,7 @@ static int get_caserver_addrinfo(void)
 	return rc;
 }
 
-/* Query the CA server, sending it the following request as posted
- * data.
- */
-int caserver_cr(unsigned char *payload, size_t payload_len)
+int caserver_open(struct caserver *ctx)
 {
 	int rc;
 	rc = get_caserver_addrinfo();
@@ -314,25 +400,52 @@ int caserver_cr(unsigned char *payload, size_t payload_len)
 		return rc;
 	}
 
+	ctx->sock = sock;
+
+	return 0;
+}
+
+int caserver_close(struct caserver *ctx)
+{
+	return zsock_close(ctx->sock);
+}
+
+static int rest_call(struct caserver *ctx, unsigned char *payload, size_t payload_len,
+		     enum http_method method,
+		     const char *url, http_response_cb_t cb)
+{
+	int rc;
 	struct http_request req;
 	memset(&req, 0, sizeof(req));
 
-	req.method = HTTP_POST;
-	req.url = "/api/v1/cr";
+	req.method = method;
+	req.url = url;
 	req.host = HOST;
 	req.protocol = "HTTP/1.1";
-	req.response = caresponse_cb;
+	req.response = cb;
 	req.payload = payload;
 	req.payload_len = payload_len;
 	req.recv_buf = recv_buf;
 	req.recv_buf_len = sizeof(recv_buf);
 	req.header_fields = cbor_header;
 
-	rc = http_client_req(sock, &req, 5 * MSEC_PER_SEC, "CSR Request");
+	rc = http_client_req(ctx->sock, &req, 5 * MSEC_PER_SEC, "CSR Request");
 	LOG_INF("Request result: %d", rc);
 
-	rc = zsock_close(sock);
-	LOG_INF("Close: %d", rc);
-
 	return rc < 0 ? rc : 0;
+}
+
+int caserver_csr(struct caserver *ctx, struct csr_req *req, uint8_t key_idx)
+{
+	int rc = build_csr_req(req, key_idx);
+	if (rc != 0) {
+		return rc;
+	}
+
+	return rest_call(ctx, req->cbor, req->cbor_len, HTTP_POST, "/api/v1/cr", csr_cb);
+}
+
+int caserver_service(struct caserver *ctx)
+{
+	return rest_call(ctx, NULL, 0, HTTP_GET, "/api/v1/ccs", service_cb);
 }

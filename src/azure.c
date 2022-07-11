@@ -377,7 +377,7 @@ static void mqtt_event_handler(struct mqtt_client *const client, const struct mq
 			}
 
 			data[bytes_read] = '\0';
-			LOG_INF("   payload: %s", log_strdup(data));
+			// LOG_INF("   payload: %s", log_strdup(data));
 			len -= bytes_read;
 		}
 

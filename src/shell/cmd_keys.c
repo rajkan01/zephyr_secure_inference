@@ -235,39 +235,41 @@ cmd_keys_ca(const struct shell *shell, size_t argc, char **argv)
 		return shell_com_invalid_arg(shell, argv[1]);
 	}
 
-	/* Get the UUID */
-	unsigned char uuid[37];
-	int status = al_psa_status(km_get_uuid(uuid, sizeof(uuid)), __func__);
-	if (status != PSA_SUCCESS) {
+	struct caserver cactx;
+
+	int status = caserver_open(&cactx);
+	if (status != 0) {
 		return shell_com_rc_code(shell,
-					 "Unable to read UUID",
+					 "Failed to talk to CAserver",
 					 status);
 	}
 
-	LOG_INF("uuid: %s", uuid);
-
-	/* Generate the CSR request */
-	static char csr_cbor[1024];
-	static size_t cbor_len = sizeof(csr_cbor);
-	status = x509_csr_cbor(key_idx,
-			       csr_cbor,
-			       &cbor_len,
-			       uuid,
-			       sizeof(uuid));
-	if (status != PSA_SUCCESS) {
+	/* Request is static to prevent stack overflow. */
+	static struct csr_req req;
+	status = caserver_csr(&cactx, &req, key_idx);
+	if (status != 0) {
+		// TODO: Need to close on error.
 		return shell_com_rc_code(shell,
-					 "Failed to generate CSR",
+					 "Unable to process CSR",
 					 status);
 	}
-	// struct sf_hex_tbl_fmt fmt = {
-	// 	.ascii = 1,
-	// 	.addr_label = 1,
-	// 	.addr = 0,
-	// };
-	// TODO: not sizeof, but size needs to be passed out.
-	// sf_hex_tabulate_16(&fmt, csr_cbor, cbor_len);
 
-	status = caserver_cr(csr_cbor, cbor_len);
+	/* Request service information. */
+	status = caserver_service(&cactx);
+	if (status != 0) {
+		// TODO: Need to close on error.
+		return shell_com_rc_code(shell,
+					 "Unable to request service information",
+					 status);
+	}
+
+	/* Regardless of error return from the request, close the
+	 * connection. */
+	int status2 = caserver_close(&cactx);
+	if (status2 != 0) {
+		shell_print(shell, "Error: Error closing caserver connection: %d", status2);
+	}
+
 	if (status != 0) {
 		return shell_com_rc_code(shell,
 					 "Failed to talk to CAserver",

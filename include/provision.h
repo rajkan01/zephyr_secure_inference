@@ -44,6 +44,10 @@ enum provision_present {
 /** Bits for all provision data. */
 #define ALL_PROVISION_DATA (PROVISION_TLS_CERT | PROVISION_HUBNAME | PROVISION_HUBPORT)
 
+/** Mask for provisioning data needed to speak with the MQTT TLS
+ * server. */
+#define PROV_MASK_TLS (PROVISION_TLS_CERT | PROVISION_HUBNAME | PROVISION_HUBPORT)
+
 /**
  * @brief Provisioning data.
  * 
@@ -80,7 +84,7 @@ struct provision_data {
  * returns immediately.  Otherwise, will block until the bootstrap server has
  * returned this information.
  */
-int provision_wait(void);
+int provision_wait(enum provision_present mask);
 
 /**
  * @brief Set or create provisioning data.

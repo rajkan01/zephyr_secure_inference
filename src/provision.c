@@ -75,10 +75,10 @@ unlock_out:
 	return 0;
 }
 
-int provision_wait(void)
+int provision_wait(enum provision_present mask)
 {
 	k_mutex_lock(&prov_lock, K_FOREVER);
-	while (prov_present != ALL_PROVISION_DATA) {
+	while ((prov_present & mask) != mask) {
 		k_condvar_wait(&prov_cond, &prov_lock, K_FOREVER);
 	}
 	k_mutex_unlock(&prov_lock);

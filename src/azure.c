@@ -90,7 +90,7 @@ static int azure_load_provision(void)
 	size_t buf_len;
 
 	/* Wait for provisioning data to become available. */
-	rc = provision_wait();
+	rc = provision_wait(PROV_MASK_TLS);
 	if (rc) {
 		return rc;
 	}
@@ -570,7 +570,7 @@ void azure_thread(void)
 	/* Before trying to start up, wait until we have been provisioned. */
 	LOG_INF("Azure: Waiting for provisioning...");
 	rc = azure_load_provision();
-	rc = provision_wait();
+	rc = provision_wait(PROV_MASK_TLS);
 	if (rc) {
 		return;
 	}

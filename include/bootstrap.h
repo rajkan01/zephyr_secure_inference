@@ -4,29 +4,29 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#ifndef __CASERVER_H__
-#define __CASERVER_H__
+#ifndef __BOOTSTRAP_H__
+#define __BOOTSTRAP_H__
 
 /**
- * @brief The context for caserver REST requests.
+ * @brief The context for bootstrap REST requests.
  */
-struct caserver {
+struct bootstrap {
 	int sock;
 };
 
 /**
- * @brief Open a connection to the CA server.
+ * @brief Open a connection to the bootstrap server.
  *
  * @return 0 for success, or a negative errno
  */
-int caserver_open(struct caserver *ctx);
+int bootstrap_open(struct bootstrap *ctx);
 
 /**
  * @brief Close a CA server connection.
  *
  * @return 0 for success, or a negative errno
  */
-int caserver_close(struct caserver *ctx);
+int bootstrap_close(struct bootstrap *ctx);
 
 /**
  * @brief The context needed for the CSR request.
@@ -45,13 +45,13 @@ struct csr_req {
  *
  * @return 0 for success, or a negative errno
  */
-int caserver_csr(struct caserver *ctx, struct csr_req *req, uint8_t key_idx);
+int bootstrap_csr(struct bootstrap *ctx, struct csr_req *req, uint8_t key_idx);
 
 /**
  * @brief Request service configuration
  *
  * @return 0 for success, or negative errno
  */
-int caserver_service(struct caserver *ctx);
+int bootstrap_service(struct bootstrap *ctx);
 
-#endif /* not __CASERVER_H__ */
+#endif /* not __BOOTSTRAP_H__ */

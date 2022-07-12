@@ -18,9 +18,6 @@
 #include "test_certs.h"
 #include "azure-config.h"
 
-/* TODO: For debugging only. */
-#include <util_sformat.h>
-
 LOG_MODULE_DECLARE(app, CONFIG_LOG_DEFAULT_LEVEL);
 
 /* Buffers for MQTT client. */
@@ -158,12 +155,7 @@ static int azure_load_provision(void)
 	buf_len -= count + 1;
 
 	/* Print out what we got to make sure it works. */
-	struct sf_hex_tbl_fmt fmt = {
-		.ascii = 1,
-		.addr_label = 1,
-		.addr = 0,
-	};
-	sf_hex_tabulate_16(&fmt, mqtt_provision.cert_der, mqtt_provision.cert_der_len);
+	LOG_HEXDUMP_INF(mqtt_provision.cert_der, mqtt_provision.cert_der_len, "Certificate (DER)");
 
 	LOG_INF("provisioned host: %s, port %d", mqtt_provision.hubname, mqtt_provision.hubport);
 	LOG_INF("our uuid: %s", prov_clientid);

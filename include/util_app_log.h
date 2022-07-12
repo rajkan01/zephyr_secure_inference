@@ -29,7 +29,7 @@ extern "C" {
 psa_status_t al_psa_status(psa_status_t status, const char *func_name);
 
 /**
- * @brief Calls 'log_process' in Zephyr to dump any queued log messages.
+ * @brief Calls 'LOG_PROCESS' in Zephyr to dump any queued log messages.
  */
 void al_dump_log(void);
 

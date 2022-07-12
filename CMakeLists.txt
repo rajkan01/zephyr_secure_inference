@@ -49,7 +49,6 @@ list(APPEND secure_app_files
   src/tfm_partition_huk.c
   src/tfm_partition_tflm.c
   src/tfm_partition_utvm.c
-  src/util_app_cfg.c
   src/util_app_log.c
   src/util_sformat.c
   src/x509_csr_gen.c

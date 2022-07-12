@@ -195,11 +195,14 @@ static int tls_init(void)
 		return err;
 	}
 
-	ctx = km_get_context();
+	ctx = km_get_context(KEY_CLIENT_TLS);
+	if (ctx == NULL) {
+		return -EINVAL;
+	}
 
 	err = tls_credential_add(APP_CA_DEV_KEY_TAG, TLS_CREDENTIAL_PRIVATE_KEY,
-				 ctx[KEY_CLIENT_TLS].local_private,
-				 ctx[KEY_CLIENT_TLS].local_private_len);
+				 ctx->local_private,
+				 ctx->local_private_len);
 	if (err < 0) {
 		LOG_ERR("Failed to register device private key: %d", err);
 		return err;

@@ -94,7 +94,7 @@ psa_status_t km_get_pubkey(uint8_t *public_key,
  *
  * @return Returns a pointer to the key context array
  */
-struct km_key_context *km_get_context();
+struct km_key_context *km_get_context(enum km_key_idx key_idx);
 
 /**
  * @brief Initialise the key context with the EC keys derived from the HUK at

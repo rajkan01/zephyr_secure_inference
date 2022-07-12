@@ -31,8 +31,8 @@ int provision_store(const struct provision_data *prov)
 
 	k_mutex_lock(&prov_lock, K_FOREVER);
 
-	if ((prov->present & PROVISION_CERT) != 0) {
-		pres = psa_ps_set(APP_PS_DEVICE_CERT, prov->cert_der_len, prov->cert_der,
+	if ((prov->present & PROVISION_TLS_CERT) != 0) {
+		pres = psa_ps_set(APP_PS_TLS_CERT, prov->tls_cert_der_len, prov->tls_cert_der,
 				  PSA_STORAGE_FLAG_NONE);
 		if (pres < 0) {
 			/* TODO: Better error code here? */
@@ -40,7 +40,7 @@ int provision_store(const struct provision_data *prov)
 			goto unlock_out;
 		}
 
-		prov_present |= PROVISION_CERT;
+		prov_present |= PROVISION_TLS_CERT;
 	}
 
 	if ((prov->present & PROVISION_HUBNAME) != 0) {
@@ -118,14 +118,14 @@ int provision_get(struct provision_data *prov, char *buf, size_t buf_len)
 		goto out;
 	}
 
-	/* Retrieve the device certificate. */
-	pres = psa_ps_get(APP_PS_DEVICE_CERT, 0, buf_len, buf, &out_len);
+	/* Retrieve the TLS certificate. */
+	pres = psa_ps_get(APP_PS_TLS_CERT, 0, buf_len, buf, &out_len);
 	rc = map_psa_ps_error(pres);
 	if (rc != 0) {
 		goto out;
 	}
-	prov->cert_der = buf;
-	prov->cert_der_len = out_len;
+	prov->tls_cert_der = buf;
+	prov->tls_cert_der_len = out_len;
 	total_len += out_len;
 	buf += out_len;
 	buf_len -= out_len;

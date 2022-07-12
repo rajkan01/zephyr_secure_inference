@@ -23,7 +23,7 @@ extern "C" {
 
 /** Device certificate.  Returned from CA server.
  */
-#define APP_PS_DEVICE_CERT (APP_PS_BASE + 0x0001)
+#define APP_PS_TLS_CERT (APP_PS_BASE + 0x0001)
 
 /** MQTT Broker hub name.  Stored as a string.
  */
@@ -36,13 +36,13 @@ extern "C" {
 /** Enum describing which fields are populated.
  */
 enum provision_present {
-	PROVISION_CERT = 1 << 0,
+	PROVISION_TLS_CERT = 1 << 0,
 	PROVISION_HUBNAME = 1 << 1,
 	PROVISION_HUBPORT = 1 << 2,
 };
 
 /** Bits for all provision data. */
-#define ALL_PROVISION_DATA (PROVISION_CERT | PROVISION_HUBNAME | PROVISION_HUBPORT)
+#define ALL_PROVISION_DATA (PROVISION_TLS_CERT | PROVISION_HUBNAME | PROVISION_HUBPORT)
 
 /**
  * @brief Provisioning data.
@@ -58,10 +58,10 @@ struct provision_data {
 	/** Bits that indicate which fields are populated in the
 	 * struct. */
 	enum provision_present present;
-        /** The device certificate, as signed by the CA.  Encoded in DER format. */
-        const uint8_t *cert_der;
+        /** The TLS client certificate, as signed by the CA.  Encoded in DER format. */
+        const uint8_t *tls_cert_der;
         /** The length of the certificate, in bytes. */
-        size_t cert_der_len;
+        size_t tls_cert_der_len;
         /** The name of the Azure IoT hub used by this device.  This string will
          * be NULL terminated when retrieved from storage, but is not
          * necessarily terminated when fetched from CBOR. */

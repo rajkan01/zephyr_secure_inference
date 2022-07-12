@@ -169,11 +169,11 @@ static int decode_csr_response(struct provision_data *prov, const uint8_t *buf, 
 		return -EINVAL;
 	}
 
-	res = nanocbor_get_bstr(&map, &prov->cert_der, &prov->cert_der_len);
+	res = nanocbor_get_bstr(&map, &prov->tls_cert_der, &prov->tls_cert_der_len);
 	if (res < 0) {
 		return res;
 	}
-	prov->present |= PROVISION_CERT;
+	prov->present |= PROVISION_TLS_CERT;
 
 	nanocbor_leave_container(&decode, &map);
 	return res;
@@ -197,7 +197,7 @@ static void csr_cb(struct http_response *rsp, enum http_final_call final_data,
 	memset(&prov, 0, sizeof(prov));
 	res = decode_csr_response(&prov, rsp->body_frag_start, rsp->content_length);
 	LOG_INF("Result: %d", res);
-	LOG_INF("cert: %d bytes", prov.cert_der_len);
+	LOG_INF("cert: %d bytes", prov.tls_cert_der_len);
 
 	if (res >= 0) {
 		/* Provided the provisioning worked, store the information in persistent storage. */
@@ -207,7 +207,7 @@ static void csr_cb(struct http_response *rsp, enum http_final_call final_data,
 	/* TODO: How should we handle errors here.  Presumably, we won't store
 	 * the provision data, and may retry later. */
 
-	LOG_HEXDUMP_INF(prov.cert_der, prov.cert_der_len, "Certificate (DER)");
+	LOG_HEXDUMP_INF(prov.tls_cert_der, prov.tls_cert_der_len, "Certificate (DER)");
 }
 
 static int decode_service_response(struct provision_data *prov, const uint8_t *buf, size_t len)

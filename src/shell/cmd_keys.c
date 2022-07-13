@@ -8,7 +8,6 @@
 #include <shell_common.h>
 #include <logging/log.h>
 
-#include <util_sformat.h>
 #include <caserver.h>
 #include "tfm_partition_huk.h"
 #include "key_mgmt.h"

@@ -9,19 +9,11 @@
 
 #include "util_app_log.h"
 #include "x509_csr_gen.h"
-#include "util_sformat.h"
 
 /*
  * Declare a reference to the application logging interface.
  */
 LOG_MODULE_DECLARE(app, CONFIG_LOG_DEFAULT_LEVEL);
-
-/* Formatting details for displaying hex dumps. */
-struct sf_hex_tbl_fmt crp_fmt = {
-	.ascii = true,
-	.addr_label = true,
-	.addr = 0
-};
 
 struct csr_json_struct {
 	const char *CSR;

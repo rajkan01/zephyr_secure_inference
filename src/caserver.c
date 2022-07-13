@@ -13,7 +13,6 @@
 #include <caserver.h>
 #include "test_certs.h"
 #include <util_app_log.h>
-#include <util_sformat.h>
 #include <x509_csr_gen.h>
 
 #include <provision.h>
@@ -208,12 +207,7 @@ static void csr_cb(struct http_response *rsp, enum http_final_call final_data,
 	/* TODO: How should we handle errors here.  Presumably, we won't store
 	 * the provision data, and may retry later. */
 
-	struct sf_hex_tbl_fmt fmt = {
-		.ascii = 1,
-		.addr_label = 1,
-		.addr = 0,
-	};
-	sf_hex_tabulate_16(&fmt, prov.cert_der, prov.cert_der_len);
+	LOG_HEXDUMP_INF(prov.cert_der, prov.cert_der_len, "Certificate (DER)");
 }
 
 static int decode_service_response(struct provision_data *prov, const uint8_t *buf, size_t len)
@@ -288,15 +282,8 @@ static void service_cb(struct http_response *rsp, enum http_final_call final_dat
 		return;
 	}
 
-	/* Show response */
-	struct sf_hex_tbl_fmt fmt = {
-		.ascii = 1,
-		.addr_label = 1,
-		.addr = 0,
-	};
-
 	LOG_INF("Content len: %d", (int)rsp->content_length);
-	sf_hex_tabulate_16(&fmt, rsp->body_frag_start, rsp->content_length);
+	LOG_HEXDUMP_INF(rsp->body_frag_start, rsp->content_length, "Content");
 
 	memset(&prov, 0, sizeof(prov));
 	res = decode_service_response(&prov, rsp->body_frag_start, rsp->content_length);

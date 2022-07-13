@@ -90,7 +90,7 @@ static int azure_load_provision(void)
 	size_t buf_len;
 
 	/* Wait for provisioning data to become available. */
-	rc = provision_wait();
+	rc = provision_wait(PROV_MASK_TLS);
 	if (rc) {
 		return rc;
 	}
@@ -155,7 +155,7 @@ static int azure_load_provision(void)
 	buf_len -= count + 1;
 
 	/* Print out what we got to make sure it works. */
-	LOG_HEXDUMP_INF(mqtt_provision.cert_der, mqtt_provision.cert_der_len, "Certificate (DER)");
+	LOG_HEXDUMP_INF(mqtt_provision.tls_cert_der, mqtt_provision.tls_cert_der_len, "Certificate (DER)");
 
 	LOG_INF("provisioned host: %s, port %d", mqtt_provision.hubname, mqtt_provision.hubport);
 	LOG_INF("our uuid: %s", prov_clientid);
@@ -181,7 +181,7 @@ static int tls_init(void)
 	}
 
 	err = tls_credential_add(APP_CA_DEV_CERT_TAG, TLS_CREDENTIAL_SERVER_CERTIFICATE,
-				 mqtt_provision.cert_der, mqtt_provision.cert_der_len);
+				 mqtt_provision.tls_cert_der, mqtt_provision.tls_cert_der_len);
 	if (err < 0) {
 		LOG_ERR("Failed to register device public certificate: %d", err);
 		return err;
@@ -570,7 +570,7 @@ void azure_thread(void)
 	/* Before trying to start up, wait until we have been provisioned. */
 	LOG_INF("Azure: Waiting for provisioning...");
 	rc = azure_load_provision();
-	rc = provision_wait();
+	rc = provision_wait(PROV_MASK_TLS);
 	if (rc) {
 		return;
 	}

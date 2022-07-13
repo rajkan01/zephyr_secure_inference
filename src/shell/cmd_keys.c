@@ -8,7 +8,7 @@
 #include <shell_common.h>
 #include <logging/log.h>
 
-#include <caserver.h>
+#include <bootstrap.h>
 #include "tfm_partition_huk.h"
 #include "key_mgmt.h"
 #include "x509_csr_gen.h"
@@ -217,7 +217,7 @@ cmd_keys_ca(const struct shell *shell, size_t argc, char **argv)
 {
 	shell_print(shell, "argc: %d", argc);
 	if (argc < 2 || strcmp(argv[1], "help") == 0) {
-		shell_print(shell, "Request certificate from CA for the given key\n");
+		shell_print(shell, "Request certificate from bootstrap server for the given key\n");
 		shell_print(shell, "$ %s %s ca <Key ID>\n", argv[-1], argv[0]);
 		shell_print(shell, "Run 'status' for key ID list\n");
 		shell_print(shell, "Example: $ %s %s 5001", argv[-1], argv[0]);
@@ -247,18 +247,18 @@ cmd_keys_ca(const struct shell *shell, size_t argc, char **argv)
 		return shell_com_invalid_arg(shell, argv[1]);
 	}
 
-	struct caserver cactx;
+	struct bootstrap bctx;
 
-	int status = caserver_open(&cactx);
+	int status = bootstrap_open(&bctx);
 	if (status != 0) {
 		return shell_com_rc_code(shell,
-					 "Failed to talk to CAserver",
+					 "Failed to talk to bootstrap server",
 					 status);
 	}
 
 	/* Request is static to prevent stack overflow. */
 	static struct csr_req req;
-	status = caserver_csr(&cactx, &req, key_idx);
+	status = bootstrap_csr(&bctx, &req, key_idx);
 	if (status != 0) {
 		// TODO: Need to close on error.
 		return shell_com_rc_code(shell,
@@ -267,7 +267,7 @@ cmd_keys_ca(const struct shell *shell, size_t argc, char **argv)
 	}
 
 	/* Request service information. */
-	status = caserver_service(&cactx);
+	status = bootstrap_service(&bctx);
 	if (status != 0) {
 		// TODO: Need to close on error.
 		return shell_com_rc_code(shell,
@@ -277,14 +277,14 @@ cmd_keys_ca(const struct shell *shell, size_t argc, char **argv)
 
 	/* Regardless of error return from the request, close the
 	 * connection. */
-	int status2 = caserver_close(&cactx);
+	int status2 = bootstrap_close(&bctx);
 	if (status2 != 0) {
-		shell_print(shell, "Error: Error closing caserver connection: %d", status2);
+		shell_print(shell, "Error: Error closing bootstrap connection: %d", status2);
 	}
 
 	if (status != 0) {
 		return shell_com_rc_code(shell,
-					 "Failed to talk to CAserver",
+					 "Failed to talk to bootstrap server",
 					 status);
 	}
 

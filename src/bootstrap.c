@@ -10,7 +10,7 @@
 #include <net/http_client.h>
 #include <nanocbor/nanocbor.h>
 
-#include <caserver.h>
+#include <bootstrap.h>
 #include "test_certs.h"
 #include <util_app_log.h>
 #include <x509_csr_gen.h>
@@ -169,11 +169,11 @@ static int decode_csr_response(struct provision_data *prov, const uint8_t *buf, 
 		return -EINVAL;
 	}
 
-	res = nanocbor_get_bstr(&map, &prov->cert_der, &prov->cert_der_len);
+	res = nanocbor_get_bstr(&map, &prov->tls_cert_der, &prov->tls_cert_der_len);
 	if (res < 0) {
 		return res;
 	}
-	prov->present |= PROVISION_CERT;
+	prov->present |= PROVISION_TLS_CERT;
 
 	nanocbor_leave_container(&decode, &map);
 	return res;
@@ -197,7 +197,7 @@ static void csr_cb(struct http_response *rsp, enum http_final_call final_data,
 	memset(&prov, 0, sizeof(prov));
 	res = decode_csr_response(&prov, rsp->body_frag_start, rsp->content_length);
 	LOG_INF("Result: %d", res);
-	LOG_INF("cert: %d bytes", prov.cert_der_len);
+	LOG_INF("cert: %d bytes", prov.tls_cert_der_len);
 
 	if (res >= 0) {
 		/* Provided the provisioning worked, store the information in persistent storage. */
@@ -207,7 +207,7 @@ static void csr_cb(struct http_response *rsp, enum http_final_call final_data,
 	/* TODO: How should we handle errors here.  Presumably, we won't store
 	 * the provision data, and may retry later. */
 
-	LOG_HEXDUMP_INF(prov.cert_der, prov.cert_der_len, "Certificate (DER)");
+	LOG_HEXDUMP_INF(prov.tls_cert_der, prov.tls_cert_der_len, "Certificate (DER)");
 }
 
 static int decode_service_response(struct provision_data *prov, const uint8_t *buf, size_t len)
@@ -296,7 +296,7 @@ static void service_cb(struct http_response *rsp, enum http_final_call final_dat
 	}
 }
 
-static int get_caserver_addrinfo(void)
+static int get_bootstrap_addrinfo(void)
 {
 	int retries = 3;
 	int rc = -EINVAL;
@@ -316,10 +316,10 @@ static int get_caserver_addrinfo(void)
 	return rc;
 }
 
-int caserver_open(struct caserver *ctx)
+int bootstrap_open(struct bootstrap *ctx)
 {
 	int rc;
-	rc = get_caserver_addrinfo();
+	rc = get_bootstrap_addrinfo();
 	if (rc < 0) {
 		return rc;
 	}
@@ -383,7 +383,7 @@ int caserver_open(struct caserver *ctx)
 	/* Attempt to connect */
 	rc = connect(sock, (struct sockaddr *)&daddr, sizeof(daddr));
 	if (rc < 0) {
-		LOG_ERR("Failed to connect to caserver: %d", -errno);
+		LOG_ERR("Failed to connect to bootstrap: %d", -errno);
 		return rc;
 	}
 
@@ -392,12 +392,12 @@ int caserver_open(struct caserver *ctx)
 	return 0;
 }
 
-int caserver_close(struct caserver *ctx)
+int bootstrap_close(struct bootstrap *ctx)
 {
 	return zsock_close(ctx->sock);
 }
 
-static int rest_call(struct caserver *ctx, unsigned char *payload, size_t payload_len,
+static int rest_call(struct bootstrap *ctx, unsigned char *payload, size_t payload_len,
 		     enum http_method method,
 		     const char *url, http_response_cb_t cb)
 {
@@ -422,7 +422,7 @@ static int rest_call(struct caserver *ctx, unsigned char *payload, size_t payloa
 	return rc < 0 ? rc : 0;
 }
 
-int caserver_csr(struct caserver *ctx, struct csr_req *req, uint8_t key_idx)
+int bootstrap_csr(struct bootstrap *ctx, struct csr_req *req, uint8_t key_idx)
 {
 	int rc = build_csr_req(req, key_idx);
 	if (rc != 0) {
@@ -432,7 +432,7 @@ int caserver_csr(struct caserver *ctx, struct csr_req *req, uint8_t key_idx)
 	return rest_call(ctx, req->cbor, req->cbor_len, HTTP_POST, "/api/v1/cr", csr_cb);
 }
 
-int caserver_service(struct caserver *ctx)
+int bootstrap_service(struct bootstrap *ctx)
 {
 	return rest_call(ctx, NULL, 0, HTTP_GET, "/api/v1/ccs", service_cb);
 }

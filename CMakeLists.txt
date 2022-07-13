@@ -58,7 +58,7 @@ list(APPEND secure_app_files
 if(CONFIG_APP_NETWORKING)
   list(APPEND secure_app_files
     src/azure.c
-    src/caserver.c
+    src/bootstrap.c
     src/dhcpwait.c
   )
 endif()

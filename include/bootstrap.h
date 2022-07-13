@@ -17,6 +17,11 @@ struct bootstrap {
 /**
  * @brief Open a connection to the bootstrap server.
  *
+ * Note that this function is not reentrant, as some of the
+ * initialization needs to be performed once, and this is not
+ * protected.  If use from multiple threads is needed, this will need
+ * to include a locking mechanism.
+ *
  * @return 0 for success, or a negative errno
  */
 int bootstrap_open(struct bootstrap *ctx);

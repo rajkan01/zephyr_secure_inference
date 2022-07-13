@@ -316,6 +316,44 @@ static int get_bootstrap_addrinfo(void)
 	return rc;
 }
 
+/* Set the credentials with Zephyr's API needed to authenticate this
+ * connection. */
+static int set_bootstrap_cred(void)
+{
+	int rc;
+
+	/* TODO: This makes this function non-reentrant, especially
+	 * from other threads. */
+	static bool credentialed;
+
+	if (!credentialed) {
+		rc = tls_credential_add(APP_CA_CERT_TAG, TLS_CREDENTIAL_CA_CERTIFICATE, caroot_crt,
+					caroot_crt_len);
+		if (rc < 0) {
+			LOG_ERR("Failed to register public certificate: %d", rc);
+			return rc;
+		}
+
+		rc = tls_credential_add(APP_SERVER_CRT_TAG, TLS_CREDENTIAL_SERVER_CERTIFICATE,
+					bootstrap_crt, bootstrap_crt_len);
+		if (rc < 0) {
+			LOG_ERR("Failed to register bootstrap certificate: %d", rc);
+			return rc;
+		}
+
+		rc = tls_credential_add(APP_SERVER_KEY_TAG, TLS_CREDENTIAL_PRIVATE_KEY, bootstrap_key,
+					bootstrap_key_len);
+		if (rc < 0) {
+			LOG_ERR("Failed to register bootstrap certificate key: %d", rc);
+			return rc;
+		}
+
+		credentialed = true;
+	}
+
+	return 0;
+}
+
 int bootstrap_open(struct bootstrap *ctx)
 {
 	int rc;
@@ -337,24 +375,9 @@ int bootstrap_open(struct bootstrap *ctx)
 		return rc;
 	}
 
-	rc = tls_credential_add(APP_CA_CERT_TAG, TLS_CREDENTIAL_CA_CERTIFICATE, caroot_crt,
-				caroot_crt_len);
+	rc = set_bootstrap_cred();
 	if (rc < 0) {
-		LOG_ERR("Failed to register public certificate: %d", rc);
-		return rc;
-	}
-
-	rc = tls_credential_add(APP_SERVER_CRT_TAG, TLS_CREDENTIAL_SERVER_CERTIFICATE,
-				bootstrap_crt, bootstrap_crt_len);
-	if (rc < 0) {
-		LOG_ERR("Failed to register bootstrap certificate: %d", rc);
-		return rc;
-	}
-
-	rc = tls_credential_add(APP_SERVER_KEY_TAG, TLS_CREDENTIAL_PRIVATE_KEY, bootstrap_key,
-				bootstrap_key_len);
-	if (rc < 0) {
-		LOG_ERR("Failed to register bootstrap certificate key: %d", rc);
+		LOG_ERR("Failed to set boostrap socket options (%d)", -errno);
 		return rc;
 	}
 

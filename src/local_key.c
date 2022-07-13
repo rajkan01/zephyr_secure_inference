@@ -54,7 +54,7 @@ int lkey_convert(struct km_key_context *ctx)
 	psa_status_t res;
 	size_t buf_len = 0;
 
-	LOG_INF("Starting to convert key");
+	LOG_DBG("Starting to convert key");
 
 	if (sizeof(key_template) != sizeof(ctx->local_private)) {
 		return -EINVAL;
@@ -71,6 +71,6 @@ int lkey_convert(struct km_key_context *ctx)
 		return -EINVAL;
 	}
 	ctx->local_private_len = sizeof(key_template);
-	LOG_ERR("Export: %d, len %d", res, buf_len);
+	LOG_DBG("Export: %d, len %d", res, buf_len);
 	return 0;
 }

@@ -61,6 +61,14 @@ void km_context_init(struct km_key_context *ctx,
 	} else {
 		ctx->status = stat;
 	}
+
+#ifdef CONFIG_TLS_PSA_KEY_WORKAROUND
+	if (ctx->key_id == KEY_ID_CLIENT_TLS) {
+		/* Setup the local key for the TLS context. */
+		lkey_convert(ctx);
+	}
+#endif
+
 	return;
 err:
 	/* Dump any queued log messages, and wait for system events. */
@@ -251,9 +259,4 @@ void km_keys_init(void)
 	km_context_init(ctx,
 			KEY_ID_COSE,
 			"Device COSE SIGN/Encrypt");
-
-#ifdef CONFIG_TLS_PSA_KEY_WORKAROUND
-	/* Setup the local key for the TLS context. */
-	lkey_convert(&ctx[KEY_CLIENT_TLS]);
-#endif
 }

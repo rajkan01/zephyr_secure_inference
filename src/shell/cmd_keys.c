@@ -266,13 +266,16 @@ cmd_keys_ca(const struct shell *shell, size_t argc, char **argv)
 					 status);
 	}
 
-	/* Request service information. */
-	status = bootstrap_service(&bctx);
-	if (status != 0) {
-		// TODO: Need to close on error.
-		return shell_com_rc_code(shell,
-					 "Unable to request service information",
-					 status);
+	/* If this is the TLS message, also retrieve the service
+	 * information. */
+	if (key_id == KEY_ID_CLIENT_TLS) {
+		status = bootstrap_service(&bctx);
+		if (status != 0) {
+			// TODO: Need to close on error.
+			return shell_com_rc_code(shell,
+						 "Unable to request service information",
+						 status);
+		}
 	}
 
 	/* Regardless of error return from the request, close the

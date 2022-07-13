@@ -156,7 +156,7 @@ typedef psa_status_t (*infer_get_cose_output)(infer_enc_t enc_format,
  *
  * @return Returns pointer to the inference model context
  */
-infer_ctx_t *infer_context_get();
+infer_ctx_t *infer_context_get(void);
 
 /**
  * @brief Initialise the inference engine context to interact with the

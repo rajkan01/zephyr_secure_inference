@@ -151,12 +151,6 @@ Sample Output
 
 
    uart:~$ *** Booting Zephyr OS build zephyr-v3.0.0-2694-g7cedc5d85e09  ***
-   [    2.131000] <inf> app: app_cfg: Creating default config file with UID 0x55CFDA7A
-   [    2.133000] <err> app: Invalid argument
-   [    2.133000] <err> app: Function: 'cfg_create_data'
-   [    2.134000] <err> app: Invalid argument
-   [    2.134000] <err> app: Function: 'cfg_load_data'
-   [    2.135000] <err> app: Error loading/generating app config data in PS.
    uart:~$ [HUK DERIV SERV] tfm_huk_gen_uuid()::613 Generated UUID: d74696ad-cb3b-4275-b74a-c346ffe71ea9
    [    2.631000] <inf> app: Azure: waiting for network...
    [    7.141000] <inf> app: Azure: Waiting for provisioning...

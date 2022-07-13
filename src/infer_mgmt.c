@@ -191,7 +191,7 @@ psa_status_t infer_get_utvm_cose_output(infer_enc_t enc_format,
 	return status;
 }
 
-infer_ctx_t *infer_context_get()
+infer_ctx_t *infer_context_get(void)
 {
 	static infer_ctx_t infer_model[INFER_MODEL_COUNT] = { 0 };
 

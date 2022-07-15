@@ -48,6 +48,12 @@ static const char *cbor_header[] = {
 
 static uint8_t recv_buf[RECV_BUF_LEN];
 
+/* User data for the rest API callback.
+ */
+struct rest_cb_data {
+	enum km_key_idx key_idx;
+};
+
 #ifdef DEBUG_WALK_CBOR
 /* Walk a CBOR structure, at least with certain fields.  This can help
  * us understand how to use the nanocbor API.
@@ -125,7 +131,8 @@ static int build_csr_req(struct csr_req *req, uint8_t key_idx)
 	return 0;
 }
 
-static int decode_csr_response(struct provision_data *prov, const uint8_t *buf, size_t len)
+static int decode_csr_response(struct provision_data *prov, const uint8_t *buf, size_t len,
+			       struct rest_cb_data *data)
 {
 	struct nanocbor_value decode;
 	struct nanocbor_value map;
@@ -169,11 +176,24 @@ static int decode_csr_response(struct provision_data *prov, const uint8_t *buf, 
 		return -EINVAL;
 	}
 
-	res = nanocbor_get_bstr(&map, &prov->tls_cert_der, &prov->tls_cert_der_len);
-	if (res < 0) {
-		return res;
+	switch (data->key_idx) {
+	case KEY_CLIENT_TLS:
+		res = nanocbor_get_bstr(&map, &prov->tls_cert_der, &prov->tls_cert_der_len);
+		if (res < 0) {
+			return res;
+		}
+		prov->present |= PROVISION_TLS_CERT;
+		break;
+	case KEY_COSE:
+		res = nanocbor_get_bstr(&map, &prov->cose_cert_der, &prov->cose_cert_der_len);
+		if (res < 0) {
+			return res;
+		}
+		prov->present |= PROVISION_COSE_CERT;
+		break;
+	case KEY_COUNT:
+		break;
 	}
-	prov->present |= PROVISION_TLS_CERT;
 
 	nanocbor_leave_container(&decode, &map);
 	return res;
@@ -184,6 +204,7 @@ static void csr_cb(struct http_response *rsp, enum http_final_call final_data,
 {
 	struct provision_data prov;
 	int res;
+	struct rest_cb_data *data = user_data;
 
 	if (final_data == HTTP_DATA_MORE) {
 		LOG_INF("Partial data %zd bytes", rsp->data_len);
@@ -195,9 +216,8 @@ static void csr_cb(struct http_response *rsp, enum http_final_call final_data,
 	LOG_INF("Status %s", rsp->http_status);
 
 	memset(&prov, 0, sizeof(prov));
-	res = decode_csr_response(&prov, rsp->body_frag_start, rsp->content_length);
+	res = decode_csr_response(&prov, rsp->body_frag_start, rsp->content_length, data);
 	LOG_INF("Result: %d", res);
-	LOG_INF("cert: %d bytes", prov.tls_cert_der_len);
 
 	if (res >= 0) {
 		/* Provided the provisioning worked, store the information in persistent storage. */
@@ -207,7 +227,16 @@ static void csr_cb(struct http_response *rsp, enum http_final_call final_data,
 	/* TODO: How should we handle errors here.  Presumably, we won't store
 	 * the provision data, and may retry later. */
 
-	LOG_HEXDUMP_INF(prov.tls_cert_der, prov.tls_cert_der_len, "Certificate (DER)");
+	switch (data->key_idx) {
+	case KEY_CLIENT_TLS:
+		LOG_HEXDUMP_INF(prov.tls_cert_der, prov.tls_cert_der_len, "TLS Certificate (DER)");
+		break;
+	case KEY_COSE:
+		LOG_HEXDUMP_INF(prov.cose_cert_der, prov.cose_cert_der_len, "COSE Certificate (DER)");
+		break;
+	case KEY_COUNT:
+		break;
+	}
 }
 
 static int decode_service_response(struct provision_data *prov, const uint8_t *buf, size_t len)
@@ -316,6 +345,44 @@ static int get_bootstrap_addrinfo(void)
 	return rc;
 }
 
+/* Set the credentials with Zephyr's API needed to authenticate this
+ * connection. */
+static int set_bootstrap_cred(void)
+{
+	int rc;
+
+	/* TODO: This makes this function non-reentrant, especially
+	 * from other threads. */
+	static bool credentialed;
+
+	if (!credentialed) {
+		rc = tls_credential_add(APP_CA_CERT_TAG, TLS_CREDENTIAL_CA_CERTIFICATE, caroot_crt,
+					caroot_crt_len);
+		if (rc < 0) {
+			LOG_ERR("Failed to register public certificate: %d", rc);
+			return rc;
+		}
+
+		rc = tls_credential_add(APP_SERVER_CRT_TAG, TLS_CREDENTIAL_SERVER_CERTIFICATE,
+					bootstrap_crt, bootstrap_crt_len);
+		if (rc < 0) {
+			LOG_ERR("Failed to register bootstrap certificate: %d", rc);
+			return rc;
+		}
+
+		rc = tls_credential_add(APP_SERVER_KEY_TAG, TLS_CREDENTIAL_PRIVATE_KEY, bootstrap_key,
+					bootstrap_key_len);
+		if (rc < 0) {
+			LOG_ERR("Failed to register bootstrap certificate key: %d", rc);
+			return rc;
+		}
+
+		credentialed = true;
+	}
+
+	return 0;
+}
+
 int bootstrap_open(struct bootstrap *ctx)
 {
 	int rc;
@@ -337,24 +404,9 @@ int bootstrap_open(struct bootstrap *ctx)
 		return rc;
 	}
 
-	rc = tls_credential_add(APP_CA_CERT_TAG, TLS_CREDENTIAL_CA_CERTIFICATE, caroot_crt,
-				caroot_crt_len);
+	rc = set_bootstrap_cred();
 	if (rc < 0) {
-		LOG_ERR("Failed to register public certificate: %d", rc);
-		return rc;
-	}
-
-	rc = tls_credential_add(APP_SERVER_CRT_TAG, TLS_CREDENTIAL_SERVER_CERTIFICATE,
-				bootstrap_crt, bootstrap_crt_len);
-	if (rc < 0) {
-		LOG_ERR("Failed to register bootstrap certificate: %d", rc);
-		return rc;
-	}
-
-	rc = tls_credential_add(APP_SERVER_KEY_TAG, TLS_CREDENTIAL_PRIVATE_KEY, bootstrap_key,
-				bootstrap_key_len);
-	if (rc < 0) {
-		LOG_ERR("Failed to register bootstrap certificate key: %d", rc);
+		LOG_ERR("Failed to set boostrap socket options (%d)", -errno);
 		return rc;
 	}
 
@@ -399,7 +451,8 @@ int bootstrap_close(struct bootstrap *ctx)
 
 static int rest_call(struct bootstrap *ctx, unsigned char *payload, size_t payload_len,
 		     enum http_method method,
-		     const char *url, http_response_cb_t cb)
+		     const char *url, http_response_cb_t cb,
+		     void *cb_data)
 {
 	int rc;
 	struct http_request req;
@@ -416,7 +469,7 @@ static int rest_call(struct bootstrap *ctx, unsigned char *payload, size_t paylo
 	req.recv_buf_len = sizeof(recv_buf);
 	req.header_fields = cbor_header;
 
-	rc = http_client_req(ctx->sock, &req, 5 * MSEC_PER_SEC, "CSR Request");
+	rc = http_client_req(ctx->sock, &req, 5 * MSEC_PER_SEC, cb_data);
 	LOG_INF("Request result: %d", rc);
 
 	return rc < 0 ? rc : 0;
@@ -424,15 +477,21 @@ static int rest_call(struct bootstrap *ctx, unsigned char *payload, size_t paylo
 
 int bootstrap_csr(struct bootstrap *ctx, struct csr_req *req, uint8_t key_idx)
 {
+	/* http_client_req waits to be finished, so the cb will happen
+	 * before the function call returns. */
+	struct rest_cb_data data = {
+		.key_idx = key_idx,
+	};
+
 	int rc = build_csr_req(req, key_idx);
 	if (rc != 0) {
 		return rc;
 	}
 
-	return rest_call(ctx, req->cbor, req->cbor_len, HTTP_POST, "/api/v1/cr", csr_cb);
+	return rest_call(ctx, req->cbor, req->cbor_len, HTTP_POST, "/api/v1/cr", csr_cb, &data);
 }
 
 int bootstrap_service(struct bootstrap *ctx)
 {
-	return rest_call(ctx, NULL, 0, HTTP_GET, "/api/v1/ccs", service_cb);
+	return rest_call(ctx, NULL, 0, HTTP_GET, "/api/v1/ccs", service_cb, NULL);
 }

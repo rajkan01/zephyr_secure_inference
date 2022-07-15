@@ -39,10 +39,12 @@ enum provision_present {
 	PROVISION_TLS_CERT = 1 << 0,
 	PROVISION_HUBNAME = 1 << 1,
 	PROVISION_HUBPORT = 1 << 2,
+	PROVISION_COSE_CERT = 1 << 3,
 };
 
 /** Bits for all provision data. */
-#define ALL_PROVISION_DATA (PROVISION_TLS_CERT | PROVISION_HUBNAME | PROVISION_HUBPORT)
+#define ALL_PROVISION_DATA (PROVISION_TLS_CERT | PROVISION_HUBNAME | PROVISION_HUBPORT \
+			    | PROVISION_COSE_CERT)
 
 /** Mask for provisioning data needed to speak with the MQTT TLS
  * server. */
@@ -66,6 +68,10 @@ struct provision_data {
         const uint8_t *tls_cert_der;
         /** The length of the certificate, in bytes. */
         size_t tls_cert_der_len;
+	/** The COSE client certificate, as signed by the CA.  Encoded in DER format. */
+	const uint8_t *cose_cert_der;
+	/** The length of the COSE certificate, in bytes. */
+	size_t cose_cert_der_len;
         /** The name of the Azure IoT hub used by this device.  This string will
          * be NULL terminated when retrieved from storage, but is not
          * necessarily terminated when fetched from CBOR. */

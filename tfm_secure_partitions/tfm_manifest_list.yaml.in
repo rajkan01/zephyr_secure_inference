@@ -14,8 +14,8 @@
     {
       "name": "TF-M HUK Key Derivation",
       "short_name": "TFM_SP_HUK_DERI",
-      "manifest": "${APPLICATION_SOURCE_DIR}/tfm_secure_partitions/tfm_huk_deriv_srv/tfm_huk_deriv_srv.yaml",
-      "output_path": "${TFM_BINARY_DIR}/tfm_secure_partitions/tfm_huk_deriv_srv",
+      "manifest": "@APP_SOURCE_DIR@/tfm_secure_partitions/tfm_huk_deriv_srv/tfm_huk_deriv_srv.yaml",
+      "output_path": "@TFM_BINARY_DIR@/tfm_secure_partitions/tfm_huk_deriv_srv",
       "tfm_partition_ipc": true,
       "version_major": 0,
       "version_minor": 1,
@@ -29,8 +29,8 @@
     {
       "name": "TFLM Service",
       "short_name": "TFM_SP_TFLM_SERVICE",
-      "manifest": "${APPLICATION_SOURCE_DIR}/tfm_secure_partitions/tfm_tflm_service/tfm_tflm_service.yaml",
-      "output_path": "${TFM_BINARY_DIR}/tfm_secure_partitions/tfm_tflm_service",
+      "manifest": "@APP_SOURCE_DIR@/tfm_secure_partitions/tfm_tflm_service/tfm_tflm_service.yaml",
+      "output_path": "@TFM_BINARY_DIR@/tfm_secure_partitions/tfm_tflm_service",
       "tfm_partition_ipc": true,
       "version_major": 0,
       "version_minor": 1,
@@ -44,8 +44,8 @@
     {
       "name": "UTVM Service",
       "short_name": "TFM_SP_UTVM_SERVICE",
-      "manifest": "${APPLICATION_SOURCE_DIR}/tfm_secure_partitions/tfm_utvm_service/tfm_utvm_service.yaml",
-      "output_path": "${TFM_BINARY_DIR}/tfm_secure_partitions/tfm_utvm_service",
+      "manifest": "@APP_SOURCE_DIR@/tfm_secure_partitions/tfm_utvm_service/tfm_utvm_service.yaml",
+      "output_path": "@TFM_BINARY_DIR@/tfm_secure_partitions/tfm_utvm_service",
       "tfm_partition_ipc": true,
       "version_major": 0,
       "version_minor": 1,

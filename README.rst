@@ -366,3 +366,64 @@ Step 4:
    $ ./STM32_Programmer_CLI -c port=/dev/ttyACM0 -ob wrp2a_pend=0x0
    $ ./STM32_Programmer_CLI -c port=/dev/ttyACM0 -ob wrp2b_pstrt=0x7f
    $ ./STM32_Programmer_CLI -c port=/dev/ttyACM0 -ob wrp2b_pend=0x0
+
+Integration test using ZTest and twister
+========================================
+
+You can find the integration tests under path/to/zephyr_secure_inference/tests and follows below directory structure:
+
+.. code-block:: console
+
+   tests
+   │
+   └───test_service
+   └───tfm_huk_deriv_srv
+       │─── src
+       │─── CMakeLists.tx
+       │─── prj.conf
+       └─── testcase.yaml
+
+
+Building and Running the test on QEMU
+*************************************
+
+Run all the tests using the command:
+
+.. code-block:: console
+
+   $ cd path/to/zephyr
+   $ source zephyr-env.sh
+   $ twister -T path/to/modules/outoftree/zephyr_secure_inference/tests
+
+For example to run a specific HUK key derivation service test using the command:
+
+.. code-block:: console
+
+   $ twister -T modules/outoftree/zephyr_secure_inference/tests/tfm_sp/tfm_huk_deriv_srv/
+
+Sample test execution logs
+***************************
+
+.. code-block:: console
+
+   Install the anytree module to use the --test-tree option
+   Renaming output directory to /home/arm/projects/zephyrproject/zephyr/twister-out.1
+   INFO    - Using Ninja..
+   INFO    - Zephyr version: zephyr-v3.1.0-2265-g62f19cc6b3d4
+   INFO    - Using 'zephyr' toolchain.
+   INFO    - Selecting default platforms per test case
+   INFO    - Building initial testsuite list...
+   INFO    - Writing JSON report /home/arm/projects/zephyrproject/zephyr/twister-out/testplan.json
+   INFO    - JOBS: 8
+   INFO    - 1 test scenarios (1 configurations) selected, 0 configurations discarded due to filters.
+   INFO    - Adding tasks to the queue...
+   INFO    - Added initial list of jobs to queue
+   INFO    - Total complete:    1/   1  100%  skipped:    0, failed:    0
+   INFO    - 1 of 1 test configurations passed (100.00%), 0 failed, 0 skipped with 0 warnings in 75.06 seconds
+   INFO    - In total 2 test cases were executed, 0 skipped on 1 out of total 473 platforms (0.21%)
+   INFO    - 1 test configurations executed on platforms, 0 test configurations were only built.
+   INFO    - Saving reports...
+   INFO    - Writing JSON report /home/arm/projects/zephyrproject/zephyr/twister-out/twister.json
+   INFO    - Writing xunit report /home/arm/projects/zephyrproject/zephyr/twister-out/twister.xml...
+   INFO    - Writing xunit report /home/arm/projects/zephyrproject/zephyr/twister-out/twister_report.xml...
+   INFO    - Run completed

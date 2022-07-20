@@ -11,6 +11,7 @@
 # time via '-DHUK_DERIV_LABEL_EXTRA=value'.
 set(HUK_DERIV_LABEL_EXTRA  "" CACHE STRING "Additional key derivation label value.")
 set(NV_PS_COUNTERS_SUPPORT OFF CACHE BOOL "NV PS counters support.")
+set(BUILD_HUK_KEY_DERIV_TEST false CACHE BOOL "HUK key deriv integration test")
 
 # To avoid buffer issues, the string must be <= 15 characters
 string(LENGTH "${HUK_DERIV_LABEL_EXTRA}" size)
@@ -34,3 +35,6 @@ endif()
 
 # Make the NV_COUNTER_TRACKER_THRESHOLD_LIMIT available in the C project
 add_compile_definitions(NV_COUNTER_TRACKER_THRESHOLD_LIMIT=${NV_COUNTER_TRACKER_THRESHOLD_LIMIT})
+
+# Make the BUILD_HUK_KEY_DERIV_TEST available in the C project
+add_compile_definitions(BUILD_HUK_KEY_DERIV_TEST=${BUILD_HUK_KEY_DERIV_TEST})

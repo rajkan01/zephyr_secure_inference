@@ -669,8 +669,14 @@ static psa_status_t tfm_huk_aat(psa_msg_t *msg)
 	psa_status_t status = PSA_SUCCESS;
 	uint8_t encoded_buf[msg->out_size[0]];
 	size_t encoded_buf_len = 0;
+	psa_key_handle_t key_handle;
 
-	status =  tfm_cose_create_aat(HUK_COSE,
+	status = tfm_huk_key_handle_get(HUK_COSE, &key_handle);
+	if (status != PSA_SUCCESS) {
+		log_err_print("failed with %d", status);
+		goto err;
+	}
+	status =  tfm_cose_create_aat(key_handle,
 				      encoded_buf,
 				      msg->out_size[0],
 				      &encoded_buf_len);

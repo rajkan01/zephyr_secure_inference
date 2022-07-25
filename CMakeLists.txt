@@ -42,7 +42,6 @@ list(APPEND secure_app_files
   src/shell/shell_common.c
   src/infer_mgmt.c
   src/key_mgmt.c
-  src/local_key.c
   src/main.c
   src/provision.c
   src/test_certs.c
@@ -53,6 +52,7 @@ list(APPEND secure_app_files
   src/x509_csr_gen.c
   ext/NanoCBOR/src/decoder.c
   ext/NanoCBOR/src/encoder.c
+  src/device_client_tls_key.c
 )
 
 if(CONFIG_APP_NETWORKING)

@@ -121,7 +121,6 @@ static int
 cmd_keys_csr(const struct shell *shell, size_t argc, char **argv)
 {
 	uint8_t key_idx = 0;
-	char *csr_supported_format[] = { "PEM", "JSON", "PEM_JSON", "Unknown" };
 	x509_csr_fmt_t csr_fmt = CSR_NONE;
 	_Bool is_valid_csr_format = false,
 	      is_print_help = false;
@@ -137,7 +136,7 @@ cmd_keys_csr(const struct shell *shell, size_t argc, char **argv)
 		shell_print(shell, "Generate a CSR for the given key id and format\n");
 		shell_print(shell, "  $ %s %s <Format> <Key ID>\n",
 			    argv[-1], argv[0]);
-		shell_print(shell, "  <Format>   'PEM', 'JSON', 'PEM_JSON'");
+		shell_print(shell, "  <Format>   'PEM', 'JSON'");
 		shell_print(shell, "  <Key ID>   Run 'status' for key ID list\n");
 		shell_print(shell, "Example: $ %s %s PEM 5001", argv[-1], argv[0]);
 		return 0;
@@ -149,12 +148,12 @@ cmd_keys_csr(const struct shell *shell, size_t argc, char **argv)
 	}
 
 	/* Validate the display format */
-	for (int i = 0; i < CSR_NONE; i++) {
-		if (strcmp(argv[1], csr_supported_format[i]) == 0) {
-			csr_fmt = i;
-			is_valid_csr_format = true;
-			break;
-		}
+	if (strcmp(argv[1], "PEM") == 0) {
+		is_valid_csr_format = true;
+		csr_fmt = CSR_PEM_FORMAT;
+	} else if ((strcmp(argv[1], "JSON") == 0)) {
+		is_valid_csr_format = true;
+		csr_fmt = CSR_JSON_FORMAT;
 	}
 
 	if (!is_valid_csr_format) {
@@ -179,21 +178,22 @@ cmd_keys_csr(const struct shell *shell, size_t argc, char **argv)
 					 status);
 	}
 
-	/* Generate CSR PEM format using Mbed TLS */
+	/* Generate CSR using Mbed TLS */
 	status = x509_csr_generate(key_idx,
 				   csr,
 				   sizeof(csr),
 				   uuid,
-				   sizeof(uuid));
-	if (status != PSA_SUCCESS) {
+				   sizeof(uuid),
+				   csr_fmt);
+	if (status < 0) {
 		return shell_com_rc_code(shell,
 					 "Failed to generate CSR",
 					 status);
 	}
-	if (csr_fmt == CSR_PEM_FORMAT || csr_fmt == CSR_PEM_JSON_FORMAT) {
+	if (csr_fmt == CSR_PEM_FORMAT) {
 		shell_print(shell, "%s", csr);
 	}
-	if (csr_fmt == CSR_JSON_FORMAT || csr_fmt == CSR_PEM_JSON_FORMAT) {
+	if (csr_fmt == CSR_JSON_FORMAT) {
 		static unsigned char csr_json[1024] = { 0 };
 
 		/* CSR encode to JSON format */

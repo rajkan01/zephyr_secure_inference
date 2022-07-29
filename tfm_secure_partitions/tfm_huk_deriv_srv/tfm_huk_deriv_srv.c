@@ -171,7 +171,7 @@ static huk_key_context_t *tfm_huk_get_context(huk_key_idx_t idx)
 {
 	static huk_key_context_t huk_ctx[HUK_KEY_COUNT] = { 0 };
 
-	if ((idx < HUK_KEY_CLIENT_TLS) || (idx >= HUK_KEY_COUNT)) {
+	if ((idx < HUK_KEY_COSE) || (idx >= HUK_KEY_COUNT)) {
 		log_err_print("Invalid argument %d", PSA_ERROR_INVALID_ARGUMENT);
 		return NULL;
 	}
@@ -184,7 +184,7 @@ static psa_status_t tfm_huk_key_context_init(huk_key_idx_t idx,
 					     huk_key_stat_t stat,
 					     psa_key_handle_t key_handle)
 {
-	if ((idx < HUK_KEY_CLIENT_TLS) || (idx >= HUK_KEY_COUNT)) {
+	if ((idx < HUK_KEY_COSE) || (idx >= HUK_KEY_COUNT)) {
 		return PSA_ERROR_INVALID_ARGUMENT;
 	}
 
@@ -203,9 +203,7 @@ static psa_status_t tfm_huk_key_get_idx(psa_key_id_t key_id,
 					huk_key_idx_t *idx)
 {
 	/* Map the Key id to key idx */
-	if (key_id == HUK_CLIENT_TLS) {
-		*idx = HUK_KEY_CLIENT_TLS;
-	} else if (key_id == HUK_COSE) {
+    if (key_id == HUK_COSE) {
 		*idx = HUK_KEY_COSE;
 	} else {
 		return PSA_ERROR_INVALID_ARGUMENT;
@@ -215,7 +213,7 @@ static psa_status_t tfm_huk_key_get_idx(psa_key_id_t key_id,
 
 static psa_status_t tfm_huk_key_get_status(huk_key_idx_t idx, huk_key_stat_t *stat)
 {
-	if ((idx < HUK_KEY_CLIENT_TLS) || (idx >= HUK_KEY_COUNT)) {
+	if ((idx < HUK_KEY_COSE) || (idx >= HUK_KEY_COUNT)) {
 		return PSA_ERROR_INVALID_ARGUMENT;
 	}
 
@@ -337,15 +335,6 @@ static psa_status_t tfm_huk_deriv_ec_key(const uint8_t *rx_label,
 	psa_algorithm_t alg = PSA_ALG_ECDSA(PSA_ALG_SHA_256);
 	psa_key_handle_t tflm_cose_key_handle = 0;
 
-	/* Until the keys can be used while remaining on the secure side, allow
-	 * exporting, but only of the TLS key.  This has to be decided here,
-	 * rather that by request, as a modified request could allow keys that
-	 * shouldn't be exported to be set that way.
-	 */
-	if (key_id == HUK_CLIENT_TLS) {
-		key_usage_flag |= PSA_KEY_USAGE_EXPORT;
-	}
-
 	/* Setup the key's attributes before the creation request. */
 	psa_set_key_usage_flags(&key_attributes, key_usage_flag);
 	psa_set_key_lifetime(&key_attributes, PSA_KEY_LIFETIME_VOLATILE);
@@ -382,21 +371,11 @@ void tfm_huk_ec_keys_init()
 	/** These are the hpke_info passed to key derivation for generating
 	 *  two unique keys - Device client TLS, Device COSE SIGN/Encrypt.
 	 */
-	const char *hpke_info[2] = {
-		"HUK_CLIENT_TLS",
+	const char *hpke_info[1] = {
 		"HUK_COSE"
 	};
 
 	status = tfm_huk_deriv_ec_key((const uint8_t *)hpke_info[0],
-				      HUK_CLIENT_TLS,
-				      (PSA_KEY_USAGE_SIGN_HASH | PSA_KEY_USAGE_VERIFY_MESSAGE));
-	if (status != PSA_SUCCESS) {
-		log_err_print("failed with %d", status);
-		goto err;
-
-	}
-
-	status = tfm_huk_deriv_ec_key((const uint8_t *)hpke_info[1],
 				      HUK_COSE,
 				      (PSA_KEY_USAGE_SIGN_HASH | PSA_KEY_USAGE_VERIFY_HASH));
 	if (status != PSA_SUCCESS) {

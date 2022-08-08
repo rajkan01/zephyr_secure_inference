@@ -136,7 +136,7 @@ static int x509_csr_write_sign(enum km_key_idx key_idx,
 	int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
 	size_t len = 0;
 	struct km_key_context *ctx = km_get_context(key_idx);
-	psa_status_t status;
+	psa_status_t status = PSA_SUCCESS;
 
 	if (ctx == NULL) {
 		return MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
@@ -409,7 +409,6 @@ psa_status_t x509_csr_cbor(const enum km_key_idx key_idx,
 			   unsigned char *uuid,
 			   size_t uuid_size)
 {
-	char csr_subject_name[80] = { 0 };
 	struct km_key_context *ctx = km_get_context(key_idx);
 	int ret = PSA_SUCCESS;
 

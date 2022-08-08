@@ -38,8 +38,7 @@
 
 /** Define the index for the key in the key context array. */
 typedef enum {
-	HUK_KEY_CLIENT_TLS = 0,                 /**< TLS client key ID */
-	HUK_KEY_COSE,                           /**< COSE SIGN/Encrypt key ID */
+	HUK_KEY_COSE = 0,                       /**< COSE SIGN/Encrypt key ID */
 	HUK_KEY_COUNT,                          /**< Number of keys present */
 } huk_key_idx_t;
 

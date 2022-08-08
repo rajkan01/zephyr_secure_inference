@@ -11,10 +11,7 @@
 #include "tfm_partition_huk.h"
 #include "util_app_log.h"
 #include "x509_csr_gen.h"
-
-#ifdef CONFIG_TLS_PSA_KEY_WORKAROUND
-#  include <local_key.h>
-#endif
+#include "device_client_tls_key.h"
 
 /** Declare a reference to the application logging interface. */
 LOG_MODULE_DECLARE(app, CONFIG_LOG_DEFAULT_LEVEL);
@@ -47,27 +44,29 @@ void km_context_init(struct km_key_context *ctx,
 	if (sizeof(ctx->label) > (strlen(label) + 1)) {
 		strcpy(ctx->label, label);
 	} else {
-		printf("Insufficient memory to copy key label\n");
+		LOG_ERR("Insufficient memory to copy key label\n");
 		goto err;
 	}
-
-	/* Get the key status from the secure service. */
-	status = al_psa_status(
-		psa_huk_ec_key_stat(&ctx->key_id, &stat),
-		__func__);
-	if (status != PSA_SUCCESS) {
-		printf("Failed to get the key status with %d\n", status);
+	switch (key_id) {
+	case KEY_ID_CLIENT_TLS:
+		device_client_tls_key_init(ctx);
+		break;
+	case KEY_ID_COSE:
+		/* Get the key status from the secure service. */
+		status = al_psa_status(
+			psa_huk_ec_key_stat(&ctx->key_id, &stat),
+			__func__);
+		if (status != PSA_SUCCESS) {
+			LOG_ERR("Failed to get the key status with %d\n", status);
+			goto err;
+		} else {
+			ctx->status = stat;
+		}
+		break;
+	default:
+		LOG_ERR("Invalid key ID");
 		goto err;
-	} else {
-		ctx->status = stat;
 	}
-
-#ifdef CONFIG_TLS_PSA_KEY_WORKAROUND
-	if (ctx->key_id == KEY_ID_CLIENT_TLS) {
-		/* Setup the local key for the TLS context. */
-		lkey_convert(ctx);
-	}
-#endif
 
 	return;
 err:
@@ -94,22 +93,45 @@ psa_status_t km_get_uuid(unsigned char *uuid, size_t uuid_size)
 psa_status_t km_get_pubkey(uint8_t *public_key, size_t public_key_len,
 			   const enum km_key_idx key_idx)
 {
-	psa_status_t status;
+	psa_status_t status = PSA_SUCCESS;
 	struct km_key_context *ctx = km_get_context(key_idx);
+	size_t public_key_data_len;
 
 	if (ctx == NULL) {
 		return PSA_ERROR_INVALID_ARGUMENT;
 	}
 
-	status = al_psa_status(
-		psa_huk_get_pubkey(&ctx->key_id,
-				   public_key,
-				   public_key_len),
-		__func__);
-	if (status != PSA_SUCCESS) {
-		LOG_ERR("Failed to export the_public_key");
+	switch (ctx->key_id) {
+	case KEY_ID_CLIENT_TLS:
+		status = al_psa_status(
+			psa_export_public_key(ctx->key_handle,
+					      public_key,
+					      public_key_len,
+					      &public_key_data_len),
+			__func__);
+		if (status != PSA_SUCCESS) {
+			LOG_ERR("Failed to export the_public_key for 0x%x", KEY_ID_CLIENT_TLS);
+			goto err;
+		}
+		break;
+	case KEY_ID_COSE:
+		status = al_psa_status(
+			psa_huk_get_pubkey(&ctx->key_id,
+					   public_key,
+					   public_key_len),
+			__func__);
+		if (status != PSA_SUCCESS) {
+			LOG_ERR("Failed to export the_public_key for 0x%x", KEY_ID_COSE);
+			goto err;
+		}
+		break;
+	default:
+		LOG_ERR("Invalid key ID");
+		status = PSA_ERROR_INVALID_ARGUMENT;
+		break;
 	}
 
+err:
 	return status;
 }
 

@@ -142,35 +142,6 @@ psa_status_t psa_huk_hash_sign(psa_key_id_t *key_id,
 	return status;
 }
 
-psa_status_t psa_huk_export_privkey(psa_key_id_t key, uint8_t *buffer, size_t buffer_size,
-				    size_t *buffer_used)
-{
-	psa_status_t status;
-	psa_handle_t handle;
-
-	psa_invec in_vec[] = {
-		{ .base = &key, .len = sizeof(psa_key_id_t) },
-	};
-
-	psa_outvec out_vec[] = {
-		{ .base = buffer, .len = buffer_size },
-		{ .base = buffer_used, .len = sizeof(size_t) },
-
-	};
-
-	handle = psa_connect(TFM_HUK_EXPORT_PRIVKEY_SID, TFM_HUK_EXPORT_PRIVKEY_VERSION);
-	if (!PSA_HANDLE_IS_VALID(handle)) {
-		return PSA_ERROR_GENERIC_ERROR;
-	}
-
-	status = psa_call(handle, PSA_IPC_CALL, in_vec, IOVEC_LEN(in_vec), out_vec,
-			  IOVEC_LEN(out_vec));
-
-	psa_close(handle);
-
-	return status;
-}
-
 psa_status_t psa_huk_aat(uint8_t *encoded_buf,
 			 size_t encoded_buf_size,
 			 size_t *encoded_buf_len)

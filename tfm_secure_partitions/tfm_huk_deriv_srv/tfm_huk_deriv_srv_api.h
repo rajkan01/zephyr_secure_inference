@@ -31,7 +31,6 @@
 	} while (0)
 
 typedef enum {
-	HUK_CLIENT_TLS  = 0x5001,               // Client TLS key id
 	HUK_COSE        = 0x5002,               // COSE SIGN key id
 } huk_key_type_t;
 

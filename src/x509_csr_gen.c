@@ -23,7 +23,6 @@ static const struct json_obj_descr csr_json_descr[] = {
 	JSON_OBJ_DESCR_PRIM(struct csr_json_struct, CSR, JSON_TOK_STRING)
 };
 
-#if HASH_CALC_USE_MBEDTLS
 int x509_csr_hash_calc(const uint8_t *buf,
 		       const size_t buf_len,
 		       uint8_t *hash)
@@ -39,14 +38,45 @@ int x509_csr_hash_calc(const uint8_t *buf,
 	if (mbedtls_md_finish(&md_ctx, hash)) {
 		return MBEDTLS_ERR_PK_BAD_INPUT_DATA;
 	}
-	printf("x509_csr_hash_calc\n");
-	for (int i = 0; i < 64; i++) {
-		printf("0x%x, ", hash[i]);
-	}
-	printf("\n");
+
 	return 0;
 }
-#endif
+
+static int x509_csr_hash_sign(enum km_key_idx key_idx,
+			      uint8_t *csr_data,
+			      size_t csr_data_size,
+			      uint8_t *sig,
+			      size_t sig_size,
+			      size_t *sig_len)
+{
+	unsigned char hash[64];
+	struct km_key_context *ctx = km_get_context(key_idx);
+	int ret = PSA_SUCCESS;
+
+	ret = x509_csr_hash_calc((uint8_t *)csr_data,
+				 csr_data_size,
+				 hash);
+	if (ret != 0) {
+		printf("Hash calc failed with %d\n", ret);
+		return(ret);
+	}
+
+	psa_algorithm_t psa_alg_id = PSA_ALG_ECDSA(PSA_ALG_SHA_256);
+	/* Sign the hash value using PSA crypto service */
+	ret = psa_sign_hash(ctx->key_handle,
+			    psa_alg_id,
+			    hash,
+			    64,
+			    sig,                        /* Sig buf */
+			    sig_size,                   /* Sig buf size */
+			    sig_len);                   /* Sig length */
+	if (ret != 0) {
+		printf("sign hash failed with %d\n", ret);
+		return(ret);
+	}
+
+	return ret;
+}
 
 static int x509_csr_write_mpibuf(unsigned char **p, unsigned char *start,
 				 size_t n_len)
@@ -106,23 +136,35 @@ static int x509_csr_write_sign(enum km_key_idx key_idx,
 	int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
 	size_t len = 0;
 	struct km_key_context *ctx = km_get_context(key_idx);
-	psa_status_t status;
+	psa_status_t status = PSA_SUCCESS;
 
 	if (ctx == NULL) {
 		return MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
 	}
 
-	/* Send the CSR payload to HUK hash sign tfm service which calculate hash
-	 * and sign, return filled sig buffer with hash signature
+	/* Send the CSR payload to tfm service to sign,
+	 * return filled sig buffer with hash signature
 	 */
-	status =  psa_huk_hash_sign(&ctx->key_id,
-				    csr_data,
-				    csr_data_size,
-				    sig,
-				    sig_size,
-				    sig_len);
-	if (status != PSA_SUCCESS) {
-		return MBEDTLS_ERR_PK_FEATURE_UNAVAILABLE;
+	if (ctx->key_id == KEY_ID_CLIENT_TLS) {
+		ret = x509_csr_hash_sign(key_idx,
+					 csr_data,
+					 csr_data_size,
+					 sig,
+					 sig_size,
+					 sig_len);
+		if (status != PSA_SUCCESS) {
+			return MBEDTLS_ERR_PK_FEATURE_UNAVAILABLE;
+		}
+	} else if (ctx->key_id == KEY_ID_COSE) {
+		status =  psa_huk_hash_sign(&ctx->key_id,
+					    csr_data,
+					    csr_data_size,
+					    sig,
+					    sig_size,
+					    sig_len);
+		if (status != PSA_SUCCESS) {
+			return MBEDTLS_ERR_PK_FEATURE_UNAVAILABLE;
+		}
 	}
 
 	const size_t rs_len = *sig_len / 2;
@@ -143,10 +185,10 @@ static int x509_csr_write_sign(enum km_key_idx key_idx,
 
 }
 
-static int x509_csr_gen_der(mbedtls_x509write_csr *ctx,
-			    unsigned char *buf,
-			    size_t size,
-			    const enum km_key_idx key_idx)
+static int x509_csr_der(mbedtls_x509write_csr *ctx,
+			unsigned char *buf,
+			size_t size,
+			const enum km_key_idx key_idx)
 {
 	unsigned char *sig;
 	int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
@@ -209,8 +251,6 @@ static int x509_csr_gen_der(mbedtls_x509write_csr *ctx,
 				  (uint8_t *)sig,
 				  sig_size,
 				  &sig_len);
-
-
 	if (ret != 0) {
 		return(ret);
 	}
@@ -267,32 +307,34 @@ static int x509_csr_gen_der(mbedtls_x509write_csr *ctx,
 }
 
 #if defined(MBEDTLS_PEM_WRITE_C)
-int x509_csr_pem(mbedtls_x509write_csr *ctx,
-		 unsigned char *buf,
-		 size_t size,
-		 const enum km_key_idx key_idx)
+int x509_csr_sign_request(mbedtls_x509write_csr *ctx,
+			  unsigned char *buf,
+			  size_t size,
+			  const enum km_key_idx key_idx,
+			  x509_csr_fmt_t fmt)
 {
 	int ret = 0;
 	size_t olen = 0;
 
 	/* Generate CSR in DER format */
-	if ((ret = x509_csr_gen_der(ctx,
-				    buf,
-				    size,
-				    key_idx)) < 0) {
+	if ((ret = x509_csr_der(ctx,
+				buf,
+				size,
+				key_idx)) < 0) {
 		return(ret);
 	}
-	/* Convert CSR from DER to PEM format using MbedTLS */
-	if ((ret = mbedtls_pem_write_buffer(X509_CSR_PEM_BEGIN,
-					    X509_CSR_PEM_END,
-					    buf + size - ret,
-					    ret,
-					    buf,
-					    size,
-					    &olen)) != 0) {
-		return(ret);
+	if (fmt == CSR_PEM_FORMAT || fmt == CSR_JSON_FORMAT) {
+		/* Convert CSR from DER to PEM format using MbedTLS */
+		if ((ret = mbedtls_pem_write_buffer(X509_CSR_PEM_BEGIN,
+						    X509_CSR_PEM_END,
+						    buf + size - ret,
+						    ret,
+						    buf,
+						    size,
+						    &olen)) != 0) {
+			return(ret);
+		}
 	}
-
 	return(ret);
 }
 
@@ -300,13 +342,14 @@ int x509_csr_pem(mbedtls_x509write_csr *ctx,
  * @brief Generates device certificate signing request (CSR) using Mbed TLS
  * X.509 and HUK CSR ROT service.
  */
-psa_status_t x509_csr_generate(const enum km_key_idx key_idx,
-			       unsigned char *csr,
-			       size_t csr_len,
-			       unsigned char *uuid,
-			       size_t uuid_size)
+int x509_csr_generate(const enum km_key_idx key_idx,
+		      unsigned char *csr,
+		      size_t csr_len,
+		      unsigned char *uuid,
+		      size_t uuid_size,
+		      x509_csr_fmt_t fmt)
 {
-	psa_status_t status;
+	int ret;
 	struct km_key_context *ctx = km_get_context(key_idx);
 	mbedtls_x509write_csr req;
 
@@ -334,20 +377,21 @@ psa_status_t x509_csr_generate(const enum km_key_idx key_idx,
 	mbedtls_x509write_csr_set_md_alg(&req, MBEDTLS_MD_SHA256);
 
 	/* Adding subject name to CSR */
-	status = mbedtls_x509write_csr_set_subject_name(&req, csr_subject_name);
-	if (status != 0) {
-		LOG_ERR("Setting a CSR subject name failed with error %d", status);
+	ret = mbedtls_x509write_csr_set_subject_name(&req, csr_subject_name);
+	if (ret != 0) {
+		LOG_ERR("Setting a CSR subject name failed with error %d", ret);
 		goto err;
 	}
 
 	/* Create device Certificate Signing Request */
-	status = x509_csr_pem(&req,
-			      csr,
-			      csr_len,
-			      key_idx);
-	if (status < 0) {
+	ret = x509_csr_sign_request(&req,
+				    csr,
+				    csr_len,
+				    key_idx,
+				    fmt);
+	if (ret < 0) {
 		LOG_ERR("CSR PEM format generation failed with error -0x%04x",
-			(unsigned int) -status);
+			(unsigned int) -ret);
 		goto err;
 	}
 
@@ -356,7 +400,7 @@ psa_status_t x509_csr_generate(const enum km_key_idx key_idx,
 err:
 	al_dump_log();
 	mbedtls_x509write_csr_free(&req);
-	return status;
+	return ret;
 }
 
 psa_status_t x509_csr_cbor(const enum km_key_idx key_idx,
@@ -365,9 +409,8 @@ psa_status_t x509_csr_cbor(const enum km_key_idx key_idx,
 			   unsigned char *uuid,
 			   size_t uuid_size)
 {
-	char csr_subject_name[80] = { 0 };
 	struct km_key_context *ctx = km_get_context(key_idx);
-	int status = PSA_SUCCESS;
+	int ret = PSA_SUCCESS;
 
 	if (ctx == NULL) {
 		return PSA_ERROR_INVALID_ARGUMENT;
@@ -375,35 +418,21 @@ psa_status_t x509_csr_cbor(const enum km_key_idx key_idx,
 
 	printf("\nGenerating X.509 CSR for '%s' key:\n", ctx->label);
 
-	// TODO: reject buffer overflow.
-	sprintf(csr_subject_name, "%s%s%s%s%s", X509_CSR_SUB_ORG,
-		",CN=", uuid, ",OU=", ctx->label);
-
-	printf("Subject: %s\n", csr_subject_name);
-
-	mbedtls_x509write_csr req;
-	mbedtls_x509write_csr_init(&req);
-	memset(csr_cbor, 0, *csr_cbor_len);
-
-	mbedtls_x509write_csr_set_md_alg(&req, MBEDTLS_MD_SHA256);
-
-	/* Add subject name to CSR */
-	status = mbedtls_x509write_csr_set_subject_name(&req, csr_subject_name);
-	if (status != 0) {
-		LOG_ERR("Setting a CSR subject name failed with error %d", status);
-		goto err;
-	}
-
 	/* Generate CSR in DER format */
-	size_t csr_len = x509_csr_gen_der(&req, csr_cbor, *csr_cbor_len, key_idx);
-	if (csr_len < 0) {
+	ret = x509_csr_generate(key_idx,
+				csr_cbor,
+				*csr_cbor_len,
+				uuid,
+				uuid_size,
+				CSR_DER_FORMAT);
+	if (ret < 0) {
 		goto err;
 	}
 
 	/* The above put the DER encoded packet at the end of the
 	 * buffer. */
-	size_t pos = *csr_cbor_len - csr_len;
-	printf("cert starts at 0x%x into buffer\n", *csr_cbor_len - csr_len);
+	size_t pos = *csr_cbor_len - ret;
+	printf("cert starts at 0x%x into buffer\n", *csr_cbor_len - ret);
 
 	/* Wrap the data in a single element CBOR array with the DER
 	 * data as a bstr. */
@@ -412,17 +441,17 @@ psa_status_t x509_csr_cbor(const enum km_key_idx key_idx,
 
 	/* TODO: Handle overflow better. */
 	nanocbor_fmt_array(&encoder, 1);
-	nanocbor_fmt_bstr(&encoder, csr_len);
+	nanocbor_fmt_bstr(&encoder, ret);
 
-	memcpy(encoder.cur, csr_cbor + (*csr_cbor_len - csr_len), csr_len);
+	memcpy(encoder.cur, csr_cbor + (*csr_cbor_len - ret), ret);
 
-	*csr_cbor_len = encoder.len + csr_len;
+	*csr_cbor_len = encoder.len + ret;
 
+	return PSA_SUCCESS;
 err:
 	al_dump_log();
-	mbedtls_x509write_csr_free(&req);
 
-	return status;
+	return ret;
 }
 
 psa_status_t x509_csr_json_encode(unsigned char *csr,

@@ -43,7 +43,7 @@ enum km_key_type {
 
 /** Key context. */
 struct km_key_context {
-	/** PSA Crypto key handle for the key in the secure domain. */
+	/** PSA Crypto key ID. */
 	psa_key_id_t key_id;
 	/** Display name. */
 	char label[32];
@@ -54,6 +54,8 @@ struct km_key_context {
 	uint8_t local_private[KM_PRIVATE_KEY_SIZE];
 	/** Used bytes of this local private key. */
 	size_t local_private_len;
+	/** PSA Crypto key handle for the key in the secure domain. */
+	psa_key_handle_t key_handle;
 };
 
 /** X.509 certificate context. */

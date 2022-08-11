@@ -6,7 +6,7 @@
 
 #include <stdlib.h> /*stroutl */
 #include <shell_common.h>
-#include <logging/log.h>
+#include <zephyr/logging/log.h>
 
 #include <bootstrap.h>
 #include "tfm_partition_huk.h"

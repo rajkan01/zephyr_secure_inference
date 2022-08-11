@@ -10,6 +10,7 @@
 # diversity during testing with MPSx boards in QEMU. It can be set at compile
 # time via '-DHUK_DERIV_LABEL_EXTRA=value'.
 set(HUK_DERIV_LABEL_EXTRA  "" CACHE STRING "Additional key derivation label value.")
+set(NV_PS_COUNTERS_SUPPORT OFF CACHE BOOL "NV PS counters support.")
 
 # To avoid buffer issues, the string must be <= 15 characters
 string(LENGTH "${HUK_DERIV_LABEL_EXTRA}" size)
@@ -25,3 +26,11 @@ endif()
 
 # Make the label value available in the C project
 add_compile_definitions(HUK_DERIV_LABEL_EXTRA="${HUK_DERIV_LABEL_EXTRA}")
+
+# Define the NV_PS_COUNTERS_SUPPORT in the C project
+if(NV_PS_COUNTERS_SUPPORT)
+    add_compile_definitions(NV_PS_COUNTERS_SUPPORT)
+endif()
+
+# Make the NV_COUNTER_TRACKER_THRESHOLD_LIMIT available in the C project
+add_compile_definitions(NV_COUNTER_TRACKER_THRESHOLD_LIMIT=${NV_COUNTER_TRACKER_THRESHOLD_LIMIT})

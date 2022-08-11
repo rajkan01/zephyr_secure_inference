@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-#include <logging/log.h>
+#include <zephyr/logging/log.h>
 
 #include "cose/mbedtls_ecdsa_verify_sign.h"
 #include "util_app_log.h"

@@ -30,11 +30,10 @@ the service definition files.
 Inference Engine(s)
 ===================
 
-This sample currently uses TensorFlow Lite Micro (TFLM) as the inference engine,
+This sample currently uses TensorFlow Lite Micro (TFLM) and microTVM as the inference engines,
 with a simple sine-wave model.
 
-This will be extended to support microTVM in the future with the same sine-wave
-model in the near future, in addition to more complex AI/ML models.
+This will be extended to support more complex AI/ML models soon.
 
 You can interact with the sine wave model from the NS side via the ``infer``
 shell command.
@@ -64,6 +63,33 @@ The non-secure processing environment exposes a ``keys`` shell command that can
 be used to retrieve the public key component of the above private keys, as well
 as generate a certificate signing request (CSR) for a specific key.
 
+Non-volatile counter
+====================
+
+TF-M has a standard NV Counter API, defined here: ``https://git.trustedfirmware.org/TF-M/trusted-firmware-m.git/tree/platform/include/tfm_plat_nv_counters.h``,
+but which can't be used by application ROT services as it is pre-allocated.
+
+Created custom NV counters support based on protected storage in secure inference, currently, two
+NV counters of 4bytes in each size for NV counter and NV roll-over counter, avoid frequent
+read-write to PS, added another two RAM based static local tracker of NV tracker counter and NV
+rollover tracker counter.
+
+NV counters support is enabled via project Kconfig variable ``NV_PS_COUNTERS_SUPPORT`` (default
+enabled) in the build and another variable ``NV_COUNTER_TRACKER_THRESHOLD_LIMIT`` for setting the
+threshold limit to write back NV tracker counter value to PS (by default threshold limit set as
+100).
+
+On every boot (or first use), read both counters from PS, and store them to local tracker counter
+variables.
+
+Roll over NV counter is incremented whenever the current NV tracker counter value is greater than
+the UINT32_MAX (which is aligned with ``NV_COUNTER_TRACKER_THRESHOLD_LIMIT`` value), reset current
+NV tracker counter to zero, and write back both tracker counters (NV counter and NV rollover
+counter) to PS.
+
+NV tracker counter value will be inserted into every COSE/CBOR payload as an additional field
+along with the inference value.
+
 Required Setup
 **************
 
@@ -71,7 +97,7 @@ This sample assumes you have already cloned zephyr locally. You will need to
 use a specific commit of zephyr to be sure that certain assumptions in this
 sample are met:
 
-- ``6f108d7f76bb7f21c8b8c62a9cee1aabdf86659f``
+- ``9562e3f794d7e3d4acc305e3a0dd52536a867586``
 
 Run these commands to checkout the expected commit hash, and apply a required
 patch to TF-M, allowing us to enable CPP support in the TF-M build system. This
@@ -82,7 +108,7 @@ allocation for the secure image(s), where required:
 
    $ cd path/to/zephyrproject/zephyr
    $ source zephyr-env.sh
-   $ git checkout 6f108d7f76bb7f21c8b8c62a9cee1aabdf86659f
+   $ git checkout 9562e3f794d7e3d4acc305e3a0dd52536a867586
    $ west update
    $ cd ../modules/tee/tf-m/trusted-firmware-m
    $ git apply <sample-path>/patch/tfm.patch
@@ -134,24 +160,30 @@ Sample Output
 
    $ west build -t run
    -- west build: running target run
-   [0/18] Performing build step for 'tfm'
+   [0/25] Performing build step for 'tfm'
    ninja: no work to do.
    [1/2] To exit from QEMU enter: 'CTRL+a, x'[QEMU] CPU: cortex-m33
-   char device redirected to /dev/pts/10 (label hostS0)
+   char device redirected to /dev/pts/1 (label hostS0)
+   qemu-system-arm: warning: nic lan9118.0 has no peer
    [INF] Beginning TF-M provisioning
    [WRN] TFM_DUMMY_PROVISIONING is not suitable for production! This device is NOT SECURE
    [Sec Thread] Secure image initializing!
-   Booting TF-M v1.6.0-RC3+31d4dce6
+   Booting TF-M v1.6.0+8cffe127
+   [UTVM SERVICE] UTVM initalisation completed
+   [TFLM SERVICE] TFLM initalisation completed
    Creating an empty ITS flash layout.
    Creating an empty PS flash layout.
-   [HUK DERIV SERV] tfm_huk_deriv_ec_key()::382 Successfully derived the key for HUK_CLIENT_TLS1
-   [HUK DERIV SERV] tfm_huk_deriv_ec_key()::382 Successfully derived the key for HUK_COSE
-   [UTVM SERVICE] tfm_utvm_service_req_mngr_init()::215 UTVM initalisation completed
-   [TFLM SERVICE] tfm_tflm_service_req_mngr_init()::398 initalisation completed
+   [HUK DERIV SERV] Successfully derived the key for HUK_COSE
+   [NV PS COUNTERS] nv_ps_counter_tracker 0
+   [NV PS COUNTERS] nv_ps_counter_rollover_tracker 0
+   [NV PS COUNTERS] NV_PS_COUNTER_ROLLOVER_MAX 4294967200
+   [NV PS COUNTERS] NV_COUNTER_TRACKER_THRESHOLD_LIMIT 100
+   *** Booting Zephyr OS build zephyr-v3.1.0-3390-g9562e3f794d7  ***
+   [HUK DERIV SERV] Generated UUID: 45b51869-8132-4e15-b780-288d521a5078
 
 
-   uart:~$ *** Booting Zephyr OS build zephyr-v3.0.0-2694-g7cedc5d85e09  ***
-   uart:~$ [HUK DERIV SERV] tfm_huk_gen_uuid()::613 Generated UUID: d74696ad-cb3b-4275-b74a-c346ffe71ea9
+   <inf> app: Successfully derived the key for HUK_CLIENT_TLS
+
    [    2.631000] <inf> app: Azure: waiting for network...
    [    7.141000] <inf> app: Azure: Waiting for provisioning...
 
@@ -274,7 +306,7 @@ And you should see the following log message for the bootstrap server:
 
 .. code-block::
 
-   $ ./run-server.sh 
+   $ ./run-server.sh
    Using config file: /Users/xyz/linaroca/.linaroca.toml
    Starting mTLS TCP server on MBP2021.lan:8443
    Starting CA server on https://MBP2021.lan:1443

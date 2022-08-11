@@ -6,7 +6,7 @@
 #ifndef X509_CSR_GEN_H
 #define X509_CSR_GEN_H
 
-#include <logging/log.h>
+#include <zephyr/logging/log.h>
 
 #include "mbedtls/x509_csr.h"
 #include "mbedtls/asn1write.h"

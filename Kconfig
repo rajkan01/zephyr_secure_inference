@@ -55,4 +55,17 @@ config BOOTSTRAP_SERVER_HOST
 	  provisioning will connect to to retrieve this devices
 	  initial provisioning data.
 
+config NV_PS_COUNTERS_SUPPORT
+	bool "Protected storage-based NV counter support enables."
+	default y
+	help
+	  Protected storage-based NV counter support enables.
+
+config NV_COUNTER_TRACKER_THRESHOLD_LIMIT
+	int "Threshold limit to write current protected storage-based NV counter value to persistent memory."
+	default 100
+	depends on NV_PS_COUNTERS_SUPPORT
+	help
+	  Threshold limit to write current protected storage-based NV counter value to persistent memory.
+
 source "Kconfig.zephyr"

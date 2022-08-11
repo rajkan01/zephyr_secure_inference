@@ -7,7 +7,7 @@
 #ifndef SHELL_COMMON_H
 #define SHELL_COMMON_H
 
-#include <shell/shell.h>
+#include <zephyr/shell/shell.h>
 
 /**
  * @brief Helper utility function to print the invalid argument error message

@@ -5,8 +5,8 @@
  */
 
 #include <azure.h>
-#include <shell/shell.h>
-#include <logging/log.h>
+#include <zephyr/shell/shell.h>
+#include <zephyr/logging/log.h>
 
 LOG_MODULE_DECLARE(app, CONFIG_LOG_DEFAULT_LEVEL);
 

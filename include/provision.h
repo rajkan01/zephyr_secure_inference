@@ -7,7 +7,7 @@
 #ifndef __PROVISION_H__
 #define __PROVISION_H__
 
-#include <zephyr.h>
+#include <zephyr/zephyr.h>
 
 #include "psa/error.h"
 #include "key_mgmt.h"
@@ -52,7 +52,7 @@ enum provision_present {
 
 /**
  * @brief Provisioning data.
- * 
+ *
  * Represents the device provisioned data.  The pointers point to data outside
  * of this struct, which for cbor fetched data points to the original buffer,
  * and for data retrieved from persistent storage, allocated from a buffer.
@@ -84,7 +84,7 @@ struct provision_data {
 
 /**
  * @brief Wait until provisioning data is available.
- * 
+ *
  * Blocks the caller until we have provisioning data available.  If the
  * provisioning has already been aquired, and is stored in persistent storage,
  * returns immediately.  Otherwise, will block until the bootstrap server has
@@ -103,11 +103,11 @@ int provision_store(const struct provision_data *prov);
 
 /**
  * @brief Read provisioning data.
- * 
+ *
  * Attempts to read the provisioning data from non-volatile storage.  The
  * variable-sized entries will be placed into #buf, which has #buf_len bytes of
  * space available.
- * 
+ *
  * @return If the buffer is not large enough to contain the results, will return
  * -ENOSPC.  If the persistent storage values are not present, will return
  * -ENOENT.  Otherwise returns the number of bytes of #buf that were used.

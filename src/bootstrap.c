@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <zephyr.h>
+#include <zephyr/zephyr.h>
 #include <net/socket.h>
 #include <net/tls_credentials.h>
 #include <net/http_client.h>
@@ -17,7 +17,7 @@
 
 #include <provision.h>
 
-#include <logging/log.h>
+#include <zephyr/logging/log.h>
 LOG_MODULE_DECLARE(app, CONFIG_LOG_DEFAULT_LEVEL);
 
 #define HTTPS_PORT 1443

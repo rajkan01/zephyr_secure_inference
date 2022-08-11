@@ -3,8 +3,8 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-#include <zephyr.h>
-#include <data/json.h>
+#include <zephyr/zephyr.h>
+#include <zephyr/data/json.h>
 #include <nanocbor/nanocbor.h>
 
 #include "util_app_log.h"

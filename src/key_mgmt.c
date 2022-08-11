@@ -5,7 +5,7 @@
  */
 
 #include <stdio.h>
-#include <logging/log.h>
+#include <zephyr/logging/log.h>
 
 #include "key_mgmt.h"
 #include "tfm_partition_huk.h"

@@ -5,7 +5,7 @@
  */
 
 #include <math.h>
-#include <logging/log.h>
+#include <zephyr/logging/log.h>
 
 #include "shell_common.h"
 #include "cose/cose_verify.h"

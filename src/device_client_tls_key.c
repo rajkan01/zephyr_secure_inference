@@ -4,9 +4,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 #include "device_client_tls_key.h"
-#include <zephyr.h>
-#include <logging/log_ctrl.h>
-#include <logging/log.h>
+#include <zephyr/zephyr.h>
+#include <zephyr/logging/log_ctrl.h>
+#include <zephyr/logging/log.h>
 #include <tfm_crypto_defs.h>
 #include <stdio.h>
 

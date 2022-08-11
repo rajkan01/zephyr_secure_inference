@@ -4,12 +4,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <zephyr.h>
+#include <zephyr/zephyr.h>
 #include <provision.h>
 #include <psa/protected_storage.h>
-
-// #include <logging/log.h>
-// LOG_MODULE_DECLARE(app, CONFIG_LOG_DEFAULT_LEVEL);
 
 /* Mutex/condition to coordinate device provisioning. */
 static K_MUTEX_DEFINE(prov_lock);
@@ -87,7 +84,7 @@ int provision_wait(enum provision_present mask)
 
 /**
  * @brief Map the return result from #psa_ps_get to an RC code.
- * 
+ *
  * @param pres the status from the #psa_ps_get call.
  * @return int Either 0, or a negative errno-type error.
  */

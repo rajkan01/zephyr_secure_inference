@@ -12,8 +12,6 @@
 #include "psa/service.h"
 #include "psa/crypto.h"
 #include "tfm_huk_deriv_srv_api.h"
-#include "tfm_tflm_service_api.h"
-#include "tfm_utvm_service_api.h"
 #include "nv_ps_counters.h"
 
 /* The algorithm used in COSE */

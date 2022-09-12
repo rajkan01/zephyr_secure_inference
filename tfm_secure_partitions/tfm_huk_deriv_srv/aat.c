@@ -6,9 +6,12 @@
 
 #include "cbor_cose_api.h"
 #include "tfm_huk_deriv_srv_api.h"
+#include "tfm_sp_log.h"
+
+#if(!BUILD_HUK_KEY_DERIV_TEST)
 #include "tfm_tflm_service_api.h"
 #include "tfm_utvm_service_api.h"
-#include "tfm_sp_log.h"
+#endif
 
 /* The algorithm used in COSE */
 #define T_COSE_ALGORITHM              T_COSE_ALGORITHM_ES256
@@ -28,9 +31,15 @@ psa_status_t tfm_cose_create_aat(psa_key_handle_t key_handle,
 	struct tfm_cose_encode_ctx encode_ctx;
 	struct q_useful_buf encode_sign;
 	struct q_useful_buf_c completed_encode_sign;
+
+#if(!BUILD_HUK_KEY_DERIV_TEST)
 	char infer_version[42] = { 0 };
 	char model_version[42] = { 0 };
 	char *supported_model[3] = { "TFLM_MODEL_SINE", "UTVM_MODEL_SINE" };
+#else
+	char infer_version[42] = { "TEST_20072022_1.0" };
+	char model_version[42] = { "TEST_1.0" };
+#endif
 
 	encode_sign.ptr = encoded_buf;
 	encode_sign.len = encoded_buf_size;
@@ -47,12 +56,13 @@ psa_status_t tfm_cose_create_aat(psa_key_handle_t key_handle,
 		return status;
 	}
 
-
+#if(!BUILD_HUK_KEY_DERIV_TEST)
 	/* Get the TFLM version */
 	status =  psa_tflm_version(infer_version, sizeof(infer_version));
 	if (status != PSA_SUCCESS) {
 		return status;
 	}
+#endif
 
 	/* Add TFLM version details */
 	status = tfm_cose_add_data(&encode_ctx,
@@ -63,6 +73,7 @@ psa_status_t tfm_cose_create_aat(psa_key_handle_t key_handle,
 		return status;
 	}
 
+#if(!BUILD_HUK_KEY_DERIV_TEST)
 	/* Get the TFLM sine model version */
 	status =  psa_tflm_model_version(supported_model[0],
 					 strlen(supported_model[0]) + 1,
@@ -71,7 +82,7 @@ psa_status_t tfm_cose_create_aat(psa_key_handle_t key_handle,
 	if (status != PSA_SUCCESS) {
 		return status;
 	}
-
+#endif
 	/* Add TFLM model version details */
 	status = tfm_cose_add_data(&encode_ctx,
 				   EAT_CBOR_LINARO_LABEL_TFLM_SINE_MODEL_VERSION,
@@ -81,6 +92,7 @@ psa_status_t tfm_cose_create_aat(psa_key_handle_t key_handle,
 		return status;
 	}
 
+#if(!BUILD_HUK_KEY_DERIV_TEST)
 	memset(infer_version, 0, sizeof(infer_version));
 	memset(model_version, 0, sizeof(model_version));
 	/* Get the MicroTVM version */
@@ -88,6 +100,7 @@ psa_status_t tfm_cose_create_aat(psa_key_handle_t key_handle,
 	if (status != PSA_SUCCESS) {
 		return status;
 	}
+#endif
 
 	/* Add MicroTVM version details */
 	status = tfm_cose_add_data(&encode_ctx,
@@ -98,6 +111,7 @@ psa_status_t tfm_cose_create_aat(psa_key_handle_t key_handle,
 		return status;
 	}
 
+#if(!BUILD_HUK_KEY_DERIV_TEST)
 	/* Get the MicroTVM model version */
 	status =  psa_utvm_model_version(supported_model[1],
 					 strlen(supported_model[1]) + 1,
@@ -106,6 +120,7 @@ psa_status_t tfm_cose_create_aat(psa_key_handle_t key_handle,
 	if (status != PSA_SUCCESS) {
 		return status;
 	}
+#endif
 
 	/* Add MicroTVM sine model version details */
 	status = tfm_cose_add_data(&encode_ctx,

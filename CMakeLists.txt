@@ -14,9 +14,11 @@ cmake_minimum_required(VERSION 3.13.1)
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 
 get_target_property(TFM_BINARY_DIR tfm TFM_BINARY_DIR)
+set(APP_SOURCE_DIR ${APPLICATION_SOURCE_DIR})
 configure_file(
   ${CMAKE_CURRENT_LIST_DIR}/tfm_secure_partitions/tfm_manifest_list.yaml.in
   ${CMAKE_CURRENT_BINARY_DIR}/tfm_secure_partitions/tfm_manifest_list.yaml
+  @ONLY
 )
 
 set_property(TARGET zephyr_property_target

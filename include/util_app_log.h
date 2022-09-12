@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2021 Linaro Limited
  *
- * SPDX-License-Identifier: Apache-2.0
+ * SPDX-License-Identifier: GPL-3.0
  */
 
 #ifndef __UTIL_APP_LOG_H__

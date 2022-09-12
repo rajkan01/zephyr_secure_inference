@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2022 Linaro Limited
  *
- * SPDX-License-Identifier: Apache-2.0
+ * SPDX-License-Identifier: GPL-3.0
  */
 #include "cose/cose_verify.h"
 #include "cose/mbedtls_ecdsa_verify_sign.h"

@@ -393,13 +393,15 @@ Run all the tests using the command:
 
    $ cd path/to/zephyr
    $ source zephyr-env.sh
-   $ twister -T path/to/modules/outoftree/zephyr_secure_inference/tests
+   $ twister -p mps2_an521_ns -N --inline-logs \
+      -T path/to/modules/outoftree/zephyr_secure_inference/tests
 
 For example to run a specific HUK key derivation service test using the command:
 
 .. code-block:: console
 
-   $ twister -T modules/outoftree/zephyr_secure_inference/tests/tfm_sp/tfm_huk_deriv_srv/
+   $ twister -p mps2_an521_ns -N --inline-logs \
+     -T modules/outoftree/zephyr_secure_inference/tests/tfm_sp/tfm_huk_deriv_srv/
 
 Sample test execution logs
 ***************************

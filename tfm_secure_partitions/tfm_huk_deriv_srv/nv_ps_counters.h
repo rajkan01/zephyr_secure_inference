@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2022 Linaro Limited
  *
- * SPDX-License-Identifier: Apache-2.0
+ * SPDX-License-Identifier: GPL-3.0
  */
 #ifndef __NV_PS_COUNTERS_H__
 #define __NV_PS_COUNTERS_H__

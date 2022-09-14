@@ -3,7 +3,7 @@
 
 manifest:
   self:
-    path: step
+    path: zephyr_secure_inference
 
   remotes:
     - name: zephyrproject-rtos

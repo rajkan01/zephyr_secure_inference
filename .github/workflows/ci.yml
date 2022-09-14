@@ -37,6 +37,9 @@ jobs:
       - name: Build app
         working-directory: zephyr_secure_inference
         run: |
+          cp ci_certs/bootstrap_crt.txt src/bootstrap_crt.txt
+          cp ci_certs/bootstrap_key.txt src/bootstrap_key.txt
+          cp ci_certs/ca_crt.txt src/ca_crt.txt
           west build -p always -b mps2_an521_ns
 
       - name: Test

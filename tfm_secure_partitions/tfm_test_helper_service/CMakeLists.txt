@@ -1,7 +1,7 @@
 #
 # Copyright (c) 2022 Linaro Limited
 #
-# SPDX-License-Identifier: GPL-3.0
+# SPDX-License-Identifier: Apache-2.0
 #
 add_library(tfm_app_rot_partition_test_helper STATIC)
 

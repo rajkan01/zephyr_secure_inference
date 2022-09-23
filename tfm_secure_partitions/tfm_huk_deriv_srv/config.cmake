@@ -1,7 +1,7 @@
 #-------------------------------------------------------------------------------
 # Copyright (c) 2022, Linaro. All rights reserved.
 #
-# SPDX-License-Identifier: GPL-3.0
+# SPDX-License-Identifier: BSD-3-Clause
 #-------------------------------------------------------------------------------
 
 # The MPS2/MPS3 boards in TF-M use a hard-coded value for the HUK, meaning

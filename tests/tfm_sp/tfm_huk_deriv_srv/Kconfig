@@ -1,5 +1,5 @@
 # Copyright (c) 2022 Linaro
-# SPDX-License-Identifier: GPL-3.0
+# SPDX-License-Identifier: Apache-2.0
 
 config BUILD_HUK_KEY_DERIV_TEST
 	bool "Enable HUK key deriv integration test build."

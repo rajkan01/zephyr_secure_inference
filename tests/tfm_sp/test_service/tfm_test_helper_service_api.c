@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2022 Linaro Limited
  *
- * SPDX-License-Identifier: GPL-3.0
+ * SPDX-License-Identifier: Apache-2.0
  */
 #include "tfm_test_helper_service_api.h"
 #include "psa/client.h"
